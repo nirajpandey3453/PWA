@@ -12,7 +12,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="shortcut icon" type="image/png" href="icons/favicon-32.png">
-<title>Shree Laxmi Tracker</title>
+<title>Shree Laxmi Home</title>
 
 <!-- SheetJS for Excel -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -148,6 +148,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .ss-opt:last-child{border-bottom:none}
 .ss-opt.on{background:var(--bg);font-weight:600}
 .ss-none{padding:10px 11px;font-size:12px;color:var(--muted)}
+.ss-new{padding:10px 11px;font-size:13px;font-weight:600;color:var(--teal);cursor:pointer;border-top:1px solid var(--border)}
+.ss-new:active{background:var(--bg)}
 .topbar-actions{display:flex;align-items:center;gap:8px}
 .home-hi{font-size:20px;font-weight:700;margin:6px 0 3px}
 .home-sub{font-size:12.5px;color:var(--sub);margin-bottom:18px}
@@ -157,6 +159,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .home-tile.ledger{border-left:4px solid var(--teal)}
 .home-tile.invest{border-left:4px solid var(--gold)}
 .home-tile.shop{border-left:4px solid var(--purple)}
+.or-line{display:flex;align-items:center;gap:9px;margin:13px 0 4px;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:0.08em}
+.or-line:before,.or-line:after{content:"";flex:1;height:1px;background:var(--border)}
 .sh-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
 .sh-row:last-child{border-bottom:none}
 .sh-chk{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);background:none;cursor:pointer;flex-shrink:0}
@@ -386,7 +390,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="auth-gate" id="auth-gate">
   <div class="auth-card">
     <img class="auth-logo" src="icons/icon-192.png" alt="">
-    <div class="auth-t">Shree Laxmi Tracker</div>
+    <div class="auth-t">Shree Laxmi Home</div>
     <div class="auth-x">Sign in with Google to open the tracker. Your ledger and
       investments load from the shared family file.</div>
     <button class="auth-btn" onclick="handleLogin()">
@@ -397,7 +401,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <div class="lock-screen" id="lock-screen">
   <img class="lock-logo" src="icons/icon-192.png" alt="">
-  <div class="lock-title">Shree Laxmi Tracker</div>
+  <div class="lock-title">Shree Laxmi Home</div>
   <div class="lock-sub" id="lock-sub">Enter your PIN</div>
   <div class="pin-dots" id="pin-dots"></div>
   <div class="keypad" id="keypad"></div>
@@ -517,7 +521,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <!-- TOP BAR -->
 <div class="topbar">
   <div>
-    <div class="topbar-title">🪔 Shree Laxmi Tracker</div>
+    <div class="topbar-title">🪔 Shree Laxmi Home</div>
     <div class="topbar-sub" id="topbar-sub">Sep 2026 – Aug 2031<span class="sync-pill" id="sync-pill"></span></div>
   </div>
   <div class="topbar-actions">
@@ -625,7 +629,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <!-- HOME -->
 <div class="section active" id="sec-home">
-  <div class="home-hi" id="home-hi">Shree Laxmi Tracker</div>
+  <div class="home-hi" id="home-hi">Shree Laxmi Home</div>
   <div class="home-sub">Pick what you want to work on.</div>
   <div class="home-grid">
     <button class="home-tile ledger" onclick="showModule('ledger')">
@@ -653,23 +657,40 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="section" id="sec-shlist">
   <div class="card">
     <div class="card-title">Add to List</div>
-    <label class="form-label">Pick a saved item</label>
-    <select class="form-select" id="sh-pick"></select>
-    <label class="form-label" style="margin-top:10px">Or type something new</label>
-    <input class="form-input" id="sh-item" placeholder="e.g. Dhaniya, Bulb, Cake">
+    <label class="form-label">Item</label>
+    <select class="form-select" id="sh-pick" data-create="createShopItem"></select>
     <button class="btn btn-primary" style="margin-top:11px" onclick="addShopItem()">+ Add Item</button>
-    <div class="lg-hint">Anything you type is saved for next time. Tick an item when
-      you buy it — that is when you record how much.</div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">Saved Items <span class="opt" id="item-count"></span></div>
-    <div id="item-manage"></div>
+    <div class="lg-hint">Start typing to search. If it is not there yet, tap
+      <b>+ Add</b> — it is saved to your items and goes straight on the list.
+      Tick an item when you buy it; that is when you record how much.</div>
   </div>
 
   <div class="card">
     <div class="card-title">To Buy <span class="opt" id="shop-count"></span></div>
     <div id="shop-list"></div>
+  </div>
+</div>
+
+<!-- SHOPPING: SAVED ITEMS -->
+<div class="section" id="sec-shitems">
+  <div class="card">
+    <div class="card-title">New Saved Item</div>
+    <div style="font-size:12px;color:var(--sub);line-height:1.5;margin-bottom:10px">
+      Items you save here show up in the picker on the List tab. Anything you
+      type straight into the list is saved here automatically too.
+    </div>
+    <div class="lg-f2">
+      <div><label class="form-label">Item name</label>
+        <input class="form-input" id="it-name" placeholder="e.g. Dhaniya"></div>
+      <div><label class="form-label">Default unit</label>
+        <select class="form-select" id="it-unit"></select></div>
+    </div>
+    <button class="btn-sm btn-outline" style="width:100%;margin-top:11px" onclick="addSavedItem()">+ Save Item</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Saved Items <span class="opt" id="item-count"></span></div>
+    <div id="item-manage"></div>
   </div>
 </div>
 
@@ -1119,6 +1140,7 @@ const MODULES = {
   ]},
   shop: {name:"Shopping List", tabs:[
     {id:"shlist", icon:"🛒", label:"List"},
+    {id:"shitems", icon:"🏷️", label:"Items"},
     {id:"shcons", icon:"📦", label:"Consumption"},
     {id:"shhist", icon:"🧾", label:"History"}
   ]},
@@ -1163,7 +1185,7 @@ function goHome(){
 // A line of live context on each tile so the home screen is not just a menu.
 function renderHome(){
   const hi = document.getElementById("home-hi");
-  if(hi) hi.textContent = gUserName ? ("Hello, " + gUserName) : "Shree Laxmi Tracker";
+  if(hi) hi.textContent = gUserName ? ("Hello, " + gUserName) : "Shree Laxmi Home";
 
   const lg = document.getElementById("home-lg");
   if(lg){
@@ -1220,16 +1242,26 @@ function makeSearchable(sel){
   }
   function close(){ list.classList.remove("open"); inp.value = current(); }
   function open(q){
-    q = String(q||"").toLowerCase();
-    const hits = Array.prototype.slice.call(sel.options).filter(function(o){
-      return optLabel(o).toLowerCase().indexOf(q) > -1;
+    const raw  = String(q||"").trim();
+    const norm = raw.toLowerCase();
+    const opts = Array.prototype.slice.call(sel.options);
+    const hits = opts.filter(function(o){
+      return optLabel(o).toLowerCase().indexOf(norm) > -1;
     });
-    list.innerHTML = hits.length
-      ? hits.map(function(o){
-          return '<div class="ss-opt' + (o.value === sel.value ? " on" : "") + '" data-v="'
-            + esc(o.value) + '">' + esc(optLabel(o)) + '</div>';
-        }).join("")
-      : '<div class="ss-none">No match</div>';
+    let html = hits.map(function(o){
+      return '<div class="ss-opt' + (o.value === sel.value ? " on" : "") + '" data-v="'
+        + esc(o.value) + '">' + esc(optLabel(o)) + '</div>';
+    }).join("");
+
+    // A creatable select offers the typed text as a new entry, so choosing an
+    // existing item and adding a new one are the same control.
+    const exact = opts.some(function(o){
+      return optLabel(o).trim().toLowerCase() === norm;
+    });
+    if(sel.dataset.create && raw && !exact){
+      html += '<div class="ss-new" data-new="' + esc(raw) + '">+ Add &ldquo;' + esc(raw) + '&rdquo;</div>';
+    }
+    list.innerHTML = html || '<div class="ss-none">No match</div>';
     list.classList.add("open");
   }
 
@@ -1244,6 +1276,14 @@ function makeSearchable(sel){
     }
   });
   list.addEventListener("mousedown", function(e){
+    const nw = e.target.closest ? e.target.closest(".ss-new") : null;
+    if(nw){
+      e.preventDefault();
+      const fn = window[sel.dataset.create];
+      if(typeof fn === "function") fn(nw.getAttribute("data-new"));
+      close(); inp.blur();
+      return;
+    }
     const el = e.target.closest ? e.target.closest(".ss-opt") : null;
     if(!el) return;
     e.preventDefault();
@@ -1279,7 +1319,8 @@ function showSec(id,el){
   if(id==="lgadd")    renderLedgerAll();
   if(id==="lgheads")  { seedHeads(); seedPeople(); seedExclPay(); renderHeads(); renderSubheads(); renderPayExcl(); renderPeopleManager(); renderPeopleList(); renderRecurringForm(); }
   if(id==="lglog")    renderLedger();
-  if(id==="shlist")   { seedItems(); renderItemPicker(); renderItemManage(); renderShopList(); }
+  if(id==="shlist")   { seedItems(); renderItemPicker(); renderShopList(); }
+  if(id==="shitems")  { seedItems(); fillUnitSelect(); renderItemManage(); }
   if(id==="shcons")   { renderShopPeriodSel(); renderShopDash(); }
   if(id==="shhist")   renderShopHistory();
   if(id==="transfer") renderTransfer();
@@ -1783,7 +1824,7 @@ function exportExcel(){
     ws3["!cols"] = [{wch:12},{wch:18},{wch:40},{wch:18},{wch:14},{wch:16}];
     XLSX.utils.book_append_sheet(wb, ws3, "Plan Summary");
 
-    XLSX.writeFile(wb, "ShreeLaxmi_Tracker.xlsx");
+    XLSX.writeFile(wb, "ShreeLaxmi_Home.xlsx");
     toast("✓ Excel downloaded!");
   }catch(e){
     toast("Export failed — try again");
@@ -1991,7 +2032,7 @@ async function saveToGoogleDrive(){
     const blob = new Blob([wbout],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
 
     // Check if file exists
-    const fileName = "ShreeLaxmi_Tracker.xlsx";
+    const fileName = "ShreeLaxmi_Home.xlsx";
     const searchRes = await fetch(
       `https://www.googleapis.com/drive/v3/files?q=name='${fileName}'+and+trashed=false&fields=files(id,name)`,
       {headers:{Authorization:"Bearer "+gToken}}
@@ -3776,6 +3817,30 @@ function ensureItem(name, unit){
   return id;
 }
 
+function fillUnitSelect(){
+  const sel = document.getElementById("it-unit");
+  if(!sel) return;
+  const keep = sel.value;
+  sel.innerHTML = UNITS.map(function(u){
+    return '<option value="'+u.id+'">'+esc(u.name)+'</option>'; }).join("");
+  sel.value = keep || "kg";
+}
+
+function addSavedItem(){
+  const el   = document.getElementById("it-name");
+  const unit = document.getElementById("it-unit").value || "pcs";
+  const name = ((el && el.value) || "").trim();
+  if(!name){ toast("Enter an item name"); return; }
+  if(itemList().some(function(i){ return i.name.toLowerCase() === name.toLowerCase(); })){
+    toast("That item is already saved"); return;
+  }
+  ensureItem(name, unit);
+  save(ST);
+  el.value = "";
+  renderItemManage(); renderItemPicker();
+  toast("✓ " + name + " saved");
+}
+
 function delItem(id){
   const nm = ST.items[id] && ST.items[id].name;
   if(!confirm("Remove " + nm + " from the saved items?\n\nAnything already on the list or bought is kept.")) return;
@@ -3805,6 +3870,7 @@ function renderItemManage(){
   el.innerHTML = list.length
     ? list.map(function(i){
         return '<span class="head-chip">' + esc(i.name)
+          + (i.unit ? '<span class="chip-x">' + esc(i.unit) + '</span>' : '')
           + '<button onclick="delItem(\'' + i.id + '\')" title="Remove">&times;</button></span>';
       }).join("")
     : '<span class="head-none">No saved items</span>';
@@ -3843,34 +3909,45 @@ function shopRows(){ return ST.shop || []; }
 function shopPending(){ return shopRows().filter(function(r){ return !r.done; }); }
 function shopDone(){ return shopRows().filter(function(r){ return r.done; }); }
 
-function addShopItem(){
-  const el    = document.getElementById("sh-item");
-  const sel   = document.getElementById("sh-pick");
-  const typed = ((el && el.value) || "").trim();
-
-  // Typing wins over the picker, so a half-finished selection cannot override
-  // what was actually written.
-  let name = "", unit = "", itemId = "";
-  if(typed){
-    itemId = ensureItem(typed, "");
-    name = ST.items[itemId].name;
-    unit = ST.items[itemId].unit || "";
-  } else if(sel && sel.value && ST.items[sel.value]){
-    itemId = sel.value;
-    name = ST.items[itemId].name;
-    unit = ST.items[itemId].unit || "";
-  }
-  if(!name){ toast("Pick a saved item or type a new one"); return; }
-
+// Single insertion path, so both routes onto the list behave identically.
+function pushShopRow(itemId){
+  const it = ST.items[itemId];
+  if(!it) return null;
+  const dup = shopPending().filter(function(r){
+    return r.item === itemId
+      || String(r.name||"").trim().toLowerCase() === it.name.trim().toLowerCase();
+  })[0];
+  if(dup){ toast(it.name + " is already on the list"); return null; }
   const id = Date.now() + Math.floor(Math.random()*1000);
-  ST.shop.unshift({id:id, name:name, item:itemId, qty:0, unit:unit, done:false,
-                   note:"", createdBy:currentPerson(), createdAt:Date.now()});
+  ST.shop.unshift({id:id, name:it.name, item:itemId, qty:0, unit:it.unit||"",
+                   done:false, note:"", createdBy:currentPerson(), createdAt:Date.now()});
   touch("shop", id);
   save(ST);
-  if(el) el.value = "";
+  return id;
+}
+
+// The picker calls this when the typed text matches nothing. Saving it to the
+// catalogue AND putting it on the list is the point of having typed it.
+function createShopItem(name){
+  const itemId = ensureItem(name, "");
+  if(!itemId){ toast("Enter an item name"); return; }
+  const added = pushShopRow(itemId);
+  const sel = document.getElementById("sh-pick");
   if(sel) sel.value = "";
   renderItemPicker(); renderItemManage(); renderShopList();
-  toast("✓ " + name + " added");
+  if(added) toast("✓ " + ST.items[itemId].name + " saved and added");
+}
+
+function addShopItem(){
+  const sel = document.getElementById("sh-pick");
+  if(!sel || !sel.value || !ST.items[sel.value]){
+    toast("Choose an item, or type a new name to add it"); return;
+  }
+  const itemId = sel.value;
+  const added = pushShopRow(itemId);
+  sel.value = "";
+  renderItemPicker(); renderShopList();
+  if(added) toast("✓ " + ST.items[itemId].name + " added");
 }
 
 function delShopItem(id){
@@ -3928,6 +4005,18 @@ function saveShopDone(){
   closeShopDone();
   renderShopList(); renderShopHistory(); renderShopPeriodSel(); renderShopDash();
   toast("✓ " + r.name + " marked bought");
+}
+
+function repeatShop(id){
+  const r = shopRows().filter(function(x){ return x.id === id; })[0];
+  if(!r) return;
+  let itemId = r.item;
+  if(!itemId || !ST.items[itemId]) itemId = ensureItem(r.name, r.unit || "");
+  if(!itemId) return;
+  const added = pushShopRow(itemId);   // refuses if it is already waiting
+  if(!added) return;
+  renderShopList(); renderItemPicker(); renderItemManage();
+  toast("✓ " + ST.items[itemId].name + " back on the list");
 }
 
 // Undo, so a mis-tick does not need deleting and re-adding.
@@ -3992,7 +4081,8 @@ function renderShopHistory(){
             +     (r.note ? '<span class="lg-note">' + esc(r.note) + '</span>' : '')
             +   '</div></div>'
             + '<div class="lg-amt">' + esc(fmtQty(Number(r.qty)*u.f, u.base)) + '</div>'
-            + '<button class="lg-del" onclick="unmarkShop(' + r.id + ')" title="Move back to list">&#8630;</button>'
+            + '<button class="lg-del" onclick="repeatShop(' + r.id + ')" title="Buy again">&#8635;</button>'
+            + '<button class="lg-del" onclick="unmarkShop(' + r.id + ')" title="Undo — this purchase is removed">&#8630;</button>'
             + '<button class="lg-del" onclick="delShopItem(' + r.id + ')">&times;</button>'
             + '</div>';
         }).join("")
@@ -4106,6 +4196,7 @@ function renderShopDash(){
 
 function renderShopAll(){
   seedItems();
+  fillUnitSelect();
   renderItemPicker();
   renderItemManage();
   renderShopList();

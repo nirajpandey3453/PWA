@@ -1,7 +1,7 @@
 {
-  "name": "Shree Laxmi Tracker",
+  "name": "Shree Laxmi Home",
   "short_name": "Shree",
-  "description": "Shree Laxmi investment tracker with Google Drive sync",
+  "description": "Shree Laxmi Home — ledger, investments and shopping, synced to Google Drive",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#1B2A4A",
