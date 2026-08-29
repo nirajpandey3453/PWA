@@ -1,6 +1,6 @@
 {
   "name": "Shree Laxmi Tracker",
-  "short_name": "Shree Laxmi",
+  "short_name": "Shree",
   "description": "Shree Laxmi investment tracker with Google Drive sync",
   "start_url": "./index.html",
   "display": "standalone",

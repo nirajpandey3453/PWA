@@ -6,9 +6,12 @@
 <meta name="theme-color" content="#0D7377">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Shree Laxmi Tracker">
+<meta name="apple-mobile-web-app-title" content="Shree">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="shortcut icon" type="image/png" href="icons/favicon-32.png">
 <title>Shree Laxmi Tracker</title>
 
 <!-- SheetJS for Excel -->
@@ -125,7 +128,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .modal-title{font-size:15px;font-weight:700;margin-bottom:2px}
 .modal-sub{font-size:12px;color:var(--sub);margin-bottom:14px}
 .modal-box label{display:block;font-size:12px;font-weight:600;color:var(--sub);margin:10px 0 5px}
-.modal-box input{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font-size:14px;box-sizing:border-box;background:var(--bg);color:var(--text)}
+.modal-box input,.modal-box select{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font-size:14px;box-sizing:border-box;background:var(--bg);color:var(--text)}
 .modal-row{display:flex;gap:8px;margin-top:16px}
 .modal-row button{flex:1}
 .sync-pill{font-size:10px;padding:1px 7px;border-radius:10px;background:rgba(255,255,255,0.18);margin-left:6px;white-space:nowrap}
@@ -136,6 +139,47 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .share-row input{flex:1;min-width:0;padding:9px 10px;border:1px solid var(--border);border-radius:10px;font-size:13px;background:var(--bg);color:var(--text)}
 .share-list{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
 .share-chip{font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:3px 9px;color:var(--sub)}
+.topbar-actions{display:flex;align-items:center;gap:8px}
+.lock-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;width:32px;height:32px;border-radius:50%;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}
+.lock-screen{position:fixed;inset:0;background:#1B2A4A;z-index:500;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;color:#fff}
+.lock-screen.show{display:flex}
+.lock-logo{width:70px;height:70px;border-radius:18px;margin-bottom:14px}
+.lock-title{font-size:17px;font-weight:700;margin-bottom:4px}
+.lock-sub{font-size:12.5px;opacity:0.78;margin-bottom:22px;text-align:center;min-height:18px}
+.pin-dots{display:flex;gap:14px;margin-bottom:26px}
+.pin-dot{width:13px;height:13px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.55)}
+.pin-dot.on{background:#fff;border-color:#fff}
+.keypad{display:grid;grid-template-columns:repeat(3,66px);gap:13px}
+.key{height:58px;border-radius:50%;border:1px solid rgba(255,255,255,0.22);background:rgba(255,255,255,0.09);color:#fff;font-size:21px;font-weight:600;cursor:pointer}
+.key:active{background:rgba(255,255,255,0.26)}
+.key.blank{background:none;border:none;cursor:default}
+.lock-forgot{margin-top:22px;background:none;border:none;color:rgba(255,255,255,0.7);font-size:12px;text-decoration:underline;cursor:pointer}
+.lock-screen.shake{animation:shk 0.35s}
+@keyframes shk{0%,100%{transform:translateX(0)}25%{transform:translateX(-9px)}75%{transform:translateX(9px)}}
+.donut-wrap{position:relative;width:168px;margin:2px auto 14px}
+.donut-wrap svg{width:100%;height:auto;transform:rotate(-90deg)}
+.donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.donut-val{font-size:17px;font-weight:700;color:var(--text)}
+.donut-lbl{font-size:10px;color:var(--sub)}
+.legend{display:flex;flex-direction:column;gap:7px}
+.legend-row{display:flex;align-items:center;gap:8px;font-size:12px}
+.legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.legend-name{flex:1;color:var(--text)}
+.legend-val{color:var(--sub);font-variant-numeric:tabular-nums}
+.catbar{margin-bottom:12px}
+.catbar-top{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;margin-bottom:5px}
+.catbar-name{font-weight:600}
+.catbar-sub{color:var(--sub);font-size:11px;margin-top:4px;line-height:1.45}
+.catbar-track{height:8px;background:var(--bg);border-radius:5px;overflow:hidden}
+.catbar-fill{height:100%;border-radius:5px}
+.ins{display:flex;gap:10px;padding:10px 11px;border-radius:11px;margin-bottom:8px;background:var(--bg);border:1px solid var(--border)}
+.ins-ico{font-size:16px;line-height:1.3;flex-shrink:0}
+.ins-t{font-size:12.5px;font-weight:600;margin-bottom:2px}
+.ins-x{font-size:11.5px;color:var(--sub);line-height:1.5}
+.ins.ok{border-left:3px solid var(--green)}
+.ins.warn{border-left:3px solid var(--gold)}
+.ins.bad{border-left:3px solid #C62828}
+.ins.info{border-left:3px solid var(--teal)}
 .share-err{font-size:11px;color:#C62828;margin-top:7px;line-height:1.5;word-break:break-word}
 .btn-red{background:#FFEBEE;color:var(--red);border:none;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:13px}
 .btn-drive{background:#4285F4;color:#fff;font-size:13px;padding:10px 16px;border-radius:12px;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:center}
@@ -188,6 +232,35 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </head>
 <body>
 
+<div class="lock-screen" id="lock-screen">
+  <img class="lock-logo" src="icons/icon-192.png" alt="">
+  <div class="lock-title">Shree Laxmi Tracker</div>
+  <div class="lock-sub" id="lock-sub">Enter your PIN</div>
+  <div class="pin-dots" id="pin-dots"></div>
+  <div class="keypad" id="keypad"></div>
+  <button class="lock-forgot" onclick="forgotPin()">Forgot PIN?</button>
+</div>
+
+<div class="modal-bg" id="pin-modal" onclick="if(event.target===this)closePinModal()">
+  <div class="modal-box">
+    <div class="modal-title" id="pin-modal-title">Set App PIN</div>
+    <div class="modal-sub" id="pin-modal-sub"></div>
+    <div id="pin-cur-row" style="display:none">
+      <label for="pin-cur">Current PIN</label>
+      <input id="pin-cur" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="Current PIN">
+    </div>
+    <label for="pin-new">New PIN</label>
+    <input id="pin-new" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password" placeholder="4 to 6 digits">
+    <label for="pin-new2">Confirm new PIN</label>
+    <input id="pin-new2" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password" placeholder="Re-enter the PIN">
+    <div class="share-err" id="pin-err"></div>
+    <div class="modal-row">
+      <button class="btn-sm btn-outline" id="pin-remove" style="display:none" onclick="removePin()">Remove</button>
+      <button class="btn-sm btn-green" onclick="savePin()">Save PIN</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="edit-modal" onclick="if(event.target===this)closeEdit()">
   <div class="modal-box">
     <div class="modal-title" id="em-title">Plan</div>
@@ -196,6 +269,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <input id="em-fund" placeholder="Fund name">
     <label for="em-amt">Monthly amount (&#8377;)</label>
     <input id="em-amt" type="number" inputmode="numeric" min="0" step="500" placeholder="20000">
+    <label for="em-cat">Category</label>
+    <select id="em-cat"></select>
     <div class="modal-row">
       <button class="btn-sm btn-outline" onclick="resetEdit()">Reset</button>
       <button class="btn-sm btn-green" onclick="saveEdit()">&#10003; Save</button>
@@ -209,16 +284,59 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="topbar-title">🪔 Shree Laxmi Tracker</div>
     <div class="topbar-sub" id="topbar-sub">Sep 2026 – Aug 2031<span class="sync-pill" id="sync-pill"></span></div>
   </div>
+  <div class="topbar-actions">
+  <button class="lock-btn" id="lock-btn" onclick="openPinModal()" title="App lock">🔓</button>
   <button class="login-btn" id="login-btn" onclick="handleLogin()">
     <img id="login-photo" alt="" referrerpolicy="no-referrer" hidden>
     <span id="login-icon">G</span>
     <span id="login-text">Login</span>
   </button>
+  </div>
 </div>
 
 <!-- SECTIONS -->
 <!-- SUMMARY -->
-<div class="section active" id="sec-summary">
+<div class="section active" id="sec-dash">
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-label">Invested so far</div><div class="stat-val teal" id="d-invested">₹0</div></div>
+    <div class="stat-card"><div class="stat-label">Months done</div><div class="stat-val navy" id="d-months">0/60</div></div>
+    <div class="stat-card"><div class="stat-label">Current streak</div><div class="stat-val green" id="d-streak">0 mo</div></div>
+    <div class="stat-card"><div class="stat-label">Projected @ 5y</div><div class="stat-val gold" id="d-proj" style="font-size:16px">₹0</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Allocation by Category</div>
+    <div class="donut-wrap">
+      <svg id="cat-donut" viewBox="0 0 42 42"></svg>
+      <div class="donut-center">
+        <div class="donut-val" id="donut-val">₹0</div>
+        <div class="donut-lbl">per month</div>
+      </div>
+    </div>
+    <div class="legend" id="cat-legend"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Invested by Category</div>
+    <div id="cat-table"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Smart Insights</div>
+    <div id="insights"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Assumptions</div>
+    <div style="font-size:11px;color:var(--sub);line-height:1.6">
+      The projection compounds each category at Equity 12%, Hybrid 9%, Debt 7%,
+      Fixed Deposit 7%, Government 8.2% a year across 60 months. These are
+      planning assumptions only — not forecasts, and not guaranteed returns.
+    </div>
+  </div>
+</div>
+
+<div class="section" id="sec-summary">
   <div class="stat-grid">
     <div class="stat-card"><div class="stat-label">Total Invested</div><div class="stat-val teal" id="s-invested">₹0</div></div>
     <div class="stat-card"><div class="stat-label">Months Done</div><div class="stat-val navy" id="s-months">0/60</div></div>
@@ -353,7 +471,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <!-- BOTTOM NAV -->
 <nav class="bottom-nav">
-  <button class="nav-item active" onclick="showSec('summary',this)">
+  <button class="nav-item active" onclick="showSec('dash',this)">
+    <span class="nav-icon">🧭</span><span>Dashboard</span>
+  </button>
+  <button class="nav-item" onclick="showSec('summary',this)">
     <span class="nav-icon">📊</span><span>Summary</span>
   </button>
   <button class="nav-item" onclick="showSec('tracker',this)">
@@ -375,14 +496,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 const MONTHS = ["Sep 2026","Oct 2026","Nov 2026","Dec 2026","Jan 2027","Feb 2027","Mar 2027","Apr 2027","May 2027","Jun 2027","Jul 2027","Aug 2027","Sep 2027","Oct 2027","Nov 2027","Dec 2027","Jan 2028","Feb 2028","Mar 2028","Apr 2028","May 2028","Jun 2028","Jul 2028","Aug 2028","Sep 2028","Oct 2028","Nov 2028","Dec 2028","Jan 2029","Feb 2029","Mar 2029","Apr 2029","May 2029","Jun 2029","Jul 2029","Aug 2029","Sep 2029","Oct 2029","Nov 2029","Dec 2029","Jan 2030","Feb 2030","Mar 2030","Apr 2030","May 2030","Jun 2030","Jul 2030","Aug 2030","Sep 2030","Oct 2030","Nov 2030","Dec 2030","Jan 2031","Feb 2031","Mar 2031","Apr 2031","May 2031","Jun 2031","Jul 2031","Aug 2031"];
 
 const DEFAULT_PLANS = [
-  {id:"H1",owner:"H",label:"Plan H-1",fund:"ICICI Pru Nifty 50 Index Fund (Direct-G)",amt:20000},
-  {id:"H2",owner:"H",label:"Plan H-2",fund:"Parag Parikh Flexi Cap Fund (Direct-G)",amt:20000},
-  {id:"H3",owner:"H",label:"Plan H-3",fund:"HDFC Balanced Advantage Fund (Direct-G)",amt:20000},
-  {id:"W1",owner:"W",label:"Plan W-1",fund:"Nippon India Arbitrage Fund (Direct-G)",amt:10000},
-  {id:"W2",owner:"W",label:"Plan W-2",fund:"ICICI Pru Short Duration Fund (Direct-G)",amt:10000},
-  {id:"W3",owner:"W",label:"Plan W-3",fund:"Bank FD 5-Year (in Wife's name)",amt:7500},
-  {id:"W4",owner:"D",label:"Plan W-4 SSY",fund:"Sukanya Samriddhi Yojana (Daughter)",amt:12500},
+  {id:"H1",owner:"H",label:"Plan H-1",fund:"ICICI Pru Nifty 50 Index Fund (Direct-G)",amt:20000,cat:"Equity"},
+  {id:"H2",owner:"H",label:"Plan H-2",fund:"Parag Parikh Flexi Cap Fund (Direct-G)",amt:20000,cat:"Equity"},
+  {id:"H3",owner:"H",label:"Plan H-3",fund:"HDFC Balanced Advantage Fund (Direct-G)",amt:20000,cat:"Hybrid"},
+  {id:"W1",owner:"W",label:"Plan W-1",fund:"Nippon India Arbitrage Fund (Direct-G)",amt:10000,cat:"Hybrid"},
+  {id:"W2",owner:"W",label:"Plan W-2",fund:"ICICI Pru Short Duration Fund (Direct-G)",amt:10000,cat:"Debt"},
+  {id:"W3",owner:"W",label:"Plan W-3",fund:"Bank FD 5-Year (in Wife's name)",amt:7500,cat:"Fixed Deposit"},
+  {id:"W4",owner:"D",label:"Plan W-4 SSY",fund:"Sukanya Samriddhi Yojana (Daughter)",amt:12500,cat:"Government"},
 ];
+
+const CATS = ["Equity","Hybrid","Debt","Fixed Deposit","Government"];
+const CAT_COLOR = {"Equity":"#1565C0","Hybrid":"#7B1FA2","Debt":"#00838F",
+                   "Fixed Deposit":"#EF6C00","Government":"#2E7D32"};
+// Long-run assumptions used only for the projection card, never for actuals.
+const CAT_RETURN = {"Equity":0.12,"Hybrid":0.09,"Debt":0.07,
+                    "Fixed Deposit":0.07,"Government":0.082};
 
 const OWNER_COLOR = {H:"#1565C0",W:"#4527A0",D:"#1A7A4A"};
 const BADGE_CLASS  = {H:"b-h",W:"b-w",D:"b-d"};
@@ -402,11 +530,12 @@ if(!ST.checks)    ST.checks = {};
 if(!ST.transfers) ST.transfers = [];
 if(!ST.funds)     ST.funds = {};
 if(!ST.amts)      ST.amts  = {};
+if(!ST.cats)      ST.cats  = {};
 // meta[kind][key] = when that single field last changed on any device.
 // Merging per field (not per document) is what stops a stale device from
 // overwriting everything with one edit.
 if(!ST.meta)      ST.meta = {};
-["checks","funds","amts","transfers","shares"].forEach(k=>{ if(!ST.meta[k]) ST.meta[k] = {}; });
+["checks","funds","amts","cats","transfers","shares"].forEach(k=>{ if(!ST.meta[k]) ST.meta[k] = {}; });
 if(!ST.tomb)      ST.tomb = {};
 if(!ST.tomb.transfers) ST.tomb.transfers = {};
 if(!ST.shares)    ST.shares = {};
@@ -418,6 +547,7 @@ if(!ST.meta.shares) ST.meta.shares = {};
   Object.keys(ST.checks).forEach(k=>{ if(ST.meta.checks[k]==null) ST.meta.checks[k]=old; });
   Object.keys(ST.funds ).forEach(k=>{ if(ST.meta.funds[k] ==null) ST.meta.funds[k] =old; });
   Object.keys(ST.amts  ).forEach(k=>{ if(ST.meta.amts[k]  ==null) ST.meta.amts[k]  =old; });
+  Object.keys(ST.cats  ).forEach(k=>{ if(ST.meta.cats[k]  ==null) ST.meta.cats[k]  =old; });
   (ST.transfers||[]).forEach(t=>{ if(ST.meta.transfers[t.id]==null) ST.meta.transfers[t.id]=old; });
 })();
 
@@ -434,7 +564,33 @@ let gTokenExp = 0;
 
 function plans(){ return DEFAULT_PLANS.map(p=>({...p,
   fund: ST.funds[p.id]||p.fund,
+  cat:  ST.cats[p.id]||p.cat,
   amt:  (ST.amts[p.id]!=null ? Number(ST.amts[p.id]) : p.amt)})); }
+
+// Actual money in, counted per plan per ticked month — a partly-done month
+// still counts for the plans that were paid.
+function investedByPlan(){
+  const out = {};
+  plans().forEach(function(p){
+    let n = 0;
+    for(let m=0;m<MONTHS.length;m++) if(ST.checks[m+"_"+p.id]) n++;
+    out[p.id] = {plan:p, months:n, amount:n*Number(p.amt)};
+  });
+  return out;
+}
+
+function byCategory(){
+  const inv = investedByPlan(), out = {};
+  CATS.forEach(function(c){ out[c] = {monthly:0, invested:0, months:0, plans:[]}; });
+  plans().forEach(function(p){
+    const c = out[p.cat] || (out[p.cat] = {monthly:0, invested:0, months:0, plans:[]});
+    c.monthly  += Number(p.amt);
+    c.invested += inv[p.id].amount;
+    c.months    = Math.max(c.months, inv[p.id].months);
+    c.plans.push(p);
+  });
+  return out;
+}
 function monthlyTotal(){ return plans().reduce((a,p)=>a+Number(p.amt),0); }
 function ownerTotal(o){ return plans().filter(p=>p.owner===o).reduce((a,p)=>a+Number(p.amt),0); }
 function esc(v){ return String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
@@ -451,6 +607,7 @@ function showSec(id,el){
   document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
   document.getElementById("sec-"+id).classList.add("active");
   el.classList.add("active");
+  if(id==="dash")     renderDash();
   if(id==="summary")  renderSummary();
   if(id==="tracker")  renderTracker();
   if(id==="transfer") renderTransfer();
@@ -705,6 +862,10 @@ function openEdit(pid){
   document.getElementById("em-title").textContent = p.label;
   document.getElementById("em-fund").value = p.fund;
   document.getElementById("em-amt").value  = p.amt;
+  const sel = document.getElementById("em-cat");
+  sel.innerHTML = CATS.map(function(c){
+    return '<option value="'+c+'"'+(c===p.cat?' selected':'')+'>'+c+'</option>';
+  }).join("");
   document.getElementById("edit-modal").classList.add("show");
 }
 
@@ -721,7 +882,8 @@ function saveEdit(){
   if(!isFinite(a) || a < 0){ toast("Enter a valid amount"); return; }
   ST.funds[editPid] = f;
   ST.amts[editPid]  = a;
-  touch("funds",editPid); touch("amts",editPid);
+  ST.cats[editPid]  = document.getElementById("em-cat").value;
+  touch("funds",editPid); touch("amts",editPid); touch("cats",editPid);
   save(ST);
   closeEdit();
   refreshAll();
@@ -732,7 +894,8 @@ function resetEdit(){
   if(!editPid) return;
   ST.funds[editPid] = null;
   ST.amts[editPid]  = null;
-  touch("funds",editPid); touch("amts",editPid);
+  ST.cats[editPid]  = null;
+  touch("funds",editPid); touch("amts",editPid); touch("cats",editPid);
   save(ST);
   closeEdit();
   refreshAll();
@@ -743,6 +906,7 @@ function resetEdit(){
 function refreshAll(){
   const open = Array.from(document.querySelectorAll(".month-body.open")).map(e=>e.id);
   renderSummary();
+  renderDash();
   renderTracker();
   renderTransferLog();
   renderShares();
@@ -1244,7 +1408,7 @@ async function createSharedFile(){
 function syncPayload(){
   return JSON.stringify({
     checks: ST.checks, transfers: ST.transfers,
-    funds: ST.funds, amts: ST.amts, shares: ST.shares,
+    funds: ST.funds, amts: ST.amts, cats: ST.cats, shares: ST.shares,
     meta: ST.meta, tomb: ST.tomb,
     updatedAt: ST.updatedAt || 0
   });
@@ -1317,7 +1481,7 @@ function applyMerge(rem){
   if(!rem) return false;
   try{ localStorage.setItem("sip_backup", JSON.stringify(ST)); }catch{}
   let changed = false;
-  ["checks","funds","amts","shares"].forEach(function(kind){
+  ["checks","funds","amts","cats","shares"].forEach(function(kind){
     const out = {val:{}, ts:{}};
     if(mergeField(kind, rem, out)) changed = true;
     ST[kind] = out.val;
@@ -1397,7 +1561,388 @@ if(!gToken && restoreSession()){
   fetchProfile();
 }
 
+// ── DASHBOARD ──────────────────────────────────────────────────────────────
+const MON_NUM = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+
+// How many months into the plan we are right now; negative before it starts.
+function monthIndexNow(){
+  const parts = MONTHS[0].split(" ");
+  const start = new Date(Number(parts[1]), MON_NUM[parts[0]], 1);
+  const now = new Date();
+  return (now.getFullYear()-start.getFullYear())*12 + (now.getMonth()-start.getMonth());
+}
+
+function completeMonths(){
+  const ps = plans(), out = [];
+  for(let m=0;m<MONTHS.length;m++) out.push(ps.every(function(p){ return ST.checks[m+"_"+p.id]; }));
+  return out;
+}
+
+function streakLength(){
+  const a = completeMonths(); let n = 0;
+  for(let i=0;i<a.length;i++){ if(a[i]) n++; else break; }
+  return n;
+}
+
+function totalInvested(){
+  const inv = investedByPlan(); let t = 0;
+  Object.keys(inv).forEach(function(k){ t += inv[k].amount; });
+  return t;
+}
+
+// Future value of the full 60-month plan, each category at its own assumed rate.
+function projectedCorpus(){
+  const cats = byCategory(); let total = 0;
+  Object.keys(cats).forEach(function(c){
+    const P = cats[c].monthly; if(!P) return;
+    const r = (CAT_RETURN[c]!=null ? CAT_RETURN[c] : 0.08)/12;
+    const n = MONTHS.length;
+    total += r ? P*((Math.pow(1+r,n)-1)/r)*(1+r) : P*n;
+  });
+  return Math.round(total);
+}
+
+function shortMoney(n){
+  n = Number(n)||0;
+  if(n >= 10000000) return "₹"+(n/10000000).toFixed(2)+" Cr";
+  if(n >= 100000)   return "₹"+(n/100000).toFixed(2)+" L";
+  if(n >= 1000)     return "₹"+Math.round(n/1000)+"K";
+  return fmt(n);
+}
+
+function buildInsights(){
+  const ps = plans(), cats = byCategory(), mt = monthlyTotal();
+  const comp = completeMonths();
+  const doneCount = comp.filter(Boolean).length;
+  const elapsed = monthIndexNow();
+  const nextIdx = comp.indexOf(false);
+  const out = [];
+
+  if(elapsed < 0){
+    out.push({t:"info",i:"🗓️",h:"Plan starts "+MONTHS[0],
+      x:"Nothing is due yet — "+Math.abs(elapsed)+" month(s) until the first SIP."});
+  } else {
+    const due = Math.min(elapsed+1, MONTHS.length);
+    const gap = due - doneCount;
+    if(gap <= 0){
+      out.push({t:"ok",i:"✅",h:"On track",
+        x:doneCount+" of "+due+" due month(s) fully ticked. Nothing pending."});
+    } else {
+      out.push({t:gap>2?"bad":"warn",i:"⚠️",h:gap+" month(s) behind",
+        x:doneCount+" of "+due+" due month(s) complete. Clear the oldest pending month first."});
+    }
+  }
+
+  const st = streakLength();
+  if(st > 0) out.push({t:"ok",i:"🔥",h:st+" month streak",
+    x:"Every plan ticked for the first "+st+" month(s) with no gap."});
+
+  if(nextIdx >= 0){
+    const missing = ps.filter(function(p){ return !ST.checks[nextIdx+"_"+p.id]; });
+    out.push({t:"info",i:"👉",h:"Next up: "+MONTHS[nextIdx],
+      x:missing.length+" of "+ps.length+" plans pending — "+missing.map(function(p){return p.label;}).join(", ")+"."});
+  } else {
+    out.push({t:"ok",i:"🎉",h:"All 60 months complete",
+      x:"The full plan is ticked off. Total invested: "+fmt(totalInvested())+"."});
+  }
+
+  let ltcg = -1;
+  for(let m=Math.max(nextIdx,0); m<MONTHS.length; m++){ if(MONTHS[m].indexOf("Mar")===0){ ltcg = m; break; } }
+  if(ltcg >= 0) out.push({t:"info",i:"⭐",h:"Next LTCG harvest: "+MONTHS[ltcg],
+    x:"Redeem up to ₹2.5L of long-term equity gains across Husband and Wife to use the tax-free limit."});
+
+  if(nextIdx >= 0 && nextIdx < 28){
+    out.push({t:"info",i:"🛬",h:"Glide path at "+MONTHS[28],
+      x:(28-nextIdx)+" month(s) away. From there, move equity into debt via STP."});
+  } else if(nextIdx >= 28 || nextIdx < 0){
+    out.push({t:"warn",i:"🛬",h:"Glide path is active",
+      x:MONTHS[28]+" has passed — equity should be stepping down into debt now."});
+  }
+
+  if(mt > 0){
+    const eq = cats["Equity"] ? cats["Equity"].monthly : 0;
+    const pct = Math.round(eq/mt*100);
+    if(pct >= 60) out.push({t:"warn",i:"📈",h:"Equity is "+pct+"% of the monthly plan",
+      x:"A heavy equity tilt. Reasonable early on — this is exactly what the glide path is meant to unwind."});
+    else if(pct <= 25) out.push({t:"info",i:"🛡️",h:"Equity is only "+pct+"% of the monthly plan",
+      x:"A conservative mix. Over five years this trades growth for stability."});
+  }
+
+  const wifeMonthly = ownerTotal("W");
+  const sent = ST.transfers.reduce(function(a,t){ return a+Number(t.amt); },0);
+  const expected = wifeMonthly * doneCount;
+  if(expected > 0){
+    if(sent < expected) out.push({t:"warn",i:"💸",h:"Transfers are behind",
+      x:fmt(sent)+" sent against "+fmt(expected)+" needed for "+doneCount+" completed month(s) — short by "+fmt(expected-sent)+"."});
+    else out.push({t:"ok",i:"💸",h:"Transfers keeping pace",
+      x:fmt(sent)+" sent, covering the "+fmt(expected)+" needed so far."});
+  }
+
+  return out;
+}
+
+function renderDonut(cats, total){
+  const svg = document.getElementById("cat-donut");
+  if(!svg) return;
+  if(!total){
+    svg.innerHTML = '<circle cx="21" cy="21" r="15.915" fill="none" stroke="#DDE3EE" stroke-width="6"></circle>';
+    return;
+  }
+  let off = 0, out = "";
+  CATS.forEach(function(c){
+    const v = cats[c] ? cats[c].monthly : 0;
+    if(!v) return;
+    const pct = v/total*100;
+    out += '<circle cx="21" cy="21" r="15.915" fill="none" stroke="'+CAT_COLOR[c]
+        +  '" stroke-width="6" stroke-dasharray="'+pct.toFixed(2)+' '+(100-pct).toFixed(2)
+        +  '" stroke-dashoffset="'+(100-off).toFixed(2)+'"></circle>';
+    off += pct;
+  });
+  svg.innerHTML = out;
+}
+
+function renderDash(){
+  const cats = byCategory();
+  const mt = monthlyTotal();
+  const comp = completeMonths();
+  const doneCount = comp.filter(Boolean).length;
+
+  document.getElementById("d-invested").textContent = shortMoney(totalInvested());
+  document.getElementById("d-months").textContent   = doneCount+"/"+MONTHS.length;
+  document.getElementById("d-streak").textContent   = streakLength()+" mo";
+  document.getElementById("d-proj").textContent     = shortMoney(projectedCorpus());
+
+  renderDonut(cats, mt);
+  document.getElementById("donut-val").textContent = shortMoney(mt);
+
+  const active = CATS.filter(function(c){ return cats[c] && cats[c].monthly > 0; });
+
+  document.getElementById("cat-legend").innerHTML = active.map(function(c){
+    const pct = mt ? Math.round(cats[c].monthly/mt*100) : 0;
+    return '<div class="legend-row">'
+      + '<span class="legend-dot" style="background:'+CAT_COLOR[c]+'"></span>'
+      + '<span class="legend-name">'+esc(c)+'</span>'
+      + '<span class="legend-val">'+fmt(cats[c].monthly)+' &middot; '+pct+'%</span></div>';
+  }).join("") || '<div class="legend-row"><span class="legend-name">No categories yet</span></div>';
+
+  const maxInv = Math.max.apply(null, active.map(function(c){ return cats[c].invested; }).concat([1]));
+  document.getElementById("cat-table").innerHTML = active.map(function(c){
+    const w = Math.round(cats[c].invested/maxInv*100);
+    const names = cats[c].plans.map(function(p){ return p.label; }).join(", ");
+    return '<div class="catbar">'
+      + '<div class="catbar-top"><span class="catbar-name">'+esc(c)+'</span>'
+      + '<span class="legend-val">'+fmt(cats[c].invested)+'</span></div>'
+      + '<div class="catbar-track"><div class="catbar-fill" style="width:'+w+'%;background:'+CAT_COLOR[c]+'"></div></div>'
+      + '<div class="catbar-sub">'+fmt(cats[c].monthly)+'/mo &middot; '+esc(names)+'</div></div>';
+  }).join("") || '<div class="catbar-sub">Nothing invested yet.</div>';
+
+  document.getElementById("insights").innerHTML = buildInsights().map(function(n){
+    return '<div class="ins '+n.t+'"><div class="ins-ico">'+n.i+'</div><div>'
+      + '<div class="ins-t">'+esc(n.h)+'</div><div class="ins-x">'+esc(n.x)+'</div></div></div>';
+  }).join("");
+}
+
+// ── APP LOCK ───────────────────────────────────────────────────────────────
+// The PIN is never stored — only a PBKDF2-SHA256 hash of it with a random
+// salt. This is a screen lock against casual access on a shared phone, not
+// encryption: the tracker data itself still sits in localStorage in the clear.
+// Deliberately NOT synced to Drive, so each device keeps its own PIN.
+const PIN_KEY = "sip_pin";
+const PIN_ITER = 150000;
+let pinBuf = "", pinFails = 0, pinLockUntil = 0, hiddenAt = 0;
+
+function pinRecord(){
+  try{ return JSON.parse(localStorage.getItem(PIN_KEY)||"null"); }catch(e){ return null; }
+}
+function hasPin(){ const r = pinRecord(); return !!(r && r.hash); }
+function cryptoOk(){ return !!(window.crypto && crypto.subtle && crypto.getRandomValues); }
+
+function toB64(u8){
+  let s = "";
+  for(let i=0;i<u8.length;i++) s += String.fromCharCode(u8[i]);
+  return btoa(s);
+}
+function fromB64(str){
+  const s = atob(str), u = new Uint8Array(s.length);
+  for(let i=0;i<s.length;i++) u[i] = s.charCodeAt(i);
+  return u;
+}
+
+async function derivePin(pin, salt){
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(pin),
+    "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits(
+    {name:"PBKDF2", salt:salt, iterations:PIN_ITER, hash:"SHA-256"}, key, 256);
+  return toB64(new Uint8Array(bits));
+}
+
+async function verifyPin(pin){
+  const rec = pinRecord();
+  if(!rec || !rec.hash) return false;
+  try{ return (await derivePin(pin, fromB64(rec.salt))) === rec.hash; }
+  catch(e){ return false; }
+}
+
+// ── lock screen ────────────────────────────────────────────────────────────
+function renderDots(){
+  const rec = pinRecord();
+  const len = rec ? rec.len : 4;
+  let out = "";
+  for(let i=0;i<len;i++) out += '<div class="pin-dot'+(i<pinBuf.length?" on":"")+'"></div>';
+  document.getElementById("pin-dots").innerHTML = out;
+}
+
+function renderKeypad(){
+  const keys = ["1","2","3","4","5","6","7","8","9","","0","<"];
+  document.getElementById("keypad").innerHTML = keys.map(function(v){
+    if(v === "") return '<button class="key blank" disabled></button>';
+    const label = v === "<" ? "&#9003;" : v;
+    return '<button class="key" onclick="pinKey(\'' + v + '\')">' + label + '</button>';
+  }).join("");
+}
+
+function lockApp(){
+  if(!hasPin()) return;
+  pinBuf = "";
+  document.getElementById("lock-sub").textContent = "Enter your PIN";
+  renderDots();
+  renderKeypad();
+  document.getElementById("lock-screen").classList.add("show");
+}
+
+function unlockApp(){
+  pinBuf = ""; pinFails = 0;
+  document.getElementById("lock-screen").classList.remove("show");
+}
+
+function pinKey(v){
+  if(Date.now() < pinLockUntil) return;
+  if(v === "<") pinBuf = pinBuf.slice(0,-1);
+  else {
+    const rec = pinRecord();
+    const len = rec ? rec.len : 4;
+    if(pinBuf.length < len) pinBuf += v;
+  }
+  renderDots();
+  const rec = pinRecord();
+  if(rec && pinBuf.length === rec.len) tryUnlock();
+}
+
+async function tryUnlock(){
+  const ok = await verifyPin(pinBuf);
+  if(ok){ unlockApp(); return; }
+
+  pinFails++;
+  pinBuf = "";
+  renderDots();
+  const scr = document.getElementById("lock-screen");
+  scr.classList.add("shake");
+  setTimeout(function(){ scr.classList.remove("shake"); }, 350);
+
+  if(pinFails >= 5){
+    // Slow down guessing. A 4-digit PIN is only 10,000 combinations.
+    pinLockUntil = Date.now() + 30000;
+    pinFails = 0;
+    let left = 30;
+    const sub = document.getElementById("lock-sub");
+    sub.textContent = "Too many attempts — wait " + left + "s";
+    const iv = setInterval(function(){
+      left--;
+      if(left <= 0){ clearInterval(iv); sub.textContent = "Enter your PIN"; }
+      else sub.textContent = "Too many attempts — wait " + left + "s";
+    }, 1000);
+  } else {
+    document.getElementById("lock-sub").textContent =
+      "Wrong PIN — " + (5-pinFails) + " attempt(s) left";
+  }
+}
+
+// Data lives in Drive, so wiping this device is a safe recovery path.
+function forgotPin(){
+  if(!confirm("Remove the PIN and clear this device's local data?\n\nYou will need to sign in with Google again, and your tracker will be restored from the shared Drive file.")) return;
+  try{
+    localStorage.removeItem(PIN_KEY);
+    localStorage.removeItem("sip_state_v2");
+    localStorage.removeItem("sip_auth");
+    localStorage.removeItem("sip_backup");
+  }catch(e){}
+  location.reload();
+}
+
+// ── PIN settings ───────────────────────────────────────────────────────────
+function openPinModal(){
+  if(!cryptoOk()){ toast("App lock needs a secure (https) connection", 4000); return; }
+  const on = hasPin();
+  document.getElementById("pin-modal-title").textContent = on ? "Change App PIN" : "Set App PIN";
+  document.getElementById("pin-modal-sub").textContent = on
+    ? "Enter your current PIN, then the new one."
+    : "Pick a 4 to 6 digit PIN. It will be asked for each time the app opens.";
+  document.getElementById("pin-cur-row").style.display = on ? "block" : "none";
+  document.getElementById("pin-remove").style.display  = on ? "block" : "none";
+  document.getElementById("pin-cur").value = "";
+  document.getElementById("pin-new").value = "";
+  document.getElementById("pin-new2").value = "";
+  document.getElementById("pin-err").textContent = "";
+  document.getElementById("pin-modal").classList.add("show");
+}
+
+function closePinModal(){
+  document.getElementById("pin-modal").classList.remove("show");
+}
+
+async function savePin(){
+  const err  = document.getElementById("pin-err");
+  const cur  = document.getElementById("pin-cur").value.trim();
+  const nw   = document.getElementById("pin-new").value.trim();
+  const nw2  = document.getElementById("pin-new2").value.trim();
+  err.textContent = "";
+
+  if(hasPin() && !(await verifyPin(cur))){ err.textContent = "Current PIN is wrong."; return; }
+  if(!/^[0-9]{4,6}$/.test(nw)){ err.textContent = "PIN must be 4 to 6 digits."; return; }
+  if(nw !== nw2){ err.textContent = "The two new PINs do not match."; return; }
+
+  try{
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const hash = await derivePin(nw, salt);
+    localStorage.setItem(PIN_KEY, JSON.stringify({salt:toB64(salt), hash:hash, len:nw.length}));
+    closePinModal();
+    updateLockUI();
+    toast("✓ App PIN saved");
+  }catch(e){
+    err.textContent = "Could not save the PIN on this device.";
+  }
+}
+
+async function removePin(){
+  const err = document.getElementById("pin-err");
+  const cur = document.getElementById("pin-cur").value.trim();
+  if(!(await verifyPin(cur))){ err.textContent = "Enter your current PIN to remove it."; return; }
+  try{ localStorage.removeItem(PIN_KEY); }catch(e){}
+  closePinModal();
+  updateLockUI();
+  toast("App lock removed");
+}
+
+function updateLockUI(){
+  const b = document.getElementById("lock-btn");
+  if(b) b.textContent = hasPin() ? "🔒" : "🔓";
+}
+
+function lockNow(){
+  if(!hasPin()){ toast("Set a PIN first"); return; }
+  lockApp();
+}
+
+// Re-lock if the app was in the background for more than two minutes.
+document.addEventListener("visibilitychange", function(){
+  if(document.hidden){ hiddenAt = Date.now(); return; }
+  if(hasPin() && hiddenAt && Date.now()-hiddenAt > 120000) lockApp();
+});
+
 renderSummary();
+renderDash();
+updateLockUI();
+if(hasPin()) lockApp();
 </script>
 </body>
 </html>

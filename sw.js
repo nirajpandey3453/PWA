@@ -1,5 +1,6 @@
-const CACHE = 'sip-tracker-v8';
-const ASSETS = ['./', './index.html', './manifest.json'];
+const CACHE = 'sip-tracker-v13';
+const ASSETS = ['./', './index.html', './manifest.json',
+                './icons/favicon-32.png', './icons/icon-192.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
