@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0D7377">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="SIP Tracker">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Family SIP Tracker</title>
+
+<!-- SheetJS for Excel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+:root {
+  --navy:#1B2A4A; --teal:#0D7377; --gold:#D4920A;
+  --blue:#1565C0; --green:#1A7A4A; --red:#C62828;
+  --pink:#880E4F; --purple:#4527A0;
+  --bg:#F4F6FB; --card:#FFFFFF; --border:#DDE3EE;
+  --text:#1a1a2e; --sub:#64748B; --muted:#94A3B8;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:calc(70px + var(--safe-bot))}
+
+/* ── TOP BAR ── */
+.topbar{background:var(--navy);color:#fff;padding:calc(14px + var(--safe-top)) 16px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-title{font-size:17px;font-weight:600}
+.topbar-sub{font-size:11px;opacity:0.7;margin-top:2px}
+.login-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 12px;border-radius:20px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px}
+.login-btn.signed{background:rgba(13,115,119,0.6)}
+.avatar{width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,0.4)}
+
+/* ── BOTTOM NAV ── */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:var(--safe-bot)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px 8px;cursor:pointer;color:var(--muted);font-size:10px;gap:3px;border:none;background:none}
+.nav-item.active{color:var(--teal)}
+.nav-icon{font-size:22px}
+
+/* ── SECTIONS ── */
+.section{display:none;padding:14px 14px 0}
+.section.active{display:block}
+
+/* ── CARDS ── */
+.card{background:var(--card);border-radius:14px;padding:14px;border:1px solid var(--border);margin-bottom:12px}
+.card-title{font-size:13px;font-weight:600;color:var(--sub);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.04em}
+
+/* ── STAT GRID ── */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.stat-card{background:var(--card);border-radius:14px;padding:14px 12px;border:1px solid var(--border)}
+.stat-label{font-size:11px;color:var(--sub);margin-bottom:5px}
+.stat-val{font-size:22px;font-weight:700}
+.stat-val.teal{color:var(--teal)}
+.stat-val.green{color:var(--green)}
+.stat-val.gold{color:var(--gold)}
+.stat-val.navy{color:var(--navy)}
+
+/* ── PROGRESS ── */
+.prog-wrap{background:#E8EEF6;border-radius:999px;height:8px;overflow:hidden;margin:8px 0 4px}
+.prog-bar{height:100%;background:linear-gradient(90deg,var(--teal),var(--blue));border-radius:999px;transition:width 0.5s}
+.prog-label{font-size:11px;color:var(--sub);text-align:right}
+
+/* ── PLAN ROW ── */
+.plan-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.plan-row:last-child{border-bottom:none}
+.plan-left{display:flex;align-items:center;gap:10px}
+.plan-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.plan-info{display:flex;flex-direction:column;gap:2px}
+.plan-name{font-size:13px;font-weight:600}
+.plan-fund{font-size:11px;color:var(--sub);max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plan-amt{font-size:14px;font-weight:700;color:var(--navy)}
+
+/* ── MONTH LIST ── */
+.month-item{background:var(--card);border-radius:14px;margin-bottom:10px;border:1px solid var(--border);overflow:hidden}
+.month-hdr{display:flex;align-items:center;justify-content:space-between;padding:13px 14px;cursor:pointer}
+.month-name{font-size:15px;font-weight:600}
+.month-right{display:flex;align-items:center;gap:10px}
+.month-badge{font-size:11px;padding:3px 9px;border-radius:999px;font-weight:600}
+.badge-done{background:#E8F5E9;color:var(--green)}
+.badge-partial{background:#FFF3E0;color:#E65100}
+.badge-pending{background:#F3F4F6;color:var(--muted)}
+.badge-ltcg{background:#FFF8E1;color:var(--gold);font-size:10px}
+.chevron{color:var(--muted);font-size:18px;transition:transform 0.25s}
+.chevron.open{transform:rotate(180deg)}
+.month-body{display:none;border-top:1px solid var(--border)}
+.month-body.open{display:block}
+.check-row{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--border)}
+.check-row:last-child{border-bottom:none}
+.check-left{display:flex;align-items:center;gap:10px;flex:1}
+.check-info{display:flex;flex-direction:column;gap:2px;min-width:0}
+.check-name{font-size:13px;font-weight:600}
+.check-fund{font-size:11px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+.check-amt{font-size:12px;font-weight:700;color:var(--teal);white-space:nowrap;margin-right:10px}
+.check-toggle{width:30px;height:30px;border-radius:50%;border:2px solid var(--border);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;transition:all 0.15s}
+.check-toggle.done{background:var(--green);border-color:var(--green);color:#fff}
+.ltcg-banner{background:#FFFDE7;padding:10px 14px;display:flex;align-items:center;gap:8px;font-size:12px;color:#F57F17;font-weight:600;border-bottom:1px solid #FFF176}
+
+/* ── TRANSFER FORM ── */
+.form-group{margin-bottom:12px}
+.form-label{font-size:12px;font-weight:600;color:var(--sub);margin-bottom:5px;display:block}
+.form-input{width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);font-size:15px;color:var(--text);background:#fff;-webkit-appearance:none;appearance:none}
+.form-input:focus{outline:none;border-color:var(--teal)}
+.form-select{width:100%;padding:12px 14px;border-radius:12px;border:1.5px solid var(--border);font-size:15px;color:var(--text);background:#fff;-webkit-appearance:none;appearance:none}
+.err-msg{font-size:11px;color:var(--red);margin-top:4px;display:none}
+
+/* ── BUTTONS ── */
+.btn{width:100%;padding:14px;border-radius:14px;font-size:15px;font-weight:600;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-primary{background:var(--teal);color:#fff}
+.btn-primary:active{opacity:0.85}
+.btn-outline{background:#fff;color:var(--teal);border:1.5px solid var(--teal)}
+.btn-sm{padding:8px 16px;border-radius:10px;font-size:13px;font-weight:600;border:none;cursor:pointer}
+.btn-green{background:var(--green);color:#fff}
+.btn-gold{background:var(--gold);color:#fff}
+.btn-red{background:#FFEBEE;color:var(--red);border:none;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:13px}
+.btn-drive{background:#4285F4;color:#fff;font-size:13px;padding:10px 16px;border-radius:12px;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:center}
+
+/* ── TRANSFER LOG ── */
+.log-item{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border)}
+.log-item:last-child{border-bottom:none}
+.log-info{display:flex;flex-direction:column;gap:3px}
+.log-date{font-size:11px;color:var(--sub)}
+.log-note{font-size:13px;font-weight:500}
+.log-mode{font-size:11px;color:var(--muted)}
+.log-right{display:flex;align-items:center;gap:8px}
+.log-amt{font-size:16px;font-weight:700;color:var(--green)}
+.empty{text-align:center;color:var(--muted);font-size:14px;padding:30px 0}
+
+/* ── FUND EDIT ── */
+.fund-edit-card{background:var(--card);border-radius:14px;padding:14px;border:1px solid var(--border);margin-bottom:10px}
+.fund-edit-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.fund-badge{font-size:11px;padding:3px 10px;border-radius:999px;font-weight:600}
+.b-h{background:#E3F2FD;color:var(--blue)}
+.b-w{background:#F3E5F5;color:var(--purple)}
+.b-d{background:#E8F5E9;color:var(--green)}
+.fund-amt-label{font-size:14px;font-weight:700;color:var(--navy)}
+.fund-input{width:100%;padding:10px 12px;border-radius:10px;border:1.5px solid var(--border);font-size:14px;color:var(--text);background:#fff;margin-bottom:8px}
+.fund-input:focus{outline:none;border-color:var(--teal)}
+
+/* ── OWNER SECTIONS ── */
+.owner-hdr{display:flex;align-items:center;gap:8px;margin:14px 0 8px}
+.owner-dot{width:12px;height:12px;border-radius:50%}
+.owner-label{font-size:13px;font-weight:700;color:var(--sub)}
+
+/* ── DRIVE STATUS ── */
+.drive-status{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:500;margin-bottom:12px}
+.ds-ok{background:#E8F5E9;color:var(--green)}
+.ds-no{background:#FFF3E0;color:#E65100}
+.ds-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ds-ok .ds-dot{background:var(--green)}
+.ds-no .ds-dot{background:#E65100}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:calc(80px + var(--safe-bot));left:50%;transform:translateX(-50%) translateY(20px);background:#1a1a2e;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:500;opacity:0;transition:all 0.3s;pointer-events:none;z-index:999;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── MISC ── */
+.divider{height:1px;background:var(--border);margin:12px 0}
+.total-row{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--navy);border-radius:12px;color:#fff;margin-top:4px}
+.total-label{font-size:13px;opacity:0.8}
+.total-val{font-size:18px;font-weight:700}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div>
+    <div class="topbar-title">💰 Family SIP Tracker</div>
+    <div class="topbar-sub" id="topbar-sub">Sep 2026 – Aug 2031</div>
+  </div>
+  <button class="login-btn" id="login-btn" onclick="handleLogin()">
+    <span id="login-icon">G</span>
+    <span id="login-text">Login</span>
+  </button>
+</div>
+
+<!-- SECTIONS -->
+<!-- SUMMARY -->
+<div class="section active" id="sec-summary">
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-label">Total Invested</div><div class="stat-val teal" id="s-invested">₹0</div></div>
+    <div class="stat-card"><div class="stat-label">Months Done</div><div class="stat-val navy" id="s-months">0/60</div></div>
+    <div class="stat-card"><div class="stat-label">Wife ko Bheja</div><div class="stat-val green" id="s-transfer">₹0</div></div>
+    <div class="stat-card"><div class="stat-label">Agle Mahine</div><div class="stat-val gold" id="s-next" style="font-size:14px">Sep 2026</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">5-Year Progress</div>
+    <div class="prog-wrap"><div class="prog-bar" id="prog" style="width:0%"></div></div>
+    <div class="prog-label" id="prog-lbl">0% — 0/60 months</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Monthly Plan — ₹1,00,000</div>
+    <div class="owner-hdr"><div class="owner-dot" style="background:var(--blue)"></div><span class="owner-label">👨 Aap (Husband) — ₹60,000</span></div>
+    <div id="sum-h"></div>
+    <div class="owner-hdr"><div class="owner-dot" style="background:var(--purple)"></div><span class="owner-label">👩 Biwi (Wife) — ₹27,500</span></div>
+    <div id="sum-w"></div>
+    <div class="owner-hdr"><div class="owner-dot" style="background:var(--green)"></div><span class="owner-label">👧 Beti (SSY) — ₹12,500</span></div>
+    <div id="sum-d"></div>
+    <div class="total-row"><span class="total-label">Monthly Total</span><span class="total-val">₹1,00,000</span></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⚠️ Glide Path Reminder</div>
+    <div style="font-size:12px;color:var(--sub);line-height:1.6">
+      <b>Year 1–2:</b> Full SIP as planned<br>
+      <b>Jan 2029:</b> Equity se STP shuru karo<br>
+      <b>Year 4:</b> Equity SIP reduce karo<br>
+      <b>Year 5:</b> Sirf debt/liquid mein<br>
+      <b>Har March:</b> ₹2.5L LTCG harvest karo (Aap+Biwi)
+    </div>
+  </div>
+</div>
+
+<!-- TRACKER -->
+<div class="section" id="sec-tracker">
+  <div style="margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+    <div style="font-size:13px;color:var(--sub)">Har investment ke baad ✓ karo</div>
+    <button class="btn-sm btn-gold" onclick="exportExcel()">📊 Excel Export</button>
+  </div>
+  <div id="month-list"></div>
+</div>
+
+<!-- TRANSFER -->
+<div class="section" id="sec-transfer">
+  <div class="card">
+    <div class="card-title">Biwi ko Transfer Record Karo</div>
+    <div class="drive-status ds-no" id="drive-status">
+      <div class="ds-dot"></div>
+      <span id="drive-status-text">Google Drive connected nahi — Login karo</span>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Date</label>
+      <input type="date" class="form-input" id="t-date">
+      <div class="err-msg" id="err-date">Date zaroori hai</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Amount (₹)</label>
+      <input type="number" class="form-input" id="t-amt" placeholder="40000" inputmode="numeric">
+      <div class="err-msg" id="err-amt">Sahi amount daalo</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Transfer Mode</label>
+      <select class="form-select" id="t-mode">
+        <option>UPI</option>
+        <option>NEFT / IMPS</option>
+        <option>Bank Transfer</option>
+        <option>Cash</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Note (optional)</label>
+      <input type="text" class="form-input" id="t-note" placeholder="e.g. Sep 2026 investment">
+    </div>
+    <button class="btn btn-primary" onclick="addTransfer()">💾 Save Transfer</button>
+    <div style="height:10px"></div>
+    <button class="btn btn-drive" onclick="saveToGoogleDrive()">
+      <span>&#9729;</span> Google Drive mein Excel Save Karo
+    </button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Transfer History</div>
+    <div id="transfer-log"><div class="empty">Koi record nahi abhi tak</div></div>
+    <div class="total-row" style="margin-top:10px">
+      <span class="total-label">Total Transferred</span>
+      <span class="total-val" id="t-total">₹0</span>
+    </div>
+  </div>
+</div>
+
+<!-- FUNDS -->
+<div class="section" id="sec-funds">
+  <div class="card" style="margin-bottom:10px">
+    <div style="font-size:13px;color:var(--sub);line-height:1.6">Fund ka naam change karo — agla baar khulne par bhi save rahega. Changes Excel export mein bhi reflect honge.</div>
+  </div>
+  <div class="owner-hdr"><div class="owner-dot" style="background:var(--blue)"></div><span class="owner-label">👨 Aap (Husband)</span></div>
+  <div id="fe-h"></div>
+  <div class="owner-hdr"><div class="owner-dot" style="background:var(--purple)"></div><span class="owner-label">👩 Biwi (Wife)</span></div>
+  <div id="fe-w"></div>
+  <div class="owner-hdr"><div class="owner-dot" style="background:var(--green)"></div><span class="owner-label">👧 Beti (SSY)</span></div>
+  <div id="fe-d"></div>
+  <div style="height:10px"></div>
+  <button class="btn btn-drive" onclick="saveToGoogleDrive()">
+    <span>&#9729;</span> Google Drive mein Save Karo
+  </button>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-item active" onclick="showSec('summary',this)">
+    <span class="nav-icon">📊</span><span>Summary</span>
+  </button>
+  <button class="nav-item" onclick="showSec('tracker',this)">
+    <span class="nav-icon">📅</span><span>Tracker</span>
+  </button>
+  <button class="nav-item" onclick="showSec('transfer',this)">
+    <span class="nav-icon">💸</span><span>Transfer</span>
+  </button>
+  <button class="nav-item" onclick="showSec('funds',this)">
+    <span class="nav-icon">✏️</span><span>Funds</span>
+  </button>
+</nav>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONSTANTS ──────────────────────────────────────────────────────────────
+const MONTHS = ["Sep 2026","Oct 2026","Nov 2026","Dec 2026","Jan 2027","Feb 2027","Mar 2027","Apr 2027","May 2027","Jun 2027","Jul 2027","Aug 2027","Sep 2027","Oct 2027","Nov 2027","Dec 2027","Jan 2028","Feb 2028","Mar 2028","Apr 2028","May 2028","Jun 2028","Jul 2028","Aug 2028","Sep 2028","Oct 2028","Nov 2028","Dec 2028","Jan 2029","Feb 2029","Mar 2029","Apr 2029","May 2029","Jun 2029","Jul 2029","Aug 2029","Sep 2029","Oct 2029","Nov 2029","Dec 2029","Jan 2030","Feb 2030","Mar 2030","Apr 2030","May 2030","Jun 2030","Jul 2030","Aug 2030","Sep 2030","Oct 2030","Nov 2030","Dec 2030","Jan 2031","Feb 2031","Mar 2031","Apr 2031","May 2031","Jun 2031","Jul 2031","Aug 2031"];
+
+const DEFAULT_PLANS = [
+  {id:"H1",owner:"H",label:"Plan H-1",fund:"ICICI Pru Nifty 50 Index Fund (Direct-G)",amt:20000},
+  {id:"H2",owner:"H",label:"Plan H-2",fund:"Parag Parikh Flexi Cap Fund (Direct-G)",amt:20000},
+  {id:"H3",owner:"H",label:"Plan H-3",fund:"HDFC Balanced Advantage Fund (Direct-G)",amt:20000},
+  {id:"W1",owner:"W",label:"Plan W-1",fund:"Nippon India Arbitrage Fund (Direct-G)",amt:10000},
+  {id:"W2",owner:"W",label:"Plan W-2",fund:"ICICI Pru Short Duration Fund (Direct-G)",amt:10000},
+  {id:"W3",owner:"W",label:"Plan W-3",fund:"Bank FD 5-Year (Biwi ke naam)",amt:7500},
+  {id:"W4",owner:"D",label:"Plan W-4 SSY",fund:"Sukanya Samriddhi Yojana (Beti)",amt:12500},
+];
+
+const OWNER_COLOR = {H:"#1565C0",W:"#4527A0",D:"#1A7A4A"};
+const BADGE_CLASS  = {H:"b-h",W:"b-w",D:"b-d"};
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+function loadState(){
+  try{ return JSON.parse(localStorage.getItem("sip_state_v2")||"{}"); }catch{ return {}; }
+}
+function save(s){
+  try{ localStorage.setItem("sip_state_v2",JSON.stringify(s)); }catch{}
+}
+
+let ST = loadState();
+if(!ST.checks)    ST.checks = {};
+if(!ST.transfers) ST.transfers = [];
+if(!ST.funds)     ST.funds = {};
+let gToken = null;
+let gUserName = null;
+
+function plans(){ return DEFAULT_PLANS.map(p=>({...p,fund:ST.funds[p.id]||p.fund})); }
+function fmt(n){ return "₹"+Number(n).toLocaleString("en-IN"); }
+function toast(msg,dur=2500){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"),dur);
+}
+
+// ── NAV ────────────────────────────────────────────────────────────────────
+function showSec(id,el){
+  document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
+  document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
+  document.getElementById("sec-"+id).classList.add("active");
+  el.classList.add("active");
+  if(id==="summary")  renderSummary();
+  if(id==="tracker")  renderTracker();
+  if(id==="transfer") renderTransfer();
+  if(id==="funds")    renderFunds();
+}
+
+// ── SUMMARY ────────────────────────────────────────────────────────────────
+function renderSummary(){
+  const ps = plans();
+  let done = 0;
+  for(let m=0;m<60;m++){
+    if(ps.every(p=>ST.checks[m+"_"+p.id])) done++;
+  }
+  const invested = done * 100000;
+  const transferred = ST.transfers.reduce((a,t)=>a+Number(t.amt),0);
+  const pct = Math.round(done/60*100);
+
+  document.getElementById("s-invested").textContent = fmt(invested);
+  document.getElementById("s-months").textContent = done+"/60";
+  document.getElementById("s-transfer").textContent = fmt(transferred);
+  document.getElementById("s-next").textContent = done<60 ? MONTHS[done] : "Complete! 🎉";
+  document.getElementById("prog").style.width = pct+"%";
+  document.getElementById("prog-lbl").textContent = pct+"% — "+done+"/60 months";
+
+  ["H","W","D"].forEach(owner=>{
+    const el = document.getElementById("sum-"+owner.toLowerCase().replace("D","d"));
+    if(!el) return;
+    el.innerHTML = ps.filter(p=>p.owner===owner).map(p=>`
+      <div class="plan-row">
+        <div class="plan-left">
+          <div class="plan-dot" style="background:${OWNER_COLOR[owner]}"></div>
+          <div class="plan-info">
+            <div class="plan-name">${p.label}</div>
+            <div class="plan-fund">${p.fund}</div>
+          </div>
+        </div>
+        <div class="plan-amt">${fmt(p.amt)}</div>
+      </div>`).join("");
+  });
+
+  // fix id for D
+  const dEl = document.getElementById("sum-d");
+  if(dEl) dEl.innerHTML = ps.filter(p=>p.owner==="D").map(p=>`
+    <div class="plan-row">
+      <div class="plan-left">
+        <div class="plan-dot" style="background:${OWNER_COLOR.D}"></div>
+        <div class="plan-info">
+          <div class="plan-name">${p.label}</div>
+          <div class="plan-fund">${p.fund}</div>
+        </div>
+      </div>
+      <div class="plan-amt">${fmt(p.amt)}</div>
+    </div>`).join("");
+}
+
+// ── TRACKER ────────────────────────────────────────────────────────────────
+function renderTracker(){
+  const ps = plans();
+  const ml = document.getElementById("month-list");
+  ml.innerHTML = "";
+  MONTHS.forEach((mo,mi)=>{
+    const allDone = ps.every(p=>ST.checks[mi+"_"+p.id]);
+    const cnt = ps.filter(p=>ST.checks[mi+"_"+p.id]).length;
+    const isLTCG = mo.startsWith("Mar");
+    const isGlide = mi===28;
+
+    const div = document.createElement("div");
+    div.className = "month-item";
+
+    let badgeHTML = allDone
+      ? `<span class="month-badge badge-done">✓ Done</span>`
+      : cnt > 0
+        ? `<span class="month-badge badge-partial">${cnt}/${ps.length}</span>`
+        : `<span class="month-badge badge-pending">Pending</span>`;
+
+    if(isLTCG) badgeHTML += `<span class="month-badge badge-ltcg">⭐ LTCG</span>`;
+
+    div.innerHTML = `
+      <div class="month-hdr" onclick="toggleMonth(${mi},this)">
+        <div>
+          <div class="month-name">${mo}</div>
+          ${isGlide?'<div style="font-size:10px;color:#E65100;font-weight:600">⚠️ Glide path shuru karo</div>':''}
+        </div>
+        <div class="month-right">
+          ${badgeHTML}
+          <div class="chevron" id="chev-${mi}">&#8964;</div>
+        </div>
+      </div>
+      <div class="month-body" id="body-${mi}">
+        ${isLTCG?`<div class="ltcg-banner">⭐ LTCG Harvest: Aap+Biwi ₹2.5L redeem karo → Reinvest karo → Zero Tax!</div>`:''}
+        ${ps.map(p=>`
+          <div class="check-row">
+            <div class="check-left">
+              <div class="plan-dot" style="background:${OWNER_COLOR[p.owner]};width:8px;height:8px;border-radius:50%;flex-shrink:0"></div>
+              <div class="check-info">
+                <div class="check-name">${p.label}</div>
+                <div class="check-fund">${p.fund}</div>
+              </div>
+            </div>
+            <div class="check-amt">${fmt(p.amt)}</div>
+            <button class="check-toggle ${ST.checks[mi+'_'+p.id]?'done':''}"
+              onclick="toggleCheck(${mi},'${p.id}',this)">
+              ${ST.checks[mi+'_'+p.id]?'✓':''}
+            </button>
+          </div>`).join("")}
+      </div>`;
+    ml.appendChild(div);
+  });
+}
+
+function toggleMonth(mi,hdr){
+  const body = document.getElementById("body-"+mi);
+  const chev = document.getElementById("chev-"+mi);
+  const open = body.classList.toggle("open");
+  chev.classList.toggle("open",open);
+}
+
+function toggleCheck(mi,pid,btn){
+  const key = mi+"_"+pid;
+  ST.checks[key] = !ST.checks[key];
+  save(ST);
+  btn.classList.toggle("done",ST.checks[key]);
+  btn.textContent = ST.checks[key]?"✓":"";
+  const ps = plans();
+  const allDone = ps.every(p=>ST.checks[mi+"_"+p.id]);
+  const cnt = ps.filter(p=>ST.checks[mi+"_"+p.id]).length;
+  const hdr = btn.closest(".month-item").querySelector(".month-right");
+  let html = allDone
+    ? `<span class="month-badge badge-done">✓ Done</span>`
+    : cnt>0
+      ? `<span class="month-badge badge-partial">${cnt}/${ps.length}</span>`
+      : `<span class="month-badge badge-pending">Pending</span>`;
+  const mo = MONTHS[mi];
+  if(mo.startsWith("Mar")) html += `<span class="month-badge badge-ltcg">⭐ LTCG</span>`;
+  html += `<div class="chevron open" id="chev-${mi}">&#8964;</div>`;
+  hdr.innerHTML = html;
+  if(allDone) toast("✓ "+MONTHS[mi]+" complete!");
+}
+
+// ── TRANSFER ───────────────────────────────────────────────────────────────
+function renderTransfer(){
+  updateDriveStatus();
+  const today = new Date().toISOString().split("T")[0];
+  document.getElementById("t-date").value = today;
+  renderTransferLog();
+}
+
+function addTransfer(){
+  const date = document.getElementById("t-date").value;
+  const amt  = document.getElementById("t-amt").value;
+  const mode = document.getElementById("t-mode").value;
+  const note = document.getElementById("t-note").value.trim();
+
+  let ok = true;
+  document.getElementById("err-date").style.display = date?"none":"block"; if(!date) ok=false;
+  document.getElementById("err-amt").style.display = (amt&&Number(amt)>0)?"none":"block"; if(!amt||Number(amt)<=0) ok=false;
+  if(!ok) return;
+
+  ST.transfers.unshift({id:Date.now(),date,amt:Number(amt),mode,note:note||"Wife ko transfer"});
+  save(ST);
+  document.getElementById("t-amt").value="";
+  document.getElementById("t-note").value="";
+  renderTransferLog();
+  toast("✓ Transfer saved!");
+}
+
+function delTransfer(id){
+  if(!confirm("Delete this transfer?")) return;
+  ST.transfers = ST.transfers.filter(t=>t.id!==id);
+  save(ST);
+  renderTransferLog();
+  toast("Transfer deleted");
+}
+
+function renderTransferLog(){
+  const log = document.getElementById("transfer-log");
+  if(!ST.transfers.length){
+    log.innerHTML='<div class="empty">Koi record nahi abhi tak</div>';
+    document.getElementById("t-total").textContent="₹0";
+    return;
+  }
+  const total = ST.transfers.reduce((a,t)=>a+Number(t.amt),0);
+  document.getElementById("t-total").textContent = fmt(total);
+  log.innerHTML = ST.transfers.map(t=>`
+    <div class="log-item">
+      <div class="log-info">
+        <div class="log-date">${t.date}</div>
+        <div class="log-note">${t.note}</div>
+        <div class="log-mode">${t.mode}</div>
+      </div>
+      <div class="log-right">
+        <div class="log-amt">${fmt(t.amt)}</div>
+        <button class="btn-red" onclick="delTransfer(${t.id})">🗑</button>
+      </div>
+    </div>`).join("");
+}
+
+// ── FUND EDIT ──────────────────────────────────────────────────────────────
+function renderFunds(){
+  ["H","W","D"].forEach(owner=>{
+    const elId = "fe-"+owner.toLowerCase();
+    const el = document.getElementById(elId);
+    if(!el) return;
+    const ps = plans().filter(p=>p.owner===owner);
+    el.innerHTML = ps.map(p=>`
+      <div class="fund-edit-card">
+        <div class="fund-edit-top">
+          <span class="fund-badge ${BADGE_CLASS[owner]}">${p.label}</span>
+          <span class="fund-amt-label">${fmt(p.amt)}/mo</span>
+        </div>
+        <input class="fund-input" id="fi-${p.id}" value="${p.fund}" placeholder="Fund ka naam">
+        <button class="btn btn-sm btn-green" onclick="saveFund('${p.id}')">✓ Save</button>
+      </div>`).join("");
+  });
+}
+
+function saveFund(pid){
+  const val = document.getElementById("fi-"+pid).value.trim();
+  if(!val){ toast("Fund name empty hai!"); return; }
+  ST.funds[pid] = val;
+  save(ST);
+  toast("✓ Fund name saved!");
+}
+
+// ── EXCEL EXPORT ───────────────────────────────────────────────────────────
+function buildExcelData(){
+  const ps = plans();
+
+  // Sheet 1: Monthly Tracker
+  const trackerRows = [
+    ["Month","Plan H-1","Plan H-2","Plan H-3","Plan W-1","Plan W-2","Plan W-3","Plan W-4 (SSY)","Total Done","Status"]
+  ];
+  MONTHS.forEach((mo,mi)=>{
+    const row = [mo];
+    ps.forEach(p=> row.push(ST.checks[mi+"_"+p.id]?"✓":""));
+    const cnt = ps.filter(p=>ST.checks[mi+"_"+p.id]).length;
+    row.push(cnt+"/"+ps.length);
+    row.push(cnt===ps.length?"Complete":cnt>0?"Partial":"Pending");
+    trackerRows.push(row);
+  });
+
+  // Sheet 2: Transfer Log
+  const transferRows = [
+    ["Date","Amount (₹)","Mode","Note"]
+  ];
+  ST.transfers.forEach(t=>{
+    transferRows.push([t.date, t.amt, t.mode, t.note]);
+  });
+  const totalTransfer = ST.transfers.reduce((a,t)=>a+Number(t.amt),0);
+  transferRows.push(["TOTAL", totalTransfer, "", ""]);
+
+  // Sheet 3: Plan Summary
+  const planRows = [
+    ["Plan ID","Account","Fund Name","Monthly Amount (₹)","Annual (₹)","5-Year Total (₹)"]
+  ];
+  const ownerLabel = {H:"Husband",W:"Wife",D:"Daughter (SSY)"};
+  ps.forEach(p=>{
+    planRows.push([p.label, ownerLabel[p.owner], p.fund, p.amt, p.amt*12, p.amt*60]);
+  });
+  planRows.push(["TOTAL","","",100000,1200000,6000000]);
+
+  return {trackerRows, transferRows, planRows};
+}
+
+function exportExcel(){
+  try{
+    const {trackerRows, transferRows, planRows} = buildExcelData();
+    const wb = XLSX.utils.book_new();
+
+    const ws1 = XLSX.utils.aoa_to_sheet(trackerRows);
+    ws1["!cols"] = [{wch:14},{wch:10},{wch:10},{wch:10},{wch:10},{wch:10},{wch:10},{wch:14},{wch:12},{wch:10}];
+    XLSX.utils.book_append_sheet(wb, ws1, "Monthly Tracker");
+
+    const ws2 = XLSX.utils.aoa_to_sheet(transferRows);
+    ws2["!cols"] = [{wch:14},{wch:14},{wch:14},{wch:30}];
+    XLSX.utils.book_append_sheet(wb, ws2, "Transfer Log");
+
+    const ws3 = XLSX.utils.aoa_to_sheet(planRows);
+    ws3["!cols"] = [{wch:12},{wch:18},{wch:40},{wch:18},{wch:14},{wch:16}];
+    XLSX.utils.book_append_sheet(wb, ws3, "Plan Summary");
+
+    XLSX.writeFile(wb, "FamilySIP_Tracker.xlsx");
+    toast("✓ Excel downloaded!");
+  }catch(e){
+    toast("Export failed — try again");
+  }
+}
+
+// ── GOOGLE DRIVE ───────────────────────────────────────────────────────────
+const CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID";
+const SCOPES = "https://www.googleapis.com/auth/drive.file";
+
+function handleLogin(){
+  if(gToken){
+    gToken = null; gUserName = null;
+    updateLoginUI();
+    updateDriveStatus();
+    toast("Logged out");
+    return;
+  }
+  // Open Google OAuth
+  const params = new URLSearchParams({
+    client_id: CLIENT_ID,
+    redirect_uri: window.location.origin + window.location.pathname,
+    response_type: "token",
+    scope: SCOPES,
+    prompt: "select_account"
+  });
+  window.open("https://accounts.google.com/o/oauth2/auth?"+params.toString(),
+    "google-auth","width=480,height=600");
+
+  window.addEventListener("message", function handler(e){
+    if(e.data && e.data.type==="google_token"){
+      gToken = e.data.token;
+      gUserName = e.data.name || "User";
+      updateLoginUI();
+      updateDriveStatus();
+      toast("✓ Google se connected!");
+      window.removeEventListener("message",handler);
+    }
+  });
+}
+
+// For demo: handle hash token from redirect
+(function(){
+  const hash = window.location.hash;
+  if(hash.includes("access_token")){
+    const params = new URLSearchParams(hash.substring(1));
+    gToken = params.get("access_token");
+    history.replaceState(null,"",window.location.pathname);
+    updateLoginUI();
+    updateDriveStatus();
+    toast("✓ Google connected!");
+  }
+})();
+
+function updateLoginUI(){
+  const btn = document.getElementById("login-btn");
+  if(gToken){
+    btn.className = "login-btn signed";
+    document.getElementById("login-text").textContent = gUserName||"Connected";
+    document.getElementById("login-icon").textContent = "✓";
+  } else {
+    btn.className = "login-btn";
+    document.getElementById("login-text").textContent = "Login";
+    document.getElementById("login-icon").textContent = "G";
+  }
+}
+
+function updateDriveStatus(){
+  const el = document.getElementById("drive-status");
+  const txt = document.getElementById("drive-status-text");
+  if(!el) return;
+  if(gToken){
+    el.className = "drive-status ds-ok";
+    txt.textContent = "Google Drive connected — "+( gUserName||"User");
+  } else {
+    el.className = "drive-status ds-no";
+    txt.textContent = "Google Drive connected nahi — Login karo";
+  }
+}
+
+async function saveToGoogleDrive(){
+  if(!gToken){
+    toast("Pehle Google se login karo!");
+    return;
+  }
+  try{
+    toast("Saving to Google Drive...",4000);
+    const {trackerRows,transferRows,planRows} = buildExcelData();
+    const wb = XLSX.utils.book_new();
+    const ws1 = XLSX.utils.aoa_to_sheet(trackerRows);
+    XLSX.utils.book_append_sheet(wb,ws1,"Monthly Tracker");
+    const ws2 = XLSX.utils.aoa_to_sheet(transferRows);
+    XLSX.utils.book_append_sheet(wb,ws2,"Transfer Log");
+    const ws3 = XLSX.utils.aoa_to_sheet(planRows);
+    XLSX.utils.book_append_sheet(wb,ws3,"Plan Summary");
+
+    // Convert to blob
+    const wbout = XLSX.write(wb,{bookType:"xlsx",type:"array"});
+    const blob = new Blob([wbout],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+
+    // Check if file exists
+    const fileName = "FamilySIP_Tracker.xlsx";
+    const searchRes = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q=name='${fileName}'+and+trashed=false&fields=files(id,name)`,
+      {headers:{Authorization:"Bearer "+gToken}}
+    );
+    const searchData = await searchRes.json();
+    const existing = searchData.files&&searchData.files[0];
+
+    let url, method;
+    if(existing){
+      url = `https://www.googleapis.com/upload/drive/v3/files/${existing.id}?uploadType=media`;
+      method = "PATCH";
+    } else {
+      // Create with metadata first
+      const meta = await fetch("https://www.googleapis.com/drive/v3/files",{
+        method:"POST",
+        headers:{Authorization:"Bearer "+gToken,"Content-Type":"application/json"},
+        body:JSON.stringify({name:fileName,mimeType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"})
+      });
+      const metaData = await meta.json();
+      url = `https://www.googleapis.com/upload/drive/v3/files/${metaData.id}?uploadType=media`;
+      method = "PATCH";
+    }
+
+    const uploadRes = await fetch(url,{
+      method,
+      headers:{Authorization:"Bearer "+gToken,"Content-Type":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+      body: blob
+    });
+
+    if(uploadRes.ok){
+      toast("✓ Google Drive mein save ho gaya!");
+    } else {
+      throw new Error("Upload failed");
+    }
+  }catch(e){
+    toast("Drive save failed — Excel download karo");
+    exportExcel();
+  }
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js").catch(()=>{});
+}
+renderSummary();
+</script>
+</body>
+</html>
