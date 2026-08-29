@@ -195,6 +195,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .chip-x.adm{color:#fff;background:var(--teal);border-radius:7px;padding:1px 6px;margin-left:6px}
 .or-line{display:flex;align-items:center;gap:9px;margin:13px 0 4px;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:0.08em}
 .or-line:before,.or-line:after{content:"";flex:1;height:1px;background:var(--border)}
+.pay-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:3px;margin-bottom:10px;-webkit-overflow-scrolling:touch}
+.pay-tabs button{flex:0 0 auto;border:1px solid var(--border);background:var(--bg);color:var(--sub);font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:9px;cursor:pointer;white-space:nowrap}
+.pay-tabs button.on{background:var(--teal);border-color:var(--teal);color:#fff}
 .view-sw{display:flex;gap:0;border:1px solid var(--border);border-radius:9px;overflow:hidden;margin-bottom:11px;width:fit-content}
 .view-sw button{border:none;background:var(--bg);color:var(--sub);font-size:11.5px;font-weight:600;padding:6px 14px;cursor:pointer}
 .view-sw button.on{background:var(--teal);color:#fff}
@@ -346,7 +349,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .lg-by{background:var(--bg);border-radius:7px;padding:0 6px;font-weight:600}
 .lg-pay{background:var(--bg);border-radius:7px;padding:0 6px}
 .hint-s{color:var(--muted);font-size:10.5px;line-height:1.45;display:inline-block;margin-top:4px}
-.pm-row{margin-top:8px;padding:9px 10px;border:1px solid var(--border);border-radius:10px;background:var(--bg);font-size:12.5px;color:var(--text)}
+.pm-row{display:flex;align-items:center;gap:8px;margin-top:8px;padding:9px 10px;border:1px solid var(--border);border-radius:10px;background:var(--bg);font-size:12.5px;color:var(--text)}
+.pm-chk{flex:1;margin-top:0}
 .pm-tag{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);border:1px solid var(--border);border-radius:7px;padding:1px 5px;margin-left:5px}
 .lg-cb{color:var(--muted)}
 .lg-amt{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;padding-top:1px;text-align:right}
@@ -915,6 +919,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       money went — they just do not add up twice when you settle the bill.
     </div>
     <div id="paymode-list"></div>
+    <div class="lg-f2" style="margin-top:11px">
+      <div style="grid-column:1 / span 2">
+        <label class="form-label">Add a payment type</label>
+        <input class="form-input" id="pm-name" placeholder="e.g. Wallet, Net Banking">
+      </div>
+    </div>
+    <button class="btn-sm btn-outline" style="width:100%;margin-top:10px" onclick="addPayMode()">+ Add Payment Type</button>
   </div>
 
   <div class="card">
@@ -1147,6 +1158,7 @@ if(!ST.people)    ST.people = {};
 if(!ST.recurring) ST.recurring = {};
 if(!ST.subheads)  ST.subheads = {};
 if(!ST.exclPay)   ST.exclPay = {};
+if(!ST.pays)      ST.pays = {};
 if(!ST.shop)      ST.shop = [];
 if(!ST.items)     ST.items = {};
 if(!ST.requests)  ST.requests = {};
@@ -1157,7 +1169,7 @@ if(!ST.ledger)    ST.ledger = [];
 // Merging per field (not per document) is what stops a stale device from
 // overwriting everything with one edit.
 if(!ST.meta)      ST.meta = {};
-["checks","funds","amts","cats","locked","heads","subheads","people","recurring","exclPay","items","requests","grants","seen","transfers","ledger","shop","shares"].forEach(k=>{ if(!ST.meta[k]) ST.meta[k] = {}; });
+["checks","funds","amts","cats","locked","heads","subheads","people","recurring","exclPay","pays","items","requests","grants","seen","transfers","ledger","shop","shares"].forEach(k=>{ if(!ST.meta[k]) ST.meta[k] = {}; });
 if(!ST.tomb)      ST.tomb = {};
 if(!ST.tomb.transfers) ST.tomb.transfers = {};
 if(!ST.tomb.ledger)    ST.tomb.ledger    = {};
@@ -2566,7 +2578,7 @@ function syncPayload(){
     checks: ST.checks, transfers: ST.transfers,
     funds: ST.funds, amts: ST.amts, cats: ST.cats, locked: ST.locked,
     heads: ST.heads, subheads: ST.subheads, people: ST.people, recurring: ST.recurring,
-    exclPay: ST.exclPay, items: ST.items, shop: ST.shop,
+    exclPay: ST.exclPay, pays: ST.pays, items: ST.items, shop: ST.shop,
     requests: ST.requests, grants: ST.grants, seen: ST.seen,
     ledger: ST.ledger, shares: ST.shares,
     meta: ST.meta, tomb: ST.tomb,
@@ -2646,7 +2658,7 @@ function applyMerge(rem){
   if(!rem) return false;
   try{ localStorage.setItem("sip_backup", JSON.stringify(ST)); }catch{}
   let changed = false;
-  ["checks","funds","amts","cats","locked","heads","subheads","people","recurring","exclPay","items","requests","grants","seen","shares"].forEach(function(kind){
+  ["checks","funds","amts","cats","locked","heads","subheads","people","recurring","exclPay","pays","items","requests","grants","seen","shares"].forEach(function(kind){
     const out = {val:{}, ts:{}};
     if(mergeField(kind, rem, out)) changed = true;
     ST[kind] = out.val;
@@ -2757,17 +2769,76 @@ function uid(prefix){
 
 // Paid-by is about WHERE the money came from; it never changes whether an
 // expense counts. A card purchase is real spending on the day you buy it.
-const PAY_MODES = [
+// The three defaults keep their original ids so entries recorded before this
+// list became editable still resolve.
+const DEFAULT_PAYS = [
   {id:"bank", name:"UPI / Bank"},
   {id:"cash", name:"Cash"},
   {id:"card", name:"Credit Card"}
 ];
 const PAY_DEFAULT = "bank";
+const PAY_ORDER = ["bank","cash","card"];
+
+function seedPays(){
+  if(!ST.pays) ST.pays = {};
+  if(!ST.meta.pays) ST.meta.pays = {};
+  if(Object.keys(ST.pays).length) return;
+  DEFAULT_PAYS.forEach(function(p){
+    ST.pays[p.id] = {name:p.name};
+    if(ST.meta.pays[p.id] == null) ST.meta.pays[p.id] = 1;
+  });
+  save(ST);
+}
+
+// Seeded modes keep their familiar order; anything added sorts after them.
+function payModes(){
+  return Object.keys(ST.pays||{})
+    .filter(function(id){ return ST.pays[id] && ST.pays[id].name; })
+    .map(function(id){ return {id:id, name:ST.pays[id].name}; })
+    .sort(function(a,b){
+      const ia = PAY_ORDER.indexOf(a.id), ib = PAY_ORDER.indexOf(b.id);
+      if(ia > -1 || ib > -1) return (ia<0?99:ia) - (ib<0?99:ib);
+      return a.name.localeCompare(b.name);
+    });
+}
+
+function addPayMode(){
+  const el = document.getElementById("pm-name");
+  const name = ((el && el.value) || "").trim();
+  if(!name){ toast("Enter a payment type"); return; }
+  if(payModes().some(function(p){ return p.name.toLowerCase() === name.toLowerCase(); })){
+    toast("That payment type already exists"); return;
+  }
+  const id = uid("pay_");
+  ST.pays[id] = {name:name};
+  if(ST.exclPay[id] == null) ST.exclPay[id] = false;
+  touch("pays", id); touch("exclPay", id);
+  save(ST);
+  if(el) el.value = "";
+  renderPayExcl(); fillPayModes();
+  toast("✓ " + name + " added");
+}
+
+function delPayMode(id){
+  const nm = ST.pays[id] && ST.pays[id].name;
+  if(payModes().length <= 1){ toast("Keep at least one payment type", 4000); return; }
+  const used = (ST.ledger||[]).filter(function(e){ return e.pay === id; }).length;
+  if(!confirm(used
+      ? used + " entr" + (used===1?"y uses":"ies use") + " " + nm + ".\n\nRemove it anyway? Those entries keep the value but show no label."
+      : "Remove " + nm + "?")) return;
+  ST.pays[id] = null;      // null, not delete, so the removal can merge
+  touch("pays", id);
+  save(ST);
+  renderPayExcl(); fillPayModes(); syncExclChk("ex");
+  renderLedger(); renderPeriodSel(); renderLedgerDash();
+  toast(nm + " removed");
+}
 // Seeded once with card excluded, since that is the common case. Every mode is
 // written explicitly so unticking card is remembered rather than re-seeded.
 function seedExclPay(){
+  seedPays();
   if(Object.keys(ST.exclPay||{}).length) return;
-  PAY_MODES.forEach(function(p){
+  payModes().forEach(function(p){
     ST.exclPay[p.id] = (p.id === "card");
     if(ST.meta.exclPay[p.id] == null) ST.meta.exclPay[p.id] = 1;
   });
@@ -2791,19 +2862,21 @@ function togglePayExcl(id){
 function renderPayExcl(){
   const el = document.getElementById("paymode-list");
   if(!el) return;
-  el.innerHTML = PAY_MODES.map(function(p){
+  el.innerHTML = payModes().map(function(p){
     const on = isPayExcluded(p.id);
-    return '<label class="chk pm-row"><input type="checkbox"' + (on ? " checked" : "")
-      + ' onchange="togglePayExcl(\'' + p.id + '\')">'
-      + '<span><b>' + esc(p.name) + '</b>'
-      + (on ? ' <span class="pm-tag">not counted</span>' : '')
-      + '</span></label>';
+    return '<div class="pm-row">'
+      + '<label class="chk pm-chk"><input type="checkbox"' + (on ? " checked" : "")
+      +   ' onchange="togglePayExcl(\'' + p.id + '\')">'
+      +   '<span><b>' + esc(p.name) + '</b>'
+      +   (on ? ' <span class="pm-tag">not counted</span>' : '') + '</span></label>'
+      + '<button class="rec-b" onclick="delPayMode(\'' + p.id + '\')" title="Remove">&times;</button>'
+      + '</div>';
   }).join("");
 }
 
 function payName(id){
-  const m = PAY_MODES.filter(function(p){ return p.id === id; })[0];
-  return m ? m.name : "";
+  const m = (ST.pays||{})[id];
+  return m && m.name ? m.name : "";
 }
 
 // Card purchases minus card bill payments — what is still owed on the card.
@@ -2926,6 +2999,16 @@ function backfillSips(){
 }
 
 let lgYear = "", lgMonth = curMonth();   // "" on month means the whole year
+let lgPay = "";                          // "" = every payment type
+let lgPayView = "cards";
+
+function setPayTab(id){ lgPay = id; renderLedgerDash(); }
+
+function setPayView(v){
+  lgPayView = v;
+  try{ localStorage.setItem("sip_payview", v); }catch(e){}
+  renderLedgerDash();
+}
 
 // Fixed ids, so two devices seeding independently produce the same heads and
 // the merge collapses them instead of creating duplicates.
@@ -3021,10 +3104,13 @@ function renderSubheads(){
 function fillPayModes(){
   const sel = document.getElementById("ex-pay");
   if(!sel) return;
+  const list = payModes();
   const keep = sel.value;
-  sel.innerHTML = PAY_MODES.map(function(p){
+  sel.innerHTML = list.map(function(p){
     return '<option value="'+p.id+'">'+esc(p.name)+'</option>'; }).join("");
-  sel.value = keep || PAY_DEFAULT;
+  const fallback = list.some(function(p){ return p.id === PAY_DEFAULT; })
+                 ? PAY_DEFAULT : (list[0] ? list[0].id : "");
+  sel.value = (keep && list.some(function(p){ return p.id === keep; })) ? keep : fallback;
 }
 
 function syncExclChk(pre){
@@ -3424,7 +3510,7 @@ function openEntryEdit(id){
 
   const ps = document.getElementById("em2-pay");
   ps.innerHTML = '<option value="">—</option>'
-    + PAY_MODES.map(function(p){ return '<option value="'+p.id+'">'+esc(p.name)+'</option>'; }).join("");
+    + payModes().map(function(p){ return '<option value="'+p.id+'">'+esc(p.name)+'</option>'; }).join("");
   ps.value = e.pay || "";
 
   document.getElementById("em2-card").checked = !!e.card;
@@ -3785,6 +3871,123 @@ function deltaChip(now, was){
   return '<span class="dl '+(up?"up":"down")+'">'+(up?"▲":"▼")+' '+Math.abs(pct)+'% vs '+"previous"+'</span>';
 }
 
+// Every expense in the window, grouped by payment type. Excluded rows are
+// included here on purpose — the question is where money went, not what the
+// totals counted.
+function payGroups(rows){
+  const out = {};
+  rows.forEach(function(e){
+    if(e.type === "income") return;
+    const p = e.pay || "";
+    if(!out[p]) out[p] = {amt:0, n:0, heads:{}, subs:{}};
+    const a = Number(e.amt) || 0;
+    out[p].amt += a;
+    out[p].n++;
+    if(!out[p].heads[e.head]) out[p].heads[e.head] = {income:0, expense:0};
+    out[p].heads[e.head].expense += a;
+    if(!out[p].subs[e.head]) out[p].subs[e.head] = {};
+    const sk = e.sub || "";
+    out[p].subs[e.head][sk] = (out[p].subs[e.head][sk] || 0) + a;
+  });
+  return out;
+}
+
+function renderPayBlock(rows){
+  const gr = payGroups(rows);
+  const keys = Object.keys(gr);
+  if(!keys.length) return "";
+
+  const modes = payModes().filter(function(p){ return gr[p.id]; });
+  const orphan = keys.filter(function(k){ return !payName(k); });   // blank or removed
+  const total  = keys.reduce(function(a,k){ return a + gr[k].amt; }, 0);
+
+  // A tab that no longer matches anything falls back to All.
+  if(lgPay && !gr[lgPay]) lgPay = "";
+
+  const tabs = '<div class="pay-tabs">'
+    + '<button class="' + (lgPay === "" ? "on" : "") + '" onclick="setPayTab(\'\')">All</button>'
+    + modes.map(function(p){
+        return '<button class="' + (lgPay === p.id ? "on" : "") + '" onclick="setPayTab(\'' + p.id + '\')">'
+          + esc(p.name) + '</button>';
+      }).join("")
+    + (orphan.length
+        ? '<button class="' + (lgPay === "__none" ? "on" : "") + '" onclick="setPayTab(\'__none\')">Unset</button>'
+        : '')
+    + '</div>';
+
+  const view = '<div class="view-sw">'
+    + '<button class="' + (lgPayView === "cards" ? "on" : "") + '" onclick="setPayView(\'cards\')">Cards</button>'
+    + '<button class="' + (lgPayView === "list"  ? "on" : "") + '" onclick="setPayView(\'list\')">List</button>'
+    + '</div>';
+
+  let body = "";
+  if(lgPay === ""){
+    // Totals per payment type.
+    const items = modes.map(function(p){
+      return {name:p.name, amt:gr[p.id].amt, n:gr[p.id].n, off:isPayExcluded(p.id)};
+    }).concat(orphan.length
+      ? [{name:"Unset", amt:orphan.reduce(function(a,k){ return a+gr[k].amt; },0),
+          n:orphan.reduce(function(a,k){ return a+gr[k].n; },0), off:false}]
+      : []).sort(function(a,b){ return b.amt - a.amt; });
+
+    body = (lgPayView === "list")
+      ? '<div class="cons-list">' + items.map(function(it, i){
+          const pct = total ? Math.round(it.amt/total*100) : 0;
+          return '<div class="cl-row"><div class="cl-rank">' + (i+1) + '</div>'
+            + '<div class="cl-main"><div class="cl-n">' + esc(it.name)
+            +   (it.off ? '<span class="pm-tag">not counted</span>' : '') + '</div>'
+            +   '<div class="cl-bar"><div style="width:' + pct + '%"></div></div></div>'
+            + '<div class="cl-nums"><div class="cl-q">' + fmt(it.amt) + '</div>'
+            +   '<div class="cl-x">' + it.n + 'x &middot; ' + pct + '%</div></div></div>';
+        }).join("") + '</div>'
+      : '<div class="cons-grid">' + items.map(function(it){
+          const pct = total ? Math.round(it.amt/total*100) : 0;
+          return '<div class="cons-card"><div class="cons-n">' + esc(it.name) + '</div>'
+            + '<div class="cons-q">' + fmt(it.amt) + '</div>'
+            + '<div class="cons-x">' + it.n + (it.n===1?' entry':' entries') + ' &middot; ' + pct + '%'
+            +   (it.off ? ' &middot; not counted' : '') + '</div>'
+            + '<div class="cons-bar"><div style="width:' + pct + '%"></div></div></div>';
+        }).join("") + '</div>';
+  } else {
+    // Head-wise inside one payment type.
+    const src = (lgPay === "__none")
+      ? orphan.reduce(function(acc,k){
+          Object.keys(gr[k].heads).forEach(function(h){
+            if(!acc.heads[h]) acc.heads[h] = {income:0, expense:0};
+            acc.heads[h].expense += gr[k].heads[h].expense;
+          });
+          return acc;
+        }, {heads:{}, subs:{}})
+      : gr[lgPay];
+
+    const ids = Object.keys(src.heads).filter(function(h){ return src.heads[h].expense > 0; })
+                  .sort(function(a,b){ return src.heads[b].expense - src.heads[a].expense; });
+    const sub = ids.reduce(function(a,h){ return a + src.heads[h].expense; }, 0);
+
+    body = ids.length
+      ? ((lgPayView === "list")
+          ? '<div class="cons-list">' + ids.map(function(h, i){
+              const v = src.heads[h].expense, pct = sub ? Math.round(v/sub*100) : 0;
+              return '<div class="cl-row"><div class="cl-rank">' + (i+1) + '</div>'
+                + '<div class="cl-main"><div class="cl-n">' + esc(headName(h)) + '</div>'
+                +   '<div class="cl-bar"><div style="width:' + pct + '%"></div></div></div>'
+                + '<div class="cl-nums"><div class="cl-q">' + fmt(v) + '</div>'
+                +   '<div class="cl-x">' + pct + '%</div></div></div>';
+            }).join("") + '</div>'
+          : '<div class="cons-grid">' + ids.map(function(h){
+              const v = src.heads[h].expense, pct = sub ? Math.round(v/sub*100) : 0;
+              return '<div class="cons-card"><div class="cons-n">' + esc(headName(h)) + '</div>'
+                + '<div class="cons-q">' + fmt(v) + '</div>'
+                + '<div class="cons-x">' + pct + '% of this type</div>'
+                + '<div class="cons-bar"><div style="width:' + pct + '%"></div></div></div>';
+            }).join("") + '</div>')
+      : '<div class="gate-x">Nothing paid this way in this period.</div>';
+  }
+
+  return '<div class="hb-block"><div class="hb-title">Expenses by payment type</div>'
+    + tabs + view + body + '</div>';
+}
+
 function renderLedgerDash(){
   const el = document.getElementById("lgd-body");
   if(!el) return;
@@ -3883,10 +4086,15 @@ function renderLedgerDash(){
           + '<div class="ins-t">'+esc(n.h)+'</div><div class="ins-x">'+esc(n.x)+'</div></div></div>';
       }).join("") + '</div>';
 
-  el.innerHTML = stats + cardBox + cardNote + notesHTML + bars;
+  el.innerHTML = stats + cardBox + cardNote + notesHTML
+    + renderPayBlock(entriesIn(lgYear, lgMonth)) + bars;
 }
 
 function renderLedgerAll(){
+  try{
+    const v = localStorage.getItem("sip_payview");
+    if(v === "list" || v === "cards") lgPayView = v;
+  }catch(e){}
   seedHeads();
   seedPeople();
   seedExclPay();
