@@ -162,7 +162,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .home-tile.shop{border-left:4px solid var(--purple)}
 .home-tile.locked .home-t,.home-tile.locked .home-x{filter:blur(3px);opacity:0.55}
 .home-tile.locked{position:relative}
-.home-tile.locked:after{content:"🔒";position:absolute;top:18px;right:18px;font-size:18px}
+.tile-lock{position:absolute;top:16px;right:16px;font-size:12px;font-weight:700;color:var(--sub);background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:2px 7px;line-height:1.4}
+.home-tile{position:relative}
+.end-access{margin-left:9px;background:none;border:1px solid var(--border);border-radius:8px;color:var(--sub);font-size:10.5px;font-weight:600;padding:2px 8px;cursor:pointer}
 .hr-box{margin-top:14px;border:1px solid var(--border);border-radius:14px;padding:13px 13px 6px;background:var(--card)}
 .hr-t{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--sub);margin-bottom:9px}
 .hr-t.spaced{margin-top:14px}
@@ -171,6 +173,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .hr-n{font-size:13px;font-weight:600}
 .hr-x{font-size:10.5px;color:var(--sub);margin-top:2px}
 .hr-b{background:none;border:none;color:var(--muted);font-size:17px;line-height:1;cursor:pointer;padding:0 3px;flex-shrink:0}
+.seen-ago{font-size:10.5px;color:var(--muted);white-space:nowrap;flex-shrink:0}
+#home-seen .hr-box{margin-top:12px}
 .home-who{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:-12px 0 10px}
 .who-em{font-size:11.5px;color:var(--sub)}
 .who-tag{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--sub);border:1px solid var(--border);border-radius:7px;padding:1px 6px}
@@ -671,12 +675,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <span class="home-t">Monthly Ledger</span>
       <span class="home-x">Income, expenses, heads and year-wise reports</span>
       <span class="home-stat" id="home-lg"></span>
+      <span class="tile-lock" id="lock-lg"></span>
     </button>
     <button class="home-tile invest" id="home-tile-iv" onclick="showModule('invest')">
       <span class="home-ico">📈</span>
       <span class="home-t">Investment</span>
       <span class="home-x">SIP tracker, funds, transfers and dashboard</span>
       <span class="home-stat" id="home-iv"></span>
+      <span class="tile-lock" id="lock-iv"></span>
     </button>
     <button class="home-tile shop" onclick="showModule('shop')">
       <span class="home-ico">🛒</span>
@@ -687,6 +693,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 
   <div id="home-requests"></div>
+  <div id="home-seen"></div>
 </div>
 
 <!-- LOCKED -->
@@ -1103,12 +1110,13 @@ if(!ST.shop)      ST.shop = [];
 if(!ST.items)     ST.items = {};
 if(!ST.requests)  ST.requests = {};
 if(!ST.grants)    ST.grants = {};
+if(!ST.seen)      ST.seen = {};
 if(!ST.ledger)    ST.ledger = [];
 // meta[kind][key] = when that single field last changed on any device.
 // Merging per field (not per document) is what stops a stale device from
 // overwriting everything with one edit.
 if(!ST.meta)      ST.meta = {};
-["checks","funds","amts","cats","locked","heads","subheads","people","recurring","exclPay","items","requests","grants","transfers","ledger","shop","shares"].forEach(k=>{ if(!ST.meta[k]) ST.meta[k] = {}; });
+["checks","funds","amts","cats","locked","heads","subheads","people","recurring","exclPay","items","requests","grants","seen","transfers","ledger","shop","shares"].forEach(k=>{ if(!ST.meta[k]) ST.meta[k] = {}; });
 if(!ST.tomb)      ST.tomb = {};
 if(!ST.tomb.transfers) ST.tomb.transfers = {};
 if(!ST.tomb.ledger)    ST.tomb.ledger    = {};
@@ -1216,9 +1224,17 @@ const MODULES = {
 
 let curModule = null;
 
-function showModule(key){
+async function showModule(key){
   const mod = MODULES[key];
   if(!mod) return;
+
+  // An approval granted on another device is only in the shared file until we
+  // pull it, so check there before telling someone they are locked out.
+  if(mod.gated && !hasAccess() && gToken && gFileId && !gSyncing){
+    toast("Checking access…", 1500);
+    try{ await syncNow(); }catch(e){}
+  }
+
   if(mod.gated && !hasAccess()){
     curModule = null;
     document.querySelectorAll(".section").forEach(function(x){ x.classList.remove("active"); });
@@ -1252,6 +1268,10 @@ function goHome(){
   nav.hidden = true;
   renderHome();
   window.scrollTo(0,0);
+  // Push anything just edited and pull anything waiting, so Home is current.
+  if(gToken && gFileId && !gSyncing){
+    syncNow().then(function(){ renderHome(); }).catch(function(){});
+  }
 }
 
 // A line of live context on each tile so the home screen is not just a menu.
@@ -1272,9 +1292,17 @@ function renderHome(){
 
   // Gated modules read as locked before anything is revealed.
   const open = hasAccess();
+  const left = grantMinutesLeft();
   ["home-tile-lg","home-tile-iv"].forEach(function(tid){
     const t = document.getElementById(tid);
     if(t) t.classList.toggle("locked", !open);
+  });
+  ["lock-lg","lock-iv"].forEach(function(lid){
+    const b = document.getElementById(lid);
+    if(!b) return;
+    if(!open)              b.textContent = "🔒";
+    else if(!isAdmin())    b.textContent = "🔓 " + left + "m";
+    else                   b.textContent = "";
   });
 
   const lg = document.getElementById("home-lg");
@@ -1300,9 +1328,15 @@ function renderHome(){
     iv.textContent = fmt(totalInvested()) + " invested · " + done + "/" + MONTHS.length + " months";
   }
   renderHomeRequests();
+  renderHomeSeen();
   const mins = grantMinutesLeft();
   const bn = document.getElementById("home-grant");
-  if(bn) bn.textContent = (!isAdmin() && mins) ? ("🔓 " + mins + " minute(s) of access left") : "";
+  if(bn){
+    bn.innerHTML = (!isAdmin() && mins)
+      ? '🔓 ' + mins + ' minute(s) of access left'
+        + '<button class="end-access" onclick="endMyAccess()">End now</button>'
+      : "";
+  }
 }
 
 // Every <select> keeps working exactly as before — it stays in the DOM and
@@ -2391,7 +2425,7 @@ function syncPayload(){
     funds: ST.funds, amts: ST.amts, cats: ST.cats, locked: ST.locked,
     heads: ST.heads, subheads: ST.subheads, people: ST.people, recurring: ST.recurring,
     exclPay: ST.exclPay, items: ST.items, shop: ST.shop,
-    requests: ST.requests, grants: ST.grants,
+    requests: ST.requests, grants: ST.grants, seen: ST.seen,
     ledger: ST.ledger, shares: ST.shares,
     meta: ST.meta, tomb: ST.tomb,
     updatedAt: ST.updatedAt || 0
@@ -2470,7 +2504,7 @@ function applyMerge(rem){
   if(!rem) return false;
   try{ localStorage.setItem("sip_backup", JSON.stringify(ST)); }catch{}
   let changed = false;
-  ["checks","funds","amts","cats","locked","heads","subheads","people","recurring","exclPay","items","requests","grants","shares"].forEach(function(kind){
+  ["checks","funds","amts","cats","locked","heads","subheads","people","recurring","exclPay","items","requests","grants","seen","shares"].forEach(function(kind){
     const out = {val:{}, ts:{}};
     if(mergeField(kind, rem, out)) changed = true;
     ST[kind] = out.val;
@@ -4546,9 +4580,66 @@ function claimIdentity(){
     ST.people[id].admin = true;
     touch("people", id);
   }
+  touchSeen();
   save(ST);
   updateLoginUI(); updateDriveStatus();
   return id;
+}
+
+// Kept in its own map rather than on the person record: a sign-in must not
+// bump the row that also carries admin and email, or a concurrent edit to
+// those could lose to a mere login.
+function touchSeen(){
+  const em = emailKey(gUserEmail);
+  if(!em) return;
+  if(!ST.seen) ST.seen = {};
+  ST.seen[em] = Date.now();
+  touch("seen", em);
+}
+
+function sinceLabel(ms){
+  if(!ms) return "never";
+  const secs = Math.floor((Date.now() - Number(ms))/1000);
+  if(secs < 90) return "just now";
+  const mins = Math.floor(secs/60);
+  if(mins < 60) return mins + " min ago";
+  const hrs = Math.floor(mins/60);
+  if(hrs < 24) return hrs + (hrs === 1 ? " hour ago" : " hours ago");
+  const days = Math.floor(hrs/24);
+  if(days === 1) return "yesterday";
+  if(days < 30) return days + " days ago";
+  const mo = Math.round(days/30);
+  return mo === 1 ? "a month ago" : (mo + " months ago");
+}
+
+// Who has been in the app, and when. Only people with a mapped sign-in email
+// can have a login to report.
+function renderHomeSeen(){
+  const el = document.getElementById("home-seen");
+  if(!el) return;
+  const rows = Object.keys(ST.people||{})
+    .filter(function(id){ return ST.people[id] && emailKey(ST.people[id].email); })
+    .map(function(id){
+      const p = ST.people[id];
+      const em = emailKey(p.email);
+      return {name:p.name, email:em, admin:!!p.admin, at:Number((ST.seen||{})[em] || 0)};
+    })
+    .sort(function(a,b){ return b.at - a.at; });
+
+  if(!rows.length){ el.innerHTML = ""; return; }
+
+  const me = emailKey(gUserEmail);
+  el.innerHTML = '<div class="hr-box"><div class="hr-t">Last signed in</div>'
+    + rows.map(function(r){
+        return '<div class="hr-row">'
+          + '<div class="hr-main"><div class="hr-n">' + esc(r.name)
+          +   (r.email === me ? '<span class="chip-x">you</span>' : '')
+          +   (r.admin ? '<span class="chip-x adm">admin</span>' : '') + '</div>'
+          +   '<div class="hr-x">' + esc(r.at ? stampLabel(r.at) : "never signed in") + '</div></div>'
+          + '<div class="seen-ago">' + esc(r.at ? sinceLabel(r.at) : "—") + '</div>'
+          + '</div>';
+      }).join("")
+    + '</div>';
 }
 
 function toggleAdmin(id){
@@ -4651,6 +4742,19 @@ function revokeGrant(key){
   save(ST);
   renderAccessAdmin(); renderHomeRequests();
   toast("Access revoked");
+}
+
+// Finished early? Give the access back rather than leaving it open.
+function endMyAccess(){
+  const key = emailKey(gUserEmail);
+  if(!key || !grantFor(key)) return;
+  if(!confirm("End your access now?\n\nYou will have to ask again to reopen Investment or the Ledger.")) return;
+  ST.grants[key] = {until: 0, by: currentPerson(), at: Date.now()};
+  touch("grants", key);
+  save(ST);
+  const gated = curModule && MODULES[curModule] && MODULES[curModule].gated;
+  if(gated) goHome(); else renderHome();
+  toast("Access ended");
 }
 
 // Grant someone 30 minutes without waiting to be asked.
