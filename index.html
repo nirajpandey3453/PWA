@@ -136,6 +136,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .share-row input{flex:1;min-width:0;padding:9px 10px;border:1px solid var(--border);border-radius:10px;font-size:13px;background:var(--bg);color:var(--text)}
 .share-list{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
 .share-chip{font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:3px 9px;color:var(--sub)}
+.share-err{font-size:11px;color:#C62828;margin-top:7px;line-height:1.5;word-break:break-word}
 .btn-red{background:#FFEBEE;color:var(--red);border:none;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:13px}
 .btn-drive{background:#4285F4;color:#fff;font-size:13px;padding:10px 16px;border-radius:12px;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:center}
 
@@ -190,8 +191,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="modal-bg" id="edit-modal" onclick="if(event.target===this)closeEdit()">
   <div class="modal-box">
     <div class="modal-title" id="em-title">Plan</div>
-    <div class="modal-sub">Fund ka naam aur monthly amount badlo</div>
-    <label for="em-fund">Fund ka naam</label>
+    <div class="modal-sub">Change the fund name and monthly amount</div>
+    <label for="em-fund">Fund name</label>
     <input id="em-fund" placeholder="Fund name">
     <label for="em-amt">Monthly amount (&#8377;)</label>
     <input id="em-amt" type="number" inputmode="numeric" min="0" step="500" placeholder="20000">
@@ -221,8 +222,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="stat-grid">
     <div class="stat-card"><div class="stat-label">Total Invested</div><div class="stat-val teal" id="s-invested">₹0</div></div>
     <div class="stat-card"><div class="stat-label">Months Done</div><div class="stat-val navy" id="s-months">0/60</div></div>
-    <div class="stat-card"><div class="stat-label">Wife ko Bheja</div><div class="stat-val green" id="s-transfer">₹0</div></div>
-    <div class="stat-card"><div class="stat-label">Agle Mahine</div><div class="stat-val gold" id="s-next" style="font-size:14px">Sep 2026</div></div>
+    <div class="stat-card"><div class="stat-label">Sent to Wife</div><div class="stat-val green" id="s-transfer">₹0</div></div>
+    <div class="stat-card"><div class="stat-label">Next Month</div><div class="stat-val gold" id="s-next" style="font-size:14px">Sep 2026</div></div>
   </div>
 
   <div class="card">
@@ -233,11 +234,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
   <div class="card">
     <div class="card-title" id="plan-card-title">Monthly Plan</div>
-    <div class="owner-hdr"><div class="owner-dot" style="background:var(--blue)"></div><span class="owner-label" id="oh-h">👨 Aap (Husband)</span></div>
+    <div class="owner-hdr"><div class="owner-dot" style="background:var(--blue)"></div><span class="owner-label" id="oh-h">👨 Husband</span></div>
     <div id="sum-h"></div>
-    <div class="owner-hdr"><div class="owner-dot" style="background:var(--purple)"></div><span class="owner-label" id="oh-w">👩 Biwi (Wife)</span></div>
+    <div class="owner-hdr"><div class="owner-dot" style="background:var(--purple)"></div><span class="owner-label" id="oh-w">👩 Wife</span></div>
     <div id="sum-w"></div>
-    <div class="owner-hdr"><div class="owner-dot" style="background:var(--green)"></div><span class="owner-label" id="oh-d">👧 Beti (SSY)</span></div>
+    <div class="owner-hdr"><div class="owner-dot" style="background:var(--green)"></div><span class="owner-label" id="oh-d">👧 Daughter (SSY)</span></div>
     <div id="sum-d"></div>
     <div class="total-row"><span class="total-label">Monthly Total</span><span class="total-val" id="total-val">₹1,00,000</span></div>
   </div>
@@ -246,10 +247,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="card-title">⚠️ Glide Path Reminder</div>
     <div style="font-size:12px;color:var(--sub);line-height:1.6">
       <b>Year 1–2:</b> Full SIP as planned<br>
-      <b>Jan 2029:</b> Equity se STP shuru karo<br>
-      <b>Year 4:</b> Equity SIP reduce karo<br>
-      <b>Year 5:</b> Sirf debt/liquid mein<br>
-      <b>Har March:</b> ₹2.5L LTCG harvest karo (Aap+Biwi)
+      <b>Jan 2029:</b> Start STP out of equity<br>
+      <b>Year 4:</b> Reduce equity SIP<br>
+      <b>Year 5:</b> Debt / liquid only<br>
+      <b>Every March:</b> Harvest ₹2.5L LTCG (Husband + Wife)
     </div>
   </div>
 </div>
@@ -257,7 +258,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <!-- TRACKER -->
 <div class="section" id="sec-tracker">
   <div style="margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
-    <div style="font-size:13px;color:var(--sub)">Har investment ke baad ✓ karo</div>
+    <div style="font-size:13px;color:var(--sub)">Tick each investment once it is done</div>
     <button class="btn-sm btn-gold" onclick="exportExcel()">📊 Excel Export</button>
   </div>
   <div id="month-list"></div>
@@ -269,35 +270,39 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="card-title">Family Shared Sync</div>
     <div class="drive-status ds-no" id="sync-state">
       <div class="ds-dot"></div>
-      <span id="sync-state-text">Login karo</span>
+      <span id="sync-state-text">Sign in</span>
     </div>
     <div class="sync-btns">
-      <button class="btn-sm btn-outline" onclick="connectSharedFile()">&#128279; Shared file connect</button>
-      <button class="btn-sm btn-outline" onclick="createSharedFile()">&#10133; Nayi file banao</button>
+      <button class="btn-sm btn-outline" onclick="connectSharedFile()">&#128279; Connect shared file</button>
+      <button class="btn-sm btn-outline" onclick="createSharedFile()">&#10133; New file</button>
     </div>
     <div class="share-row">
       <input id="share-email" type="email" inputmode="email" autocomplete="off" placeholder="family@gmail.com">
       <button class="btn-sm btn-green" onclick="shareWithFamily()">Share</button>
     </div>
+    <div class="share-err" id="share-err"></div>
     <div class="share-list" id="share-list"></div>
-    <div class="sync-hint">Ek hi file sab log use karte hain. Pehla banda file banata hai, baaki log "Shared file connect" se usko choose karte hain.</div>
+    <div class="sync-btns" style="margin-top:6px">
+      <button class="btn-sm btn-outline" onclick="openInDrive()">&#128194; Open in Drive</button>
+    </div>
+    <div class="sync-hint">Everyone shares one file. The first person creates it, then the others pick it once using "Shared file connect".</div>
   </div>
 
   <div class="card">
-    <div class="card-title">Biwi ko Transfer Record Karo</div>
+    <div class="card-title">Record Transfer to Wife</div>
     <div class="drive-status ds-no" id="drive-status">
       <div class="ds-dot"></div>
-      <span id="drive-status-text">Google Drive connected nahi — Login karo</span>
+      <span id="drive-status-text">Google Drive not connected — sign in</span>
     </div>
     <div class="form-group">
       <label class="form-label">Date</label>
       <input type="date" class="form-input" id="t-date">
-      <div class="err-msg" id="err-date">Date zaroori hai</div>
+      <div class="err-msg" id="err-date">Date is required</div>
     </div>
     <div class="form-group">
       <label class="form-label">Amount (₹)</label>
       <input type="number" class="form-input" id="t-amt" placeholder="40000" inputmode="numeric">
-      <div class="err-msg" id="err-amt">Sahi amount daalo</div>
+      <div class="err-msg" id="err-amt">Enter a valid amount</div>
     </div>
     <div class="form-group">
       <label class="form-label">Transfer Mode</label>
@@ -315,13 +320,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <button class="btn btn-primary" onclick="addTransfer()">💾 Save Transfer</button>
     <div style="height:10px"></div>
     <button class="btn btn-drive" onclick="saveToGoogleDrive()">
-      <span>&#9729;</span> Google Drive mein Excel Save Karo
+      <span>&#9729;</span> Save Excel to Google Drive
     </button>
   </div>
 
   <div class="card">
     <div class="card-title">Transfer History</div>
-    <div id="transfer-log"><div class="empty">Koi record nahi abhi tak</div></div>
+    <div id="transfer-log"><div class="empty">No records yet</div></div>
     <div class="total-row" style="margin-top:10px">
       <span class="total-label">Total Transferred</span>
       <span class="total-val" id="t-total">₹0</span>
@@ -332,17 +337,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <!-- FUNDS -->
 <div class="section" id="sec-funds">
   <div class="card" style="margin-bottom:10px">
-    <div style="font-size:13px;color:var(--sub);line-height:1.6">Fund ka naam change karo — agla baar khulne par bhi save rahega. Changes Excel export mein bhi reflect honge.</div>
+    <div style="font-size:13px;color:var(--sub);line-height:1.6">Rename a fund — it is remembered next time and carries through to the Excel export.</div>
   </div>
-  <div class="owner-hdr"><div class="owner-dot" style="background:var(--blue)"></div><span class="owner-label">👨 Aap (Husband)</span></div>
+  <div class="owner-hdr"><div class="owner-dot" style="background:var(--blue)"></div><span class="owner-label">👨 Husband</span></div>
   <div id="fe-h"></div>
-  <div class="owner-hdr"><div class="owner-dot" style="background:var(--purple)"></div><span class="owner-label">👩 Biwi (Wife)</span></div>
+  <div class="owner-hdr"><div class="owner-dot" style="background:var(--purple)"></div><span class="owner-label">👩 Wife</span></div>
   <div id="fe-w"></div>
-  <div class="owner-hdr"><div class="owner-dot" style="background:var(--green)"></div><span class="owner-label">👧 Beti (SSY)</span></div>
+  <div class="owner-hdr"><div class="owner-dot" style="background:var(--green)"></div><span class="owner-label">👧 Daughter (SSY)</span></div>
   <div id="fe-d"></div>
   <div style="height:10px"></div>
   <button class="btn btn-drive" onclick="saveToGoogleDrive()">
-    <span>&#9729;</span> Google Drive mein Save Karo
+    <span>&#9729;</span> Save to Google Drive
   </button>
 </div>
 
@@ -375,8 +380,8 @@ const DEFAULT_PLANS = [
   {id:"H3",owner:"H",label:"Plan H-3",fund:"HDFC Balanced Advantage Fund (Direct-G)",amt:20000},
   {id:"W1",owner:"W",label:"Plan W-1",fund:"Nippon India Arbitrage Fund (Direct-G)",amt:10000},
   {id:"W2",owner:"W",label:"Plan W-2",fund:"ICICI Pru Short Duration Fund (Direct-G)",amt:10000},
-  {id:"W3",owner:"W",label:"Plan W-3",fund:"Bank FD 5-Year (Biwi ke naam)",amt:7500},
-  {id:"W4",owner:"D",label:"Plan W-4 SSY",fund:"Sukanya Samriddhi Yojana (Beti)",amt:12500},
+  {id:"W3",owner:"W",label:"Plan W-3",fund:"Bank FD 5-Year (in Wife's name)",amt:7500},
+  {id:"W4",owner:"D",label:"Plan W-4 SSY",fund:"Sukanya Samriddhi Yojana (Daughter)",amt:12500},
 ];
 
 const OWNER_COLOR = {H:"#1565C0",W:"#4527A0",D:"#1A7A4A"};
@@ -424,6 +429,7 @@ let gToken = null;
 let gUserName = null;
 let gUserPhoto = null;
 let gUserSub = null;
+let gUserEmail = null;
 let gTokenExp = 0;
 
 function plans(){ return DEFAULT_PLANS.map(p=>({...p,
@@ -472,9 +478,9 @@ function renderSummary(){
   const mt = monthlyTotal();
   document.getElementById("plan-card-title").textContent = "Monthly Plan — "+fmt(mt);
   document.getElementById("total-val").textContent = fmt(mt);
-  document.getElementById("oh-h").textContent = "👨 Aap (Husband) — "+fmt(ownerTotal("H"));
-  document.getElementById("oh-w").textContent = "👩 Biwi (Wife) — "+fmt(ownerTotal("W"));
-  document.getElementById("oh-d").textContent = "👧 Beti (SSY) — "+fmt(ownerTotal("D"));
+  document.getElementById("oh-h").textContent = "👨 Husband — "+fmt(ownerTotal("H"));
+  document.getElementById("oh-w").textContent = "👩 Wife — "+fmt(ownerTotal("W"));
+  document.getElementById("oh-d").textContent = "👧 Daughter (SSY) — "+fmt(ownerTotal("D"));
 
   ["H","W","D"].forEach(owner=>{
     const el = document.getElementById("sum-"+owner.toLowerCase().replace("D","d"));
@@ -533,7 +539,7 @@ function renderTracker(){
       <div class="month-hdr" onclick="toggleMonth(${mi},this)">
         <div>
           <div class="month-name">${mo}</div>
-          ${isGlide?'<div style="font-size:10px;color:#E65100;font-weight:600">⚠️ Glide path shuru karo</div>':''}
+          ${isGlide?'<div style="font-size:10px;color:#E65100;font-weight:600">⚠️ Start the glide path</div>':''}
         </div>
         <div class="month-right">
           ${badgeHTML}
@@ -541,7 +547,7 @@ function renderTracker(){
         </div>
       </div>
       <div class="month-body" id="body-${mi}">
-        ${isLTCG?`<div class="ltcg-banner">⭐ LTCG Harvest: Aap+Biwi ₹2.5L redeem karo → Reinvest karo → Zero Tax!</div>`:''}
+        ${isLTCG?`<div class="ltcg-banner">⭐ LTCG Harvest: Husband + Wife redeem ₹2.5L → Reinvest → Zero tax!</div>`:''}
         ${ps.map(p=>`
           <div class="check-row">
             <div class="check-left">
@@ -552,7 +558,7 @@ function renderTracker(){
               </div>
             </div>
             <div class="check-amt">${fmt(p.amt)}</div>
-            <button class="row-edit" title="Fund / amount edit karo"
+            <button class="row-edit" title="Edit fund / amount"
               onclick="event.stopPropagation();openEdit('${p.id}')">&#9998;</button>
             <button class="check-toggle ${ST.checks[mi+'_'+p.id]?'done':''}"
               onclick="toggleCheck(${mi},'${p.id}',this)">
@@ -614,7 +620,7 @@ function addTransfer(){
   if(!ok) return;
 
   const tid = Date.now();
-  ST.transfers.unshift({id:tid,date,amt:Number(amt),mode,note:note||"Wife ko transfer"});
+  ST.transfers.unshift({id:tid,date,amt:Number(amt),mode,note:note||"Transfer to wife"});
   touch("transfers",tid);
   save(ST);
   document.getElementById("t-amt").value="";
@@ -635,7 +641,7 @@ function delTransfer(id){
 function renderTransferLog(){
   const log = document.getElementById("transfer-log");
   if(!ST.transfers.length){
-    log.innerHTML='<div class="empty">Koi record nahi abhi tak</div>';
+    log.innerHTML='<div class="empty">No records yet</div>';
     document.getElementById("t-total").textContent="₹0";
     return;
   }
@@ -668,7 +674,7 @@ function renderFunds(){
           <span class="fund-badge ${BADGE_CLASS[owner]}">${p.label}</span>
           <span class="fund-amt-label">${fmt(p.amt)}/mo</span>
         </div>
-        <input class="fund-input" id="fi-${p.id}" value="${esc(p.fund)}" placeholder="Fund ka naam">
+        <input class="fund-input" id="fi-${p.id}" value="${esc(p.fund)}" placeholder="Fund name">
         <input class="fund-input" id="fa-${p.id}" type="number" inputmode="numeric" min="0" step="500" value="${p.amt}" placeholder="Monthly amount (₹)">
         <button class="btn btn-sm btn-green" onclick="saveFund('${p.id}')">✓ Save</button>
       </div>`).join("");
@@ -679,14 +685,14 @@ function saveFund(pid){
   const val = document.getElementById("fi-"+pid).value.trim();
   const el  = document.getElementById("fa-"+pid);
   const amt = el ? Number(el.value) : NaN;
-  if(!val){ toast("Fund name empty hai!"); return; }
-  if(!isFinite(amt) || amt < 0){ toast("Amount sahi daalo!"); return; }
+  if(!val){ toast("Fund name cannot be empty"); return; }
+  if(!isFinite(amt) || amt < 0){ toast("Enter a valid amount"); return; }
   ST.funds[pid] = val;
   ST.amts[pid]  = amt;
   touch("funds",pid); touch("amts",pid);
   save(ST);
   refreshAll();
-  toast("✓ Fund aur amount saved!");
+  toast("✓ Fund and amount saved");
 }
 
 // ── INLINE PLAN EDITOR ─────────────────────────────────────────────────────
@@ -711,15 +717,15 @@ function saveEdit(){
   if(!editPid) return;
   const f = document.getElementById("em-fund").value.trim();
   const a = Number(document.getElementById("em-amt").value);
-  if(!f){ toast("Fund name empty hai!"); return; }
-  if(!isFinite(a) || a < 0){ toast("Amount sahi daalo!"); return; }
+  if(!f){ toast("Fund name cannot be empty"); return; }
+  if(!isFinite(a) || a < 0){ toast("Enter a valid amount"); return; }
   ST.funds[editPid] = f;
   ST.amts[editPid]  = a;
   touch("funds",editPid); touch("amts",editPid);
   save(ST);
   closeEdit();
   refreshAll();
-  toast("✓ Save ho gaya!");
+  toast("✓ Saved");
 }
 
 function resetEdit(){
@@ -730,7 +736,7 @@ function resetEdit(){
   save(ST);
   closeEdit();
   refreshAll();
-  toast("Default pe reset ho gaya");
+  toast("Reset to default");
 }
 
 // Re-render everything, keeping any expanded months open.
@@ -824,7 +830,7 @@ function saveSession(){
   try{
     localStorage.setItem(AUTH_KEY, JSON.stringify({
       token: gToken, exp: gTokenExp,
-      name: gUserName, photo: gUserPhoto, sub: gUserSub
+      name: gUserName, photo: gUserPhoto, sub: gUserSub, email: gUserEmail
     }));
   }catch{}
 }
@@ -843,20 +849,21 @@ function restoreSession(){
   gUserName  = a.name  || null;
   gUserPhoto = a.photo || null;
   gUserSub   = a.sub   || null;
+  gUserEmail = a.email || null;
   return true;
 }
 
 // Token died while the app was open — drop it and ask for a fresh login.
 function sessionExpired(){
   gToken = null; gTokenExp = 0;
-  gUserName = null; gUserPhoto = null; gUserSub = null;
+  gUserName = null; gUserPhoto = null; gUserSub = null; gUserEmail = null;
   gFileId = null; clearTimeout(syncTimer);
   clearSession();
   updateLoginUI();
   updateDriveStatus();
   setSync("");
-  setSyncState(false,"Session khatam — dubara login karo");
-  toast("Session expire ho gaya — dubara login karo", 4000);
+  setSyncState(false,"Session ended — sign in again");
+  toast("Session expired — please sign in again", 4000);
 }
 
 // ── GOOGLE DRIVE ───────────────────────────────────────────────────────────
@@ -872,10 +879,10 @@ const SCOPES = "https://www.googleapis.com/auth/drive.file profile email";
 
 function handleLogin(){
   if(gToken){
-    gToken = null; gUserName = null; gUserPhoto = null; gUserSub = null; gTokenExp = 0;
+    gToken = null; gUserName = null; gUserPhoto = null; gUserSub = null; gUserEmail = null; gTokenExp = 0;
     clearSession();
     gFileId = null; clearTimeout(syncTimer); setSync("");
-    setSyncState(false,"Login karo");
+    setSyncState(false,"Sign in");
     updateLoginUI();
     updateDriveStatus();
     toast("Logged out");
@@ -902,7 +909,7 @@ function handleLogin(){
       updateLoginUI();
       updateDriveStatus();
       fetchProfile();
-      toast("✓ Google se connected!");
+      toast("✓ Connected to Google");
       window.removeEventListener("message",handler);
     }
   });
@@ -931,7 +938,7 @@ function handleLogin(){
   updateLoginUI();
   updateDriveStatus();
   fetchProfile();
-  toast("✓ Google connected!");
+  toast("✓ Google connected");
 })();
 
 // Pull the signed-in user's name and avatar. Needs the "profile" scope.
@@ -946,6 +953,7 @@ async function fetchProfile(){
     gUserName  = p.given_name || p.name || p.email || "User";
     gUserPhoto = p.picture || null;
     gUserSub   = p.sub || null;
+    gUserEmail = (p.email||"").toLowerCase() || null;
     saveSession();
     updateLoginUI();
     updateDriveStatus();
@@ -982,13 +990,13 @@ function updateDriveStatus(){
     txt.textContent = "Google Drive connected — "+( gUserName||"User");
   } else {
     el.className = "drive-status ds-no";
-    txt.textContent = "Google Drive connected nahi — Login karo";
+    txt.textContent = "Google Drive not connected — sign in";
   }
 }
 
 async function saveToGoogleDrive(){
   if(!gToken){
-    toast("Pehle Google se login karo!");
+    toast("Sign in with Google first");
     return;
   }
   try{
@@ -1038,12 +1046,12 @@ async function saveToGoogleDrive(){
     });
 
     if(uploadRes.ok){
-      toast("✓ Google Drive mein save ho gaya!");
+      toast("✓ Saved to Google Drive");
     } else {
       throw new Error("Upload failed");
     }
   }catch(e){
-    toast("Drive save failed — Excel download karo");
+    toast("Drive save failed — downloading Excel instead");
     exportExcel();
   }
 }
@@ -1084,14 +1092,14 @@ async function checkFile(id){
 // ── GOOGLE PICKER ──────────────────────────────────────────────────────────
 function loadPicker(cb){
   if(pickerReady) return cb();
-  if(typeof gapi === "undefined"){ toast("Picker load nahi hua — reload karo"); return; }
+  if(typeof gapi === "undefined"){ toast("Picker failed to load — reload the page"); return; }
   gapi.load("picker", function(){ pickerReady = true; cb(); });
 }
 
 function connectSharedFile(){
-  if(!gToken){ toast("Pehle Google se login karo!"); return; }
+  if(!gToken){ toast("Sign in with Google first"); return; }
   if(PICKER_API_KEY === "YOUR_PICKER_API_KEY"){
-    toast("Picker API key set nahi hai", 4000);
+    toast("Picker API key is not set", 4000);
     return;
   }
   loadPicker(function(){
@@ -1116,7 +1124,7 @@ function pickerCallback(data){
   const doc = data.docs && data.docs[0];
   if(!doc) return;
   rememberFile(doc.id);
-  toast("✓ Shared file connect ho gaya!");
+  toast("✓ Shared file connected");
   syncDown();
 }
 
@@ -1125,25 +1133,48 @@ function pickerCallback(data){
 async function shareWithFamily(){
   const el = document.getElementById("share-email");
   const email = ((el && el.value) || "").trim().toLowerCase();
-  if(!gToken){ toast("Pehle Google se login karo!"); return; }
-  if(!gFileId){ toast("Pehle 'Nayi file banao' ya connect karo"); return; }
-  if(!/^[^@s]+@[^@s]+.[^@s]+$/.test(email)){ toast("Sahi email daalo"); return; }
-  if(ST.shares[email]){ toast("Ye email already added hai"); return; }
+  if(!gToken){ toast("Sign in with Google first"); return; }
+  if(!gFileId){ toast("Create or connect a file first"); return; }
+  if(!/^[^@s]+@[^@s]+.[^@s]+$/.test(email)){ toast("Enter a valid email address"); return; }
+  if(gUserEmail && email === gUserEmail){ toast("That is your own email address"); return; }
+  if(ST.shares[email]){ toast("That email is already added"); return; }
   try{
-    const r = await fetch("https://www.googleapis.com/drive/v3/files/" + gFileId + "/permissions?sendNotificationEmail=true",
+    const r = await fetch("https://www.googleapis.com/drive/v3/files/" + gFileId + "/permissions?sendNotificationEmail=true&fields=id",
       {method:"POST",
        headers:{Authorization:"Bearer " + gToken,"Content-Type":"application/json"},
        body: JSON.stringify({role:"writer", type:"user", emailAddress: email})});
-    if(!r.ok) throw new Error("share failed");
+    if(r.status === 401){ sessionExpired(); return; }
+    if(!r.ok){
+      // Surface what Google actually said instead of a blanket failure.
+      let msg = "HTTP " + r.status;
+      try{
+        const j = await r.json();
+        const e = j && j.error;
+        msg = (e && (e.message || (e.errors && e.errors[0] && e.errors[0].message))) || msg;
+      }catch(_){}
+      console.error("Drive share failed:", r.status, msg);
+      document.getElementById("share-err").textContent = "Google: " + msg;
+      toast("Share failed: " + msg, 6000);
+      return;
+    }
+    document.getElementById("share-err").textContent = "";
     ST.shares[email] = true;
     touch("shares", email);
     save(ST);
     if(el) el.value = "";
     renderShares();
-    toast("✓ " + email + " ko access mil gaya!", 3500);
+    toast("✓ " + email + " now has access", 3500);
   }catch(e){
-    toast("Share fail hua — email check karo");
+    console.error("Drive share error:", e);
+    document.getElementById("share-err").textContent = "Network error — please try again";
+    toast("Share failed — check your connection");
   }
+}
+
+// Fallback: hand the file to Drive's own sharing dialog.
+function openInDrive(){
+  if(!gFileId){ toast("Create or connect a file first"); return; }
+  window.open("https://drive.google.com/file/d/" + gFileId + "/view", "_blank");
 }
 
 function renderShares(){
@@ -1152,7 +1183,7 @@ function renderShares(){
   const list = Object.keys(ST.shares||{}).filter(function(k){ return ST.shares[k]; });
   el.innerHTML = list.length
     ? list.map(function(e){ return '<span class="share-chip">&#128100; ' + esc(e) + '</span>'; }).join("")
-    : '<span class="share-chip">Abhi kisi ko share nahi kiya</span>';
+    : '<span class="share-chip">Not shared with anyone yet</span>';
 }
 
 function setSync(t){
@@ -1192,8 +1223,8 @@ async function resolveFile(){
 
 // First person only — everyone else connects to this via the Picker.
 async function createSharedFile(){
-  if(!gToken){ toast("Pehle Google se login karo!"); return; }
-  if(gFileId){ toast("File already connected hai"); return; }
+  if(!gToken){ toast("Sign in with Google first"); return; }
+  if(gFileId){ toast("A file is already connected"); return; }
   try{
     const meta = await fetch("https://www.googleapis.com/drive/v3/files",{
       method:"POST",
@@ -1203,10 +1234,10 @@ async function createSharedFile(){
     if(!meta.ok) throw new Error("create failed");
     rememberFile((await meta.json()).id);
     await uploadState();
-    setSyncState(true,"Nayi shared file ban gayi — ab family member add karo");
-    toast("✓ Shared file ban gayi!");
+    setSyncState(true,"Shared file created — now add a family member");
+    toast("✓ Shared file created");
   }catch(e){
-    toast("File create fail hua");
+    toast("Could not create the file");
   }
 }
 
@@ -1319,11 +1350,11 @@ async function syncNow(){
     const changed = applyMerge(rem);
     await uploadState();
     setSync("synced");
-    setSyncState(true,"Shared file se synced");
-    if(changed){ refreshAll(); toast("✓ Family ka data update hua"); }
+    setSyncState(true,"Synced with shared file");
+    if(changed){ refreshAll(); toast("✓ Family data updated"); }
   }catch(e){
     setSync("sync off");
-    setSyncState(false,"Sync fail — dubara connect karo");
+    setSyncState(false,"Sync failed — reconnect");
   }finally{
     gSyncing = false;
     if(gPendingSync){ gPendingSync = false; scheduleSync(); }
@@ -1337,13 +1368,13 @@ async function syncDown(){
     const id = await resolveFile();
     if(!id){
       setSync("");
-      setSyncState(false,"Shared file nahi mili — connect ya nayi banao");
+      setSyncState(false,"No shared file found — connect or create one");
       return;
     }
     await syncNow();
   }catch(e){
     setSync("sync off");
-    setSyncState(false,"Sync fail — dubara connect karo");
+    setSyncState(false,"Sync failed — reconnect");
   }
 }
 
