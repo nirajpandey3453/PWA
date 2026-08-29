@@ -1,4 +1,4 @@
-const CACHE = 'sip-tracker-v41';
+const CACHE = 'sip-tracker-v43';
 const ASSETS = ['./', './index.html', './manifest.json',
                 './icons/favicon-32.png', './icons/icon-192.png'];
 

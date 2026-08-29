@@ -156,6 +156,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .home-tile:active{transform:scale(0.99)}
 .home-tile.ledger{border-left:4px solid var(--teal)}
 .home-tile.invest{border-left:4px solid var(--gold)}
+.home-tile.shop{border-left:4px solid var(--purple)}
+.sh-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.sh-row:last-child{border-bottom:none}
+.sh-chk{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);background:none;cursor:pointer;flex-shrink:0}
+.sh-chk:active{background:var(--bg)}
+.sh-main{flex:1;min-width:0}
+.sh-name{font-size:13px;font-weight:600}
+.sh-sub{font-size:10.5px;color:var(--muted);margin-top:2px}
 .home-ico{font-size:32px;line-height:1}
 .home-t{font-size:17px;font-weight:700}
 .home-x{font-size:12px;color:var(--sub);line-height:1.45}
@@ -396,6 +404,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <button class="lock-forgot" onclick="forgotPin()">Forgot PIN?</button>
 </div>
 
+<div class="modal-bg" id="shopdone-modal" onclick="if(event.target===this)closeShopDone()">
+  <div class="modal-box">
+    <div class="modal-title" id="sd-title">Item</div>
+    <div class="modal-sub">How much did you actually buy?</div>
+    <label for="sd-qty">Quantity</label>
+    <input id="sd-qty" type="number" inputmode="decimal" min="0" step="any" placeholder="0">
+    <label for="sd-unit">Unit</label>
+    <select id="sd-unit"></select>
+    <label for="sd-date">Bought on</label>
+    <input id="sd-date" type="date">
+    <label for="sd-note">Note</label>
+    <input id="sd-note" placeholder="optional">
+    <div class="share-err" id="sd-err"></div>
+    <div class="modal-row">
+      <button class="btn-sm btn-outline" onclick="closeShopDone()">Cancel</button>
+      <button class="btn-sm btn-green" onclick="saveShopDone()">&#10003; Bought</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="entry-modal" onclick="if(event.target===this)closeEntryEdit()">
   <div class="modal-box">
     <div class="modal-title" id="em2-title">Edit entry</div>
@@ -612,6 +640,58 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <span class="home-x">SIP tracker, funds, transfers and dashboard</span>
       <span class="home-stat" id="home-iv"></span>
     </button>
+    <button class="home-tile shop" onclick="showModule('shop')">
+      <span class="home-ico">🛒</span>
+      <span class="home-t">Shopping List</span>
+      <span class="home-x">What to buy, what was bought, and monthly consumption</span>
+      <span class="home-stat" id="home-sh"></span>
+    </button>
+  </div>
+</div>
+
+<!-- SHOPPING: LIST -->
+<div class="section" id="sec-shlist">
+  <div class="card">
+    <div class="card-title">Add to List</div>
+    <label class="form-label">Pick a saved item</label>
+    <select class="form-select" id="sh-pick"></select>
+    <label class="form-label" style="margin-top:10px">Or type something new</label>
+    <input class="form-input" id="sh-item" placeholder="e.g. Dhaniya, Bulb, Cake">
+    <button class="btn btn-primary" style="margin-top:11px" onclick="addShopItem()">+ Add Item</button>
+    <div class="lg-hint">Anything you type is saved for next time. Tick an item when
+      you buy it — that is when you record how much.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Saved Items <span class="opt" id="item-count"></span></div>
+    <div id="item-manage"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">To Buy <span class="opt" id="shop-count"></span></div>
+    <div id="shop-list"></div>
+  </div>
+</div>
+
+<!-- SHOPPING: CONSUMPTION -->
+<div class="section" id="sec-shcons">
+  <div class="card">
+    <div class="card-title">Consumption</div>
+    <div class="lg-f2">
+      <div><label class="form-label">Year</label>
+        <select class="form-select" id="shd-year" onchange="onShopPeriodChange()"></select></div>
+      <div><label class="form-label">Month</label>
+        <select class="form-select" id="shd-month" onchange="onShopPeriodChange()"></select></div>
+    </div>
+    <div id="shd-body" style="margin-top:13px"></div>
+  </div>
+</div>
+
+<!-- SHOPPING: HISTORY -->
+<div class="section" id="sec-shhist">
+  <div class="card">
+    <div class="card-title">Purchase History</div>
+    <div id="shop-hist"></div>
   </div>
 </div>
 
@@ -939,15 +1019,18 @@ if(!ST.people)    ST.people = {};
 if(!ST.recurring) ST.recurring = {};
 if(!ST.subheads)  ST.subheads = {};
 if(!ST.exclPay)   ST.exclPay = {};
+if(!ST.shop)      ST.shop = [];
+if(!ST.items)     ST.items = {};
 if(!ST.ledger)    ST.ledger = [];
 // meta[kind][key] = when that single field last changed on any device.
 // Merging per field (not per document) is what stops a stale device from
 // overwriting everything with one edit.
 if(!ST.meta)      ST.meta = {};
-["checks","funds","amts","cats","locked","heads","subheads","people","recurring","exclPay","transfers","ledger","shares"].forEach(k=>{ if(!ST.meta[k]) ST.meta[k] = {}; });
+["checks","funds","amts","cats","locked","heads","subheads","people","recurring","exclPay","items","transfers","ledger","shop","shares"].forEach(k=>{ if(!ST.meta[k]) ST.meta[k] = {}; });
 if(!ST.tomb)      ST.tomb = {};
 if(!ST.tomb.transfers) ST.tomb.transfers = {};
 if(!ST.tomb.ledger)    ST.tomb.ledger    = {};
+if(!ST.tomb.shop)      ST.tomb.shop      = {};
 if(!ST.shares)    ST.shares = {};
 if(!ST.meta.shares) ST.meta.shares = {};
 (function migrate(){
@@ -1034,6 +1117,11 @@ const MODULES = {
     {id:"lgheads", icon:"🏷️", label:"Setup"},
     {id:"lglog",   icon:"🧾",  label:"Log"}
   ]},
+  shop: {name:"Shopping List", tabs:[
+    {id:"shlist", icon:"🛒", label:"List"},
+    {id:"shcons", icon:"📦", label:"Consumption"},
+    {id:"shhist", icon:"🧾", label:"History"}
+  ]},
   invest: {name:"Investment", tabs:[
     {id:"dash",     icon:"🧭", label:"Dashboard"},
     {id:"summary",  icon:"📊", label:"Summary"},
@@ -1085,6 +1173,12 @@ function renderHome(){
     lg.textContent = r.count
       ? y + ": +" + fmt(r.income) + " · −" + fmt(r.expense)
       : "No entries yet";
+  }
+  const sh = document.getElementById("home-sh");
+  if(sh){
+    const pend = shopPending().length, got = shopDone().length;
+    sh.textContent = pend ? (pend + " to buy · " + got + " bought")
+                          : (got ? (got + " bought") : "Nothing on the list");
   }
   const iv = document.getElementById("home-iv");
   if(iv){
@@ -1185,6 +1279,9 @@ function showSec(id,el){
   if(id==="lgadd")    renderLedgerAll();
   if(id==="lgheads")  { seedHeads(); seedPeople(); seedExclPay(); renderHeads(); renderSubheads(); renderPayExcl(); renderPeopleManager(); renderPeopleList(); renderRecurringForm(); }
   if(id==="lglog")    renderLedger();
+  if(id==="shlist")   { seedItems(); renderItemPicker(); renderItemManage(); renderShopList(); }
+  if(id==="shcons")   { renderShopPeriodSel(); renderShopDash(); }
+  if(id==="shhist")   renderShopHistory();
   if(id==="transfer") renderTransfer();
   if(id==="funds")    renderFunds();
 }
@@ -2139,7 +2236,7 @@ function syncPayload(){
     checks: ST.checks, transfers: ST.transfers,
     funds: ST.funds, amts: ST.amts, cats: ST.cats, locked: ST.locked,
     heads: ST.heads, subheads: ST.subheads, people: ST.people, recurring: ST.recurring,
-    exclPay: ST.exclPay,
+    exclPay: ST.exclPay, items: ST.items, shop: ST.shop,
     ledger: ST.ledger, shares: ST.shares,
     meta: ST.meta, tomb: ST.tomb,
     updatedAt: ST.updatedAt || 0
@@ -2218,7 +2315,7 @@ function applyMerge(rem){
   if(!rem) return false;
   try{ localStorage.setItem("sip_backup", JSON.stringify(ST)); }catch{}
   let changed = false;
-  ["checks","funds","amts","cats","locked","heads","subheads","people","recurring","exclPay","shares"].forEach(function(kind){
+  ["checks","funds","amts","cats","locked","heads","subheads","people","recurring","exclPay","items","shares"].forEach(function(kind){
     const out = {val:{}, ts:{}};
     if(mergeField(kind, rem, out)) changed = true;
     ST[kind] = out.val;
@@ -2226,6 +2323,7 @@ function applyMerge(rem){
   });
   if(mergeRows("transfers", rem)) changed = true;
   if(mergeRows("ledger", rem))    changed = true;
+  if(mergeRows("shop", rem))      changed = true;
   ST.updatedAt = Math.max(Number(ST.updatedAt||0), Number(rem.updatedAt||0));
   try{ localStorage.setItem("sip_state_v2", JSON.stringify(ST)); }catch{}
   return changed;
@@ -3605,6 +3703,415 @@ function renderRecurringForm(){
   if(from && !from.value) from.value = ymNow();
   fillSubs("rc");
   renderRecurring();
+}
+
+// ── ITEM CATALOGUE ─────────────────────────────────────────────────────────
+// Seeded with everyday grocery and household items so the list is usable from
+// the first tap. Ids are fixed strings, so two devices seeding independently
+// produce the same catalogue and the merge collapses it rather than doubling.
+const DEFAULT_ITEMS = [
+  // staples
+  ["it_atta","Atta","kg"],["it_rice","Rice","kg"],["it_sugar","Sugar","kg"],
+  ["it_salt","Salt","kg"],["it_toordal","Toor Dal","kg"],["it_moongdal","Moong Dal","kg"],
+  ["it_chanadal","Chana Dal","kg"],["it_rajma","Rajma","kg"],["it_poha","Poha","kg"],
+  ["it_suji","Suji","kg"],["it_besan","Besan","kg"],["it_maida","Maida","kg"],
+  // oils and dairy
+  ["it_oil","Cooking Oil","l"],["it_ghee","Ghee","kg"],["it_milk","Milk","l"],
+  ["it_curd","Curd","kg"],["it_paneer","Paneer","kg"],["it_butter","Butter","kg"],
+  ["it_eggs","Eggs","pcs"],
+  // vegetables
+  ["it_onion","Onion","kg"],["it_potato","Potato","kg"],["it_tomato","Tomato","kg"],
+  ["it_garlic","Garlic","kg"],["it_ginger","Ginger","kg"],["it_chilli","Green Chilli","g"],
+  ["it_coriander","Coriander Leaves","g"],["it_lemon","Lemon","pcs"],
+  ["it_cauliflower","Cauliflower","pcs"],["it_brinjal","Brinjal","kg"],
+  ["it_lady","Lady Finger","kg"],["it_peas","Green Peas","kg"],
+  // fruit
+  ["it_banana","Banana","pcs"],["it_apple","Apple","kg"],["it_orange","Orange","kg"],
+  // spices
+  ["it_turmeric","Turmeric Powder","g"],["it_redchilli","Red Chilli Powder","g"],
+  ["it_dhaniya","Coriander Powder","g"],["it_garam","Garam Masala","g"],
+  ["it_jeera","Cumin Seeds","g"],["it_mustard","Mustard Seeds","g"],
+  // beverages and snacks
+  ["it_tea","Tea","g"],["it_coffee","Coffee","g"],["it_bread","Bread","pcs"],
+  ["it_biscuits","Biscuits","pcs"],["it_namkeen","Namkeen","g"],["it_maggi","Maggi","pcs"],
+  // household
+  ["it_soap","Bath Soap","pcs"],["it_shampoo","Shampoo","pcs"],
+  ["it_toothpaste","Toothpaste","pcs"],["it_detergent","Detergent","kg"],
+  ["it_dishwash","Dishwash","pcs"],["it_toilet","Toilet Cleaner","pcs"],
+  ["it_phenyl","Floor Cleaner","pcs"],["it_garbage","Garbage Bags","pcs"],
+  ["it_tissue","Tissue Roll","pcs"],["it_mosquito","Mosquito Repellent","pcs"],
+  ["it_matchbox","Match Box","pcs"],["it_cylinder","Gas Cylinder","pcs"]
+];
+
+function seedItems(){
+  if(!ST.items) ST.items = {};
+  if(!ST.meta.items) ST.meta.items = {};
+  if(Object.keys(ST.items).length) return;
+  DEFAULT_ITEMS.forEach(function(a){
+    ST.items[a[0]] = {name:a[1], unit:a[2]};
+    if(ST.meta.items[a[0]] == null) ST.meta.items[a[0]] = 1;
+  });
+  save(ST);
+}
+
+function itemList(){
+  return Object.keys(ST.items||{})
+    .filter(function(id){ return ST.items[id] && ST.items[id].name; })
+    .map(function(id){ return {id:id, name:ST.items[id].name, unit:ST.items[id].unit||""}; })
+    .sort(function(a,b){ return a.name.localeCompare(b.name); });
+}
+
+// Typing a name that is not in the catalogue adds it, so the list learns.
+function ensureItem(name, unit){
+  name = String(name||"").trim();
+  if(!name) return null;
+  if(!ST.items) ST.items = {};
+  const hit = Object.keys(ST.items).filter(function(id){
+    return ST.items[id] && ST.items[id].name.toLowerCase() === name.toLowerCase();
+  })[0];
+  if(hit) return hit;
+  const id = "it_" + Date.now().toString(36) + Math.floor(Math.random()*100);
+  ST.items[id] = {name:name, unit:unit || "pcs"};
+  touch("items", id);
+  return id;
+}
+
+function delItem(id){
+  const nm = ST.items[id] && ST.items[id].name;
+  if(!confirm("Remove " + nm + " from the saved items?\n\nAnything already on the list or bought is kept.")) return;
+  ST.items[id] = null;      // null, not delete, so the removal can merge
+  touch("items", id);
+  save(ST);
+  renderItemPicker(); renderItemManage();
+  toast(nm + " removed");
+}
+
+function renderItemPicker(){
+  const sel = document.getElementById("sh-pick");
+  if(!sel) return;
+  const keep = sel.value;
+  const list = itemList();
+  sel.innerHTML = '<option value="">— choose a saved item —</option>'
+    + list.map(function(i){
+        return '<option value="'+i.id+'">'+esc(i.name)+(i.unit?' ('+esc(i.unit)+')':'')+'</option>';
+      }).join("");
+  if(keep && list.some(function(i){ return i.id === keep; })) sel.value = keep;
+}
+
+function renderItemManage(){
+  const el = document.getElementById("item-manage");
+  if(!el) return;
+  const list = itemList();
+  el.innerHTML = list.length
+    ? list.map(function(i){
+        return '<span class="head-chip">' + esc(i.name)
+          + '<button onclick="delItem(\'' + i.id + '\')" title="Remove">&times;</button></span>';
+      }).join("")
+    : '<span class="head-none">No saved items</span>';
+  const n = document.getElementById("item-count");
+  if(n) n.textContent = list.length ? (list.length + " saved") : "";
+}
+
+// ── SHOPPING LIST ──────────────────────────────────────────────────────────
+// One row per item. It starts pending; ticking it captures the quantity really
+// bought, which is what the consumption view aggregates. Rows ride the shared
+// Drive file like everything else, so the history is kept.
+const UNITS = [
+  {id:"kg",  name:"kg",    base:"kg",  f:1},
+  {id:"g",   name:"gram",  base:"kg",  f:0.001},
+  {id:"l",   name:"litre", base:"l",   f:1},
+  {id:"ml",  name:"ml",    base:"l",   f:0.001},
+  {id:"pcs", name:"count", base:"pcs", f:1}
+];
+
+function unitOf(id){
+  return UNITS.filter(function(u){ return u.id === id; })[0] || UNITS[0];
+}
+
+// Grams roll up into kg, ml into litres, so a month of mixed entries still adds.
+function fmtQty(v, base){
+  v = Number(v) || 0;
+  if(base === "kg") return v >= 1 ? (+v.toFixed(3)) + " kg" : Math.round(v*1000) + " g";
+  if(base === "l")  return v >= 1 ? (+v.toFixed(3)) + " L"  : Math.round(v*1000) + " ml";
+  return (+v.toFixed(2)) + " pcs";
+}
+
+let shYear = "", shMonth = "";
+let shDoneId = null;
+
+function shopRows(){ return ST.shop || []; }
+function shopPending(){ return shopRows().filter(function(r){ return !r.done; }); }
+function shopDone(){ return shopRows().filter(function(r){ return r.done; }); }
+
+function addShopItem(){
+  const el    = document.getElementById("sh-item");
+  const sel   = document.getElementById("sh-pick");
+  const typed = ((el && el.value) || "").trim();
+
+  // Typing wins over the picker, so a half-finished selection cannot override
+  // what was actually written.
+  let name = "", unit = "", itemId = "";
+  if(typed){
+    itemId = ensureItem(typed, "");
+    name = ST.items[itemId].name;
+    unit = ST.items[itemId].unit || "";
+  } else if(sel && sel.value && ST.items[sel.value]){
+    itemId = sel.value;
+    name = ST.items[itemId].name;
+    unit = ST.items[itemId].unit || "";
+  }
+  if(!name){ toast("Pick a saved item or type a new one"); return; }
+
+  const id = Date.now() + Math.floor(Math.random()*1000);
+  ST.shop.unshift({id:id, name:name, item:itemId, qty:0, unit:unit, done:false,
+                   note:"", createdBy:currentPerson(), createdAt:Date.now()});
+  touch("shop", id);
+  save(ST);
+  if(el) el.value = "";
+  if(sel) sel.value = "";
+  renderItemPicker(); renderItemManage(); renderShopList();
+  toast("✓ " + name + " added");
+}
+
+function delShopItem(id){
+  if(!confirm("Remove this item?")) return;
+  ST.shop = shopRows().filter(function(r){ return r.id !== id; });
+  ST.tomb.shop[id] = Date.now();
+  save(ST);
+  renderShopList(); renderShopHistory(); renderShopDash();
+  toast("Removed");
+}
+
+// ── marking bought ─────────────────────────────────────────────────────────
+function openShopDone(id){
+  const r = shopRows().filter(function(x){ return x.id === id; })[0];
+  if(!r) return;
+  shDoneId = id;
+  document.getElementById("sd-title").textContent = r.name;
+  document.getElementById("sd-qty").value = r.qty || "";
+  const u = document.getElementById("sd-unit");
+  u.innerHTML = UNITS.map(function(x){
+    return '<option value="'+x.id+'">'+esc(x.name)+'</option>'; }).join("");
+  u.value = r.unit || (ST.items[r.item] && ST.items[r.item].unit) || "kg";
+  document.getElementById("sd-note").value = r.note || "";
+  document.getElementById("sd-date").value = r.doneAt
+    ? new Date(r.doneAt).toISOString().slice(0,10)
+    : new Date().toISOString().slice(0,10);
+  document.getElementById("sd-err").textContent = "";
+  document.getElementById("shopdone-modal").classList.add("show");
+}
+
+function closeShopDone(){
+  document.getElementById("shopdone-modal").classList.remove("show");
+  shDoneId = null;
+}
+
+function saveShopDone(){
+  if(shDoneId === null) return;
+  const r = shopRows().filter(function(x){ return x.id === shDoneId; })[0];
+  if(!r){ closeShopDone(); return; }
+  const qty  = Number(document.getElementById("sd-qty").value);
+  const unit = document.getElementById("sd-unit").value;
+  const date = document.getElementById("sd-date").value;
+  const err  = document.getElementById("sd-err");
+  if(!isFinite(qty) || qty <= 0){ err.textContent = "Enter the quantity you bought."; return; }
+  if(!date){ err.textContent = "Pick the date."; return; }
+
+  r.qty    = qty;
+  r.unit   = unit;
+  r.note   = document.getElementById("sd-note").value.trim();
+  r.done   = true;
+  r.doneAt = new Date(date + "T12:00:00").getTime();
+  r.doneBy = currentPerson();
+  touch("shop", r.id);
+  save(ST);
+  closeShopDone();
+  renderShopList(); renderShopHistory(); renderShopPeriodSel(); renderShopDash();
+  toast("✓ " + r.name + " marked bought");
+}
+
+// Undo, so a mis-tick does not need deleting and re-adding.
+function unmarkShop(id){
+  const r = shopRows().filter(function(x){ return x.id === id; })[0];
+  if(!r) return;
+  r.done = false; r.doneAt = 0;
+  touch("shop", id);
+  save(ST);
+  renderShopList(); renderShopHistory(); renderShopDash();
+  toast("Moved back to the list");
+}
+
+function renderShopList(){
+  const el = document.getElementById("shop-list");
+  if(!el) return;
+  const list = shopPending();
+  el.innerHTML = list.length
+    ? list.map(function(r){
+        return '<div class="sh-row">'
+          + '<button class="sh-chk" onclick="openShopDone(' + r.id + ')" title="Mark bought"></button>'
+          + '<div class="sh-main"><div class="sh-name">' + esc(r.name) + '</div>'
+          +   '<div class="sh-sub">added by ' + esc(r.createdBy || "?")
+          +     (r.createdAt ? ' &middot; ' + esc(stampLabel(r.createdAt)) : '') + '</div></div>'
+          + '<button class="lg-del" onclick="delShopItem(' + r.id + ')">&times;</button>'
+          + '</div>';
+      }).join("")
+    : '<div class="empty">Nothing on the list.</div>';
+  const n = document.getElementById("shop-count");
+  if(n) n.textContent = list.length ? (list.length + " to buy") : "";
+}
+
+// ── history ────────────────────────────────────────────────────────────────
+function shopByMonth(){
+  const out = {};
+  shopDone().forEach(function(r){
+    if(!r.doneAt) return;
+    const d = new Date(r.doneAt);
+    const ym = d.getFullYear() + "-" + (d.getMonth()<9?"0":"") + (d.getMonth()+1);
+    if(!out[ym]) out[ym] = [];
+    out[ym].push(r);
+  });
+  return out;
+}
+
+function renderShopHistory(){
+  const el = document.getElementById("shop-hist");
+  if(!el) return;
+  const by = shopByMonth();
+  const months = Object.keys(by).sort().reverse();
+  if(!months.length){ el.innerHTML = '<div class="empty">Nothing bought yet.</div>'; return; }
+  el.innerHTML = months.map(function(ym){
+    const rows = by[ym].slice().sort(function(a,b){ return b.doneAt - a.doneAt; });
+    return '<div class="lg-month">'
+      + '<div class="lg-month-hdr"><span>' + monthLabel(ym) + '</span>'
+      +   '<span class="lg-month-sum">' + rows.length + ' item(s)</span></div>'
+      + rows.map(function(r){
+          const u = unitOf(r.unit);
+          return '<div class="lg-row">'
+            + '<div class="lg-main"><div class="lg-head">' + esc(r.name) + '</div>'
+            +   '<div class="lg-sub"><span class="lg-by">' + esc(r.doneBy || "?") + '</span>'
+            +     (r.note ? '<span class="lg-note">' + esc(r.note) + '</span>' : '')
+            +   '</div></div>'
+            + '<div class="lg-amt">' + esc(fmtQty(Number(r.qty)*u.f, u.base)) + '</div>'
+            + '<button class="lg-del" onclick="unmarkShop(' + r.id + ')" title="Move back to list">&#8630;</button>'
+            + '<button class="lg-del" onclick="delShopItem(' + r.id + ')">&times;</button>'
+            + '</div>';
+        }).join("")
+      + '</div>';
+  }).join("");
+}
+
+// ── consumption ────────────────────────────────────────────────────────────
+function shopYears(){
+  const set = {};
+  shopDone().forEach(function(r){
+    if(r.doneAt) set[new Date(r.doneAt).getFullYear()] = 1;
+  });
+  set[new Date().getFullYear()] = 1;
+  return Object.keys(set).sort().reverse();
+}
+
+function renderShopPeriodSel(){
+  const ys = document.getElementById("shd-year");
+  const ms = document.getElementById("shd-month");
+  if(!ys || !ms) return;
+  const years = shopYears();
+  if(!shYear || years.indexOf(shYear) === -1) shYear = years[0];
+  ys.innerHTML = years.map(function(y){
+    return '<option value="'+y+'"'+(y===shYear?' selected':'')+'>'+y+'</option>'; }).join("");
+  let out = '<option value=""'+(shMonth===""?' selected':'')+'>Whole year</option>';
+  for(let i=0;i<12;i++){
+    const mm = (i+1<10?"0":"")+(i+1);
+    out += '<option value="'+mm+'"'+(shMonth===mm?' selected':'')+'>'+MON_SHORT[i]+'</option>';
+  }
+  ms.innerHTML = out;
+}
+
+function onShopPeriodChange(){
+  shYear  = document.getElementById("shd-year").value;
+  shMonth = document.getElementById("shd-month").value;
+  renderShopDash();
+}
+
+// Same item name in different units still adds up, because everything is
+// converted to a base unit first.
+function consumption(year, month){
+  const pre = month ? (year + "-" + month) : year;
+  const out = {};
+  shopDone().forEach(function(r){
+    if(!r.doneAt) return;
+    const d  = new Date(r.doneAt);
+    const ym = d.getFullYear() + "-" + (d.getMonth()<9?"0":"") + (d.getMonth()+1);
+    if(ym.indexOf(pre) !== 0) return;
+    const u   = unitOf(r.unit);
+    const key = String(r.name).trim().toLowerCase() + "|" + u.base;
+    if(!out[key]) out[key] = {name:String(r.name).trim(), base:u.base, qty:0, times:0, months:{}};
+    out[key].qty  += Number(r.qty) * u.f;
+    out[key].times++;
+    out[key].months[ym] = (out[key].months[ym] || 0) + Number(r.qty) * u.f;
+  });
+  return out;
+}
+
+function renderShopDash(){
+  const el = document.getElementById("shd-body");
+  if(!el) return;
+  const c = consumption(shYear, shMonth);
+  const keys = Object.keys(c).sort(function(a,b){ return c[b].times - c[a].times; });
+
+  const trips = shopDone().filter(function(r){
+    if(!r.doneAt) return false;
+    const d = new Date(r.doneAt);
+    const ym = d.getFullYear() + "-" + (d.getMonth()<9?"0":"") + (d.getMonth()+1);
+    return ym.indexOf(shMonth ? (shYear + "-" + shMonth) : shYear) === 0;
+  }).length;
+
+  const stats = '<div class="lgd-stats">'
+    + '<div class="lgd-s"><div class="lgd-l">Items bought</div><div class="lgd-v">'+trips+'</div></div>'
+    + '<div class="lgd-s"><div class="lgd-l">Distinct</div><div class="lgd-v">'+keys.length+'</div></div>'
+    + '<div class="lgd-s"><div class="lgd-l">Still to buy</div><div class="lgd-v">'+shopPending().length+'</div></div>'
+    + '<div class="lgd-s"><div class="lgd-l">Period</div><div class="lgd-v" style="font-size:11px">'
+    +   (shMonth ? monthLabel(shYear+"-"+shMonth) : shYear) + '</div></div>'
+    + '</div>';
+
+  if(!keys.length){
+    el.innerHTML = stats + '<div class="empty">Nothing bought in this period.</div>';
+    return;
+  }
+
+  const max = Math.max.apply(null, keys.map(function(k){ return c[k].qty; }));
+  const rows = keys.map(function(k){
+    const it = c[k];
+    const w  = max ? Math.round(it.qty/max*100) : 0;
+    return '<div class="hb-row">'
+      + '<div class="hb-top"><span>' + esc(it.name) + '</span>'
+      +   '<span class="hb-val">' + esc(fmtQty(it.qty, it.base)) + ' &middot; ' + it.times + 'x</span></div>'
+      + '<div class="hb-track"><div class="hb-fill expense" style="width:' + w + '%"></div></div>'
+      + '</div>';
+  }).join("");
+
+  // A per-month average is only meaningful across a whole year.
+  let note = "";
+  if(!shMonth && keys.length){
+    const top = keys.slice().sort(function(a,b){ return c[b].qty - c[a].qty; })[0];
+    const ms  = Object.keys(c[top].months).length;
+    note = '<div class="ins info"><div class="ins-ico">📦</div><div>'
+      + '<div class="ins-t">Most consumed: ' + esc(c[top].name) + '</div>'
+      + '<div class="ins-x">' + esc(fmtQty(c[top].qty, c[top].base)) + ' across ' + ms
+      + ' month(s) — about ' + esc(fmtQty(c[top].qty/ms, c[top].base)) + ' a month.</div></div></div>';
+  }
+
+  el.innerHTML = stats + note
+    + '<div class="hb-block"><div class="hb-title">Consumption by item</div>' + rows + '</div>';
+}
+
+function renderShopAll(){
+  seedItems();
+  renderItemPicker();
+  renderItemManage();
+  renderShopList();
+  renderShopPeriodSel();
+  renderShopDash();
+  renderShopHistory();
 }
 
 // ── DASHBOARD ──────────────────────────────────────────────────────────────
