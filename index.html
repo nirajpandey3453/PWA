@@ -41,6 +41,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 /* ── BOTTOM NAV ── */
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:var(--safe-bot)}
+.bottom-nav[hidden]{display:none}
 .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px 8px;cursor:pointer;color:var(--muted);font-size:10px;gap:3px;border:none;background:none}
 .nav-item.active{color:var(--teal)}
 .nav-icon{font-size:22px}
@@ -159,8 +160,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .home-tile.ledger{border-left:4px solid var(--teal)}
 .home-tile.invest{border-left:4px solid var(--gold)}
 .home-tile.shop{border-left:4px solid var(--purple)}
+.home-tile.locked .home-t,.home-tile.locked .home-x{filter:blur(3px);opacity:0.55}
+.home-tile.locked{position:relative}
+.home-tile.locked:after{content:"🔒";position:absolute;top:18px;right:18px;font-size:18px}
+.home-who{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:-12px 0 10px}
+.who-em{font-size:11.5px;color:var(--sub)}
+.who-tag{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--sub);border:1px solid var(--border);border-radius:7px;padding:1px 6px}
+.who-tag.adm{background:var(--teal);border-color:var(--teal);color:#fff}
+.home-grant{font-size:11.5px;color:var(--teal);font-weight:600;margin:0 0 14px}
+.gate-card{text-align:center;padding:30px 22px}
+.gate-ico{font-size:38px;line-height:1}
+.gate-t{font-size:16px;font-weight:700;margin:10px 0 6px}
+.gate-x{font-size:12.5px;color:var(--sub);line-height:1.55}
+.chip-x.adm{color:#fff;background:var(--teal);border-radius:7px;padding:1px 6px;margin-left:6px}
 .or-line{display:flex;align-items:center;gap:9px;margin:13px 0 4px;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:0.08em}
 .or-line:before,.or-line:after{content:"";flex:1;height:1px;background:var(--border)}
+.freq-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.freq{display:flex;align-items:center;gap:6px;padding:9px 6px 9px 11px;border:1px solid var(--border);border-radius:11px;background:var(--bg);color:var(--text)}
+.freq.on{border-color:var(--green)}
+.freq-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;cursor:pointer}
+.freq-n{font-size:12.5px;font-weight:600;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.freq-u{font-size:10px;color:var(--muted)}
+.freq-add{width:26px;height:26px;flex-shrink:0;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--sub);font-size:14px;line-height:1;cursor:pointer;padding:0}
+.freq-add:active{background:var(--bg)}
+.freq.on .freq-add{color:var(--green);border-color:var(--green)}
 .sh-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
 .sh-row:last-child{border-bottom:none}
 .sh-chk{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);background:none;cursor:pointer;flex-shrink:0}
@@ -631,14 +654,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="section active" id="sec-home">
   <div class="home-hi" id="home-hi">Shree Laxmi Home</div>
   <div class="home-sub">Pick what you want to work on.</div>
+  <div class="home-who" id="home-who"></div>
+  <div class="home-grant" id="home-grant"></div>
   <div class="home-grid">
-    <button class="home-tile ledger" onclick="showModule('ledger')">
+    <button class="home-tile ledger" id="home-tile-lg" onclick="showModule('ledger')">
       <span class="home-ico">🧾</span>
       <span class="home-t">Monthly Ledger</span>
       <span class="home-x">Income, expenses, heads and year-wise reports</span>
       <span class="home-stat" id="home-lg"></span>
     </button>
-    <button class="home-tile invest" onclick="showModule('invest')">
+    <button class="home-tile invest" id="home-tile-iv" onclick="showModule('invest')">
       <span class="home-ico">📈</span>
       <span class="home-t">Investment</span>
       <span class="home-x">SIP tracker, funds, transfers and dashboard</span>
@@ -653,6 +678,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
+<!-- LOCKED -->
+<div class="section" id="sec-noaccess">
+  <div class="card gate-card" id="gate-body"></div>
+</div>
+
 <!-- SHOPPING: LIST -->
 <div class="section" id="sec-shlist">
   <div class="card">
@@ -663,6 +693,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="lg-hint">Start typing to search. If it is not there yet, tap
       <b>+ Add</b> — it is saved to your items and goes straight on the list.
       Tick an item when you buy it; that is when you record how much.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Buy Again</div>
+    <div style="font-size:12px;color:var(--sub);line-height:1.5;margin-bottom:10px">
+      Your most-bought items. Tap one to record a purchase straight away — the
+      unit is prefilled from the last time you bought it.
+    </div>
+    <div class="freq-grid" id="freq-list"></div>
   </div>
 
   <div class="card">
@@ -799,6 +838,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <button class="btn-sm btn-outline" style="width:100%;margin-top:10px" onclick="addHead()">+ Add Head</button>
     <div id="head-list" style="margin-top:12px"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Access</div>
+    <div style="font-size:12px;color:var(--sub);line-height:1.5;margin-bottom:10px">
+      Investment and the Ledger are admin-only. Anyone else has to ask, and a
+      granted request lasts 30 minutes.
+    </div>
+    <div id="access-admin"></div>
   </div>
 
   <div class="card">
@@ -1042,12 +1090,14 @@ if(!ST.subheads)  ST.subheads = {};
 if(!ST.exclPay)   ST.exclPay = {};
 if(!ST.shop)      ST.shop = [];
 if(!ST.items)     ST.items = {};
+if(!ST.requests)  ST.requests = {};
+if(!ST.grants)    ST.grants = {};
 if(!ST.ledger)    ST.ledger = [];
 // meta[kind][key] = when that single field last changed on any device.
 // Merging per field (not per document) is what stops a stale device from
 // overwriting everything with one edit.
 if(!ST.meta)      ST.meta = {};
-["checks","funds","amts","cats","locked","heads","subheads","people","recurring","exclPay","items","transfers","ledger","shop","shares"].forEach(k=>{ if(!ST.meta[k]) ST.meta[k] = {}; });
+["checks","funds","amts","cats","locked","heads","subheads","people","recurring","exclPay","items","requests","grants","transfers","ledger","shop","shares"].forEach(k=>{ if(!ST.meta[k]) ST.meta[k] = {}; });
 if(!ST.tomb)      ST.tomb = {};
 if(!ST.tomb.transfers) ST.tomb.transfers = {};
 if(!ST.tomb.ledger)    ST.tomb.ledger    = {};
@@ -1132,7 +1182,7 @@ function toast(msg,dur=2500){
 // ── NAV ────────────────────────────────────────────────────────────────────
 // Two front doors: the ledger and the investment tracker each own a nav.
 const MODULES = {
-  ledger: {name:"Monthly Ledger", tabs:[
+  ledger: {name:"Monthly Ledger", gated:true, tabs:[
     {id:"lgd",     icon:"📈",  label:"Insights"},
     {id:"lgadd",   icon:"➕",  label:"Add"},
     {id:"lgheads", icon:"🏷️", label:"Setup"},
@@ -1144,7 +1194,7 @@ const MODULES = {
     {id:"shcons", icon:"📦", label:"Consumption"},
     {id:"shhist", icon:"🧾", label:"History"}
   ]},
-  invest: {name:"Investment", tabs:[
+  invest: {name:"Investment", gated:true, tabs:[
     {id:"dash",     icon:"🧭", label:"Dashboard"},
     {id:"summary",  icon:"📊", label:"Summary"},
     {id:"tracker",  icon:"📅", label:"Tracker"},
@@ -1158,6 +1208,15 @@ let curModule = null;
 function showModule(key){
   const mod = MODULES[key];
   if(!mod) return;
+  if(mod.gated && !hasAccess()){
+    curModule = null;
+    document.querySelectorAll(".section").forEach(function(x){ x.classList.remove("active"); });
+    document.getElementById("sec-noaccess").classList.add("active");
+    document.getElementById("nav").hidden = true;
+    renderGate(key);
+    window.scrollTo(0,0);
+    return;
+  }
   curModule = key;
   try{ localStorage.setItem("sip_module", key); }catch(e){}
   const nav = document.getElementById("nav");
@@ -1177,7 +1236,9 @@ function goHome(){
   try{ localStorage.removeItem("sip_module"); }catch(e){}
   document.querySelectorAll(".section").forEach(function(x){ x.classList.remove("active"); });
   document.getElementById("sec-home").classList.add("active");
-  document.getElementById("nav").hidden = true;
+  const nav = document.getElementById("nav");
+  nav.innerHTML = "";
+  nav.hidden = true;
   renderHome();
   window.scrollTo(0,0);
 }
@@ -1187,8 +1248,27 @@ function renderHome(){
   const hi = document.getElementById("home-hi");
   if(hi) hi.textContent = gUserName ? ("Hello, " + gUserName) : "Shree Laxmi Home";
 
+  const who = document.getElementById("home-who");
+  if(who){
+    if(!gUserEmail){ who.textContent = ""; }
+    else {
+      const p = myPerson();
+      who.innerHTML = '<span class="who-em">' + esc(gUserEmail) + '</span>'
+        + (isAdmin() ? '<span class="who-tag adm">admin</span>'
+                     : '<span class="who-tag">' + (p ? "member" : "not mapped") + '</span>');
+    }
+  }
+
+  // Gated modules read as locked before anything is revealed.
+  const open = hasAccess();
+  ["home-tile-lg","home-tile-iv"].forEach(function(tid){
+    const t = document.getElementById(tid);
+    if(t) t.classList.toggle("locked", !open);
+  });
+
   const lg = document.getElementById("home-lg");
-  if(lg){
+  if(lg && !open){ lg.textContent = "🔒 Needs admin approval"; }
+  else if(lg){
     seedHeads();
     const y = String(new Date().getFullYear());
     const r = sumUp(entriesIn(y,""));
@@ -1203,10 +1283,14 @@ function renderHome(){
                           : (got ? (got + " bought") : "Nothing on the list");
   }
   const iv = document.getElementById("home-iv");
-  if(iv){
+  if(iv && !open){ iv.textContent = "🔒 Needs admin approval"; }
+  else if(iv){
     const done = completeMonths().filter(Boolean).length;
     iv.textContent = fmt(totalInvested()) + " invested · " + done + "/" + MONTHS.length + " months";
   }
+  const mins = grantMinutesLeft();
+  const bn = document.getElementById("home-grant");
+  if(bn) bn.textContent = (!isAdmin() && mins) ? ("🔓 " + mins + " minute(s) of access left") : "";
 }
 
 // Every <select> keeps working exactly as before — it stays in the DOM and
@@ -1307,7 +1391,20 @@ function enhanceSelects(){
   for(let i=0;i<all.length;i++) makeSearchable(all[i]);
 }
 
+function moduleOf(secId){
+  const keys = Object.keys(MODULES);
+  for(let i=0;i<keys.length;i++){
+    const tabs = MODULES[keys[i]].tabs || [];
+    for(let j=0;j<tabs.length;j++) if(tabs[j].id === secId) return keys[i];
+  }
+  return null;
+}
+
 function showSec(id,el){
+  // Belt and braces: never let a section of a gated module open without access,
+  // whatever route got us here.
+  const mk = moduleOf(id);
+  if(mk && MODULES[mk].gated && !hasAccess()){ showModule(mk); return; }
   document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
   document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
   document.getElementById("sec-"+id).classList.add("active");
@@ -1317,9 +1414,9 @@ function showSec(id,el){
   if(id==="tracker")  renderTracker();
   if(id==="lgd")      { seedHeads(); renderPeriodSel(); renderLedgerDash(); }
   if(id==="lgadd")    renderLedgerAll();
-  if(id==="lgheads")  { seedHeads(); seedPeople(); seedExclPay(); renderHeads(); renderSubheads(); renderPayExcl(); renderPeopleManager(); renderPeopleList(); renderRecurringForm(); }
+  if(id==="lgheads")  { seedHeads(); seedPeople(); seedExclPay(); renderHeads(); renderSubheads(); renderPayExcl(); renderPeopleManager(); renderPeopleList(); renderRecurringForm(); renderAccessAdmin(); }
   if(id==="lglog")    renderLedger();
-  if(id==="shlist")   { seedItems(); renderItemPicker(); renderShopList(); }
+  if(id==="shlist")   { seedItems(); renderItemPicker(); renderFrequent(); renderShopList(); }
   if(id==="shitems")  { seedItems(); fillUnitSelect(); renderItemManage(); }
   if(id==="shcons")   { renderShopPeriodSel(); renderShopDash(); }
   if(id==="shhist")   renderShopHistory();
@@ -1965,6 +2062,8 @@ async function fetchProfile(){
     gUserSub   = p.sub || null;
     gUserEmail = (p.email||"").toLowerCase() || null;
     saveSession();
+    seedPeople();
+    claimIdentity();
     updateLoginUI();
     updateDriveStatus();
     syncDown();
@@ -2278,6 +2377,7 @@ function syncPayload(){
     funds: ST.funds, amts: ST.amts, cats: ST.cats, locked: ST.locked,
     heads: ST.heads, subheads: ST.subheads, people: ST.people, recurring: ST.recurring,
     exclPay: ST.exclPay, items: ST.items, shop: ST.shop,
+    requests: ST.requests, grants: ST.grants,
     ledger: ST.ledger, shares: ST.shares,
     meta: ST.meta, tomb: ST.tomb,
     updatedAt: ST.updatedAt || 0
@@ -2356,7 +2456,7 @@ function applyMerge(rem){
   if(!rem) return false;
   try{ localStorage.setItem("sip_backup", JSON.stringify(ST)); }catch{}
   let changed = false;
-  ["checks","funds","amts","cats","locked","heads","subheads","people","recurring","exclPay","items","shares"].forEach(function(kind){
+  ["checks","funds","amts","cats","locked","heads","subheads","people","recurring","exclPay","items","requests","grants","shares"].forEach(function(kind){
     const out = {val:{}, ts:{}};
     if(mergeField(kind, rem, out)) changed = true;
     ST[kind] = out.val;
@@ -2817,6 +2917,9 @@ function addPerson(){
 
 function delPerson(id){
   const nm = ST.people[id] && ST.people[id].name;
+  if(ST.people[id] && ST.people[id].admin && adminCount() <= 1){
+    toast("The app must keep at least one admin", 4000); return;
+  }
   const used = (ST.ledger||[]).some(function(e){ return e.by === nm; });
   if(!confirm(used
       ? "Entries are already recorded against " + nm + ".\n\nRemove from the list anyway? Those entries keep the name."
@@ -2831,14 +2934,29 @@ function delPerson(id){
 function renderPeopleManager(){
   const el = document.getElementById("people-manage");
   if(!el) return;
+  const me = myPersonId();
   const ids = Object.keys(ST.people||{}).filter(function(id){ return ST.people[id]; })
     .sort(function(a,b){ return ST.people[a].name.localeCompare(ST.people[b].name); });
-  el.innerHTML = ids.length
-    ? ids.map(function(id){
-        return '<span class="head-chip">' + esc(ST.people[id].name)
-          + '<button onclick="delPerson(\'' + id + '\')" title="Remove">&times;</button></span>';
-      }).join("")
-    : '<span class="head-none">Nobody yet</span>';
+  if(!ids.length){ el.innerHTML = '<span class="head-none">Nobody yet</span>'; return; }
+  el.innerHTML = ids.map(function(id){
+    const p = ST.people[id];
+    const g = grantFor(p.email);
+    return '<div class="rec-row">'
+      + '<div class="rec-main">'
+      +   '<div class="rec-t">' + esc(p.name)
+      +     (p.admin ? '<span class="chip-x adm">admin</span>' : '')
+      +     (id === me ? '<span class="chip-x">you</span>' : '') + '</div>'
+      +   '<div class="rec-x">' + (p.email ? esc(p.email) : 'no sign-in email mapped')
+      +     (g ? ' &middot; ' + Math.max(0,Math.ceil((g.until-Date.now())/60000)) + ' min access' : '')
+      +   '</div>'
+      + '</div>'
+      + '<button class="rec-b" onclick="setPersonEmail(\'' + id + '\')" title="Map sign-in email">&#9993;</button>'
+      + '<button class="rec-b" onclick="toggleAdmin(\'' + id + '\')" title="Toggle admin">'
+      +   (p.admin ? '&#9733;' : '&#9734;') + '</button>'
+      + '<button class="rec-b" onclick="grantNow(\'' + id + '\')" title="Give 30 minutes">&#9201;</button>'
+      + '<button class="rec-b" onclick="delPerson(\'' + id + '\')" title="Remove">&times;</button>'
+      + '</div>';
+  }).join("");
 }
 
 // The managed list drives the pickers. Names already used by existing entries
@@ -3903,7 +4021,7 @@ function fmtQty(v, base){
 }
 
 let shYear = "", shMonth = "";
-let shDoneId = null;
+let shDoneId = null, shQuickItem = null;
 
 function shopRows(){ return ST.shop || []; }
 function shopPending(){ return shopRows().filter(function(r){ return !r.done; }); }
@@ -3934,7 +4052,7 @@ function createShopItem(name){
   const added = pushShopRow(itemId);
   const sel = document.getElementById("sh-pick");
   if(sel) sel.value = "";
-  renderItemPicker(); renderItemManage(); renderShopList();
+  renderItemPicker(); renderItemManage(); renderFrequent(); renderShopList();
   if(added) toast("✓ " + ST.items[itemId].name + " saved and added");
 }
 
@@ -3946,7 +4064,7 @@ function addShopItem(){
   const itemId = sel.value;
   const added = pushShopRow(itemId);
   sel.value = "";
-  renderItemPicker(); renderShopList();
+  renderItemPicker(); renderFrequent(); renderShopList();
   if(added) toast("✓ " + ST.items[itemId].name + " added");
 }
 
@@ -3955,21 +4073,45 @@ function delShopItem(id){
   ST.shop = shopRows().filter(function(r){ return r.id !== id; });
   ST.tomb.shop[id] = Date.now();
   save(ST);
-  renderShopList(); renderShopHistory(); renderShopDash();
+  renderShopList(); renderFrequent(); renderShopHistory(); renderShopDash();
   toast("Removed");
 }
 
 // ── marking bought ─────────────────────────────────────────────────────────
+function fillUnitOptions(pick){
+  const u = document.getElementById("sd-unit");
+  if(!u) return;
+  u.innerHTML = UNITS.map(function(x){
+    return '<option value="'+x.id+'">'+esc(x.name)+'</option>'; }).join("");
+  u.value = pick || "kg";
+}
+
+// Tapping a frequent item records a purchase directly — no list round-trip.
+// The row is only created when the popup is saved, so cancelling leaves
+// nothing behind.
+function openQuickBuy(itemId){
+  const it = ST.items[itemId];
+  if(!it) return;
+  shDoneId = null;
+  shQuickItem = itemId;
+  document.getElementById("sd-title").textContent = it.name;
+  document.getElementById("sd-qty").value = "";
+  fillUnitOptions(lastUnitFor(itemId) || it.unit || "kg");
+  document.getElementById("sd-note").value = "";
+  document.getElementById("sd-date").value = new Date().toISOString().slice(0,10);
+  document.getElementById("sd-err").textContent = "";
+  document.getElementById("shopdone-modal").classList.add("show");
+}
+
 function openShopDone(id){
   const r = shopRows().filter(function(x){ return x.id === id; })[0];
   if(!r) return;
   shDoneId = id;
+  shQuickItem = null;
   document.getElementById("sd-title").textContent = r.name;
   document.getElementById("sd-qty").value = r.qty || "";
-  const u = document.getElementById("sd-unit");
-  u.innerHTML = UNITS.map(function(x){
-    return '<option value="'+x.id+'">'+esc(x.name)+'</option>'; }).join("");
-  u.value = r.unit || (ST.items[r.item] && ST.items[r.item].unit) || "kg";
+  fillUnitOptions(r.unit || lastUnitFor(r.item, r.name)
+                  || (ST.items[r.item] && ST.items[r.item].unit) || "kg");
   document.getElementById("sd-note").value = r.note || "";
   document.getElementById("sd-date").value = r.doneAt
     ? new Date(r.doneAt).toISOString().slice(0,10)
@@ -3981,18 +4123,30 @@ function openShopDone(id){
 function closeShopDone(){
   document.getElementById("shopdone-modal").classList.remove("show");
   shDoneId = null;
+  shQuickItem = null;
 }
 
 function saveShopDone(){
-  if(shDoneId === null) return;
-  const r = shopRows().filter(function(x){ return x.id === shDoneId; })[0];
-  if(!r){ closeShopDone(); return; }
   const qty  = Number(document.getElementById("sd-qty").value);
   const unit = document.getElementById("sd-unit").value;
   const date = document.getElementById("sd-date").value;
   const err  = document.getElementById("sd-err");
   if(!isFinite(qty) || qty <= 0){ err.textContent = "Enter the quantity you bought."; return; }
   if(!date){ err.textContent = "Pick the date."; return; }
+
+  let r;
+  if(shQuickItem){
+    const it = ST.items[shQuickItem];
+    if(!it){ closeShopDone(); return; }
+    const nid = Date.now() + Math.floor(Math.random()*1000);
+    r = {id:nid, name:it.name, item:shQuickItem, qty:0, unit:"", done:false,
+         note:"", createdBy:currentPerson(), createdAt:Date.now()};
+    ST.shop.unshift(r);
+  } else {
+    if(shDoneId === null) return;
+    r = shopRows().filter(function(x){ return x.id === shDoneId; })[0];
+    if(!r){ closeShopDone(); return; }
+  }
 
   r.qty    = qty;
   r.unit   = unit;
@@ -4002,9 +4156,11 @@ function saveShopDone(){
   r.doneBy = currentPerson();
   touch("shop", r.id);
   save(ST);
+  const nm = r.name;
   closeShopDone();
-  renderShopList(); renderShopHistory(); renderShopPeriodSel(); renderShopDash();
-  toast("✓ " + r.name + " marked bought");
+  renderShopList(); renderFrequent(); renderShopHistory();
+  renderShopPeriodSel(); renderShopDash();
+  toast("✓ " + nm + " bought");
 }
 
 function repeatShop(id){
@@ -4015,7 +4171,7 @@ function repeatShop(id){
   if(!itemId) return;
   const added = pushShopRow(itemId);   // refuses if it is already waiting
   if(!added) return;
-  renderShopList(); renderItemPicker(); renderItemManage();
+  renderShopList(); renderFrequent(); renderItemPicker(); renderItemManage();
   toast("✓ " + ST.items[itemId].name + " back on the list");
 }
 
@@ -4030,6 +4186,70 @@ function unmarkShop(id){
   toast("Moved back to the list");
 }
 
+// Whatever unit this item was last bought in is almost always the right
+// default next time, so it beats the catalogue default.
+function lastUnitFor(itemId, name){
+  const key = String(name||"").trim().toLowerCase();
+  const hits = shopDone().filter(function(r){
+    return (itemId && r.item === itemId)
+        || (key && String(r.name||"").trim().toLowerCase() === key);
+  }).sort(function(a,b){ return (b.doneAt||0) - (a.doneAt||0); });
+  return hits.length ? (hits[0].unit || "") : "";
+}
+
+// Ranked by how often each item has actually been bought, then alphabetically
+// so the grid is stable before any history exists.
+function frequentItems(limit){
+  const cnt = {};
+  shopDone().forEach(function(r){
+    let id = r.item;
+    if(!id || !ST.items[id]){
+      const m = itemList().filter(function(i){
+        return i.name.toLowerCase() === String(r.name||"").trim().toLowerCase();
+      })[0];
+      id = m ? m.id : null;
+    }
+    if(id) cnt[id] = (cnt[id]||0) + 1;
+  });
+  return itemList()
+    .map(function(i){ return {id:i.id, name:i.name, unit:i.unit, n:cnt[i.id]||0}; })
+    .sort(function(a,b){ return (b.n - a.n) || a.name.localeCompare(b.name); })
+    .slice(0, limit || 50);
+}
+
+function quickAddToList(itemId){
+  const it = ST.items[itemId];
+  if(!it) return;
+  const added = pushShopRow(itemId);   // refuses if it is already waiting
+  if(!added) return;
+  renderFrequent(); renderShopList(); renderItemPicker();
+  toast("✓ " + it.name + " added to the list");
+}
+
+function renderFrequent(){
+  const el = document.getElementById("freq-list");
+  if(!el) return;
+  const list = frequentItems(50);
+  const pend = {};
+  shopPending().forEach(function(r){ if(r.item) pend[r.item] = 1; });
+  el.innerHTML = list.length
+    ? list.map(function(i){
+        const u = lastUnitFor(i.id) || i.unit || "";
+        const on = !!pend[i.id];
+        return '<div class="freq' + (on ? " on" : "") + '">'
+          + '<div class="freq-main" onclick="openQuickBuy(\'' + i.id + '\')" title="Record a purchase">'
+          +   '<span class="freq-n">' + esc(i.name) + '</span>'
+          +   '<span class="freq-u">' + esc(u ? unitOf(u).name : "")
+          +     (i.n ? ' &middot; ' + i.n + 'x' : '') + '</span>'
+          + '</div>'
+          + '<button class="freq-add" onclick="quickAddToList(\'' + i.id + '\')" title="'
+          +   (on ? 'Already on the list' : 'Add to the list') + '">'
+          +   (on ? '&#10003;' : '+') + '</button>'
+          + '</div>';
+      }).join("")
+    : '<span class="head-none">No saved items yet</span>';
+}
+
 function renderShopList(){
   const el = document.getElementById("shop-list");
   if(!el) return;
@@ -4038,7 +4258,8 @@ function renderShopList(){
     ? list.map(function(r){
         return '<div class="sh-row">'
           + '<button class="sh-chk" onclick="openShopDone(' + r.id + ')" title="Mark bought"></button>'
-          + '<div class="sh-main"><div class="sh-name">' + esc(r.name) + '</div>'
+          + '<div class="sh-main" onclick="openShopDone(' + r.id + ')" style="cursor:pointer">'
+          +   '<div class="sh-name">' + esc(r.name) + '</div>'
           +   '<div class="sh-sub">added by ' + esc(r.createdBy || "?")
           +     (r.createdAt ? ' &middot; ' + esc(stampLabel(r.createdAt)) : '') + '</div></div>'
           + '<button class="lg-del" onclick="delShopItem(' + r.id + ')">&times;</button>'
@@ -4199,11 +4420,280 @@ function renderShopAll(){
   fillUnitSelect();
   renderItemPicker();
   renderItemManage();
+  renderFrequent();
   renderShopList();
   renderShopPeriodSel();
   renderShopDash();
   renderShopHistory();
 }
+
+// ── ACCESS CONTROL ─────────────────────────────────────────────────────────
+// People carry the Google email they sign in with, so a login maps to a person
+// and that person may be an admin. Non-admins see Investment and the Ledger
+// only while an admin has granted them a time-boxed window.
+const GRANT_MS = 30 * 60 * 1000;
+
+function emailKey(e){ return String(e||"").trim().toLowerCase(); }
+
+function adminIds(){
+  return Object.keys(ST.people||{}).filter(function(id){
+    return ST.people[id] && ST.people[id].admin;
+  });
+}
+function adminCount(){ return adminIds().length; }
+
+// Who am I? Matched on the signed-in email, never on the display name alone.
+function myPersonId(){
+  const em = emailKey(gUserEmail);
+  if(!em) return null;
+  return Object.keys(ST.people||{}).filter(function(id){
+    return ST.people[id] && emailKey(ST.people[id].email) === em;
+  })[0] || null;
+}
+function myPerson(){ const id = myPersonId(); return id ? ST.people[id] : null; }
+
+function isAdmin(){
+  const p = myPerson();
+  if(p && p.admin) return true;
+  // Before anyone is an admin the app would be unusable, so an unclaimed app
+  // treats the signed-in user as admin until claimIdentity() records one.
+  return adminCount() === 0;
+}
+
+// Bind this Google account to a person row, creating one if needed, and make
+// the very first user an admin so the app always has one.
+function claimIdentity(){
+  if(!gUserEmail) return null;
+  if(!ST.people) ST.people = {};
+  const em = emailKey(gUserEmail);
+  let id = myPersonId();
+
+  if(!id){
+    // An existing person with no email yet and a matching display name is the
+    // most likely owner of this login; otherwise start a new one.
+    id = Object.keys(ST.people).filter(function(k){
+      return ST.people[k] && !ST.people[k].email && ST.people[k].name === gUserName;
+    })[0] || ensurePerson(gUserName || em);
+    if(!id) return null;
+    ST.people[id].email = em;
+    touch("people", id);
+  }
+  if(adminCount() === 0){
+    ST.people[id].admin = true;
+    touch("people", id);
+  }
+  save(ST);
+  return id;
+}
+
+function toggleAdmin(id){
+  const p = ST.people[id];
+  if(!p) return;
+  if(p.admin && adminCount() <= 1){
+    toast("The app must keep at least one admin", 4000);
+    return;
+  }
+  p.admin = !p.admin;
+  touch("people", id);
+  save(ST);
+  renderPeopleManager(); renderAccessAdmin();
+  toast(p.name + (p.admin ? " is now an admin" : " is no longer an admin"));
+}
+
+function setPersonEmail(id){
+  const p = ST.people[id];
+  if(!p) return;
+  const cur = p.email || "";
+  const v = prompt("Google sign-in email for " + p.name + ":", cur);
+  if(v === null) return;
+  const em = emailKey(v);
+  if(em && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){ toast("Enter a valid email"); return; }
+  const clash = Object.keys(ST.people).filter(function(k){
+    return k !== id && ST.people[k] && emailKey(ST.people[k].email) === em && em;
+  })[0];
+  if(clash){ toast("That email is already mapped to " + ST.people[clash].name); return; }
+  p.email = em;
+  touch("people", id);
+  save(ST);
+  renderPeopleManager();
+  toast(em ? (p.name + " mapped to " + em) : (p.name + " unmapped"));
+}
+
+// ── grants ─────────────────────────────────────────────────────────────────
+function grantFor(email){
+  const g = (ST.grants || {})[emailKey(email)];
+  return (g && Number(g.until) > Date.now()) ? g : null;
+}
+function myGrant(){ return grantFor(gUserEmail); }
+
+function grantMinutesLeft(){
+  const g = myGrant();
+  return g ? Math.max(0, Math.ceil((Number(g.until) - Date.now())/60000)) : 0;
+}
+
+function hasAccess(){
+  return isAdmin() || !!myGrant();
+}
+
+function requestAccess(){
+  if(!gUserEmail){ toast("Sign in first"); return; }
+  if(!ST.requests) ST.requests = {};
+  const key = emailKey(gUserEmail);
+  const open = Object.keys(ST.requests).filter(function(k){
+    return ST.requests[k] && emailKey(ST.requests[k].email) === key && ST.requests[k].status === "open";
+  })[0];
+  if(open){ toast("Your request is already waiting for an admin"); return; }
+  const id = "rq_" + Date.now().toString(36);
+  ST.requests[id] = {email:key, name:(gUserName || key), at:Date.now(), status:"open"};
+  touch("requests", id);
+  save(ST);
+  renderGate(gateModule);
+  toast("Request sent — an admin has to approve it", 4000);
+}
+
+function approveRequest(id){
+  if(!isAdmin()){ toast("Only an admin can approve"); return; }
+  const r = (ST.requests||{})[id];
+  if(!r) return;
+  if(!ST.grants) ST.grants = {};
+  const key = emailKey(r.email);
+  ST.grants[key] = {until: Date.now() + GRANT_MS, by: currentPerson(), at: Date.now()};
+  touch("grants", key);
+  r.status = "granted";
+  touch("requests", id);
+  save(ST);
+  renderAccessAdmin();
+  toast("✓ " + r.name + " has 30 minutes of access");
+}
+
+function denyRequest(id){
+  if(!isAdmin()){ toast("Only an admin can decline"); return; }
+  const r = (ST.requests||{})[id];
+  if(!r) return;
+  r.status = "denied";
+  touch("requests", id);
+  save(ST);
+  renderAccessAdmin();
+  toast("Request declined");
+}
+
+function revokeGrant(key){
+  if(!isAdmin()) return;
+  if(!ST.grants || !ST.grants[key]) return;
+  ST.grants[key] = {until: 0, by: currentPerson(), at: Date.now()};
+  touch("grants", key);
+  save(ST);
+  renderAccessAdmin();
+  toast("Access revoked");
+}
+
+// Grant someone 30 minutes without waiting to be asked.
+function grantNow(id){
+  if(!isAdmin()) return;
+  const p = ST.people[id];
+  if(!p) return;
+  const key = emailKey(p.email);
+  if(!key){ toast("Map a sign-in email for " + p.name + " first", 4000); return; }
+  if(!ST.grants) ST.grants = {};
+  ST.grants[key] = {until: Date.now() + GRANT_MS, by: currentPerson(), at: Date.now()};
+  touch("grants", key);
+  save(ST);
+  renderAccessAdmin();
+  toast("✓ " + p.name + " has 30 minutes of access");
+}
+
+// ── the gate ───────────────────────────────────────────────────────────────
+let gateModule = "";
+
+function renderGate(key){
+  gateModule = key || gateModule;
+  const el = document.getElementById("gate-body");
+  if(!el) return;
+  const mod  = MODULES[gateModule];
+  const name = mod ? mod.name : "This section";
+  const mins = grantMinutesLeft();
+
+  if(mins > 0){
+    el.innerHTML = '<div class="gate-ico">🔓</div>'
+      + '<div class="gate-t">' + esc(name) + ' is unlocked</div>'
+      + '<div class="gate-x">' + mins + ' minute(s) left on your access.</div>'
+      + '<button class="btn btn-primary" style="margin-top:14px" onclick="showModule(\'' + gateModule + '\')">Open ' + esc(name) + '</button>'
+      + '<button class="lock-forgot" style="color:var(--sub)" onclick="goHome()">Back to home</button>';
+    return;
+  }
+
+  const key2 = emailKey(gUserEmail);
+  const waiting = Object.keys(ST.requests||{}).filter(function(k){
+    return ST.requests[k] && emailKey(ST.requests[k].email) === key2 && ST.requests[k].status === "open";
+  }).length > 0;
+  const denied = Object.keys(ST.requests||{}).filter(function(k){
+    return ST.requests[k] && emailKey(ST.requests[k].email) === key2 && ST.requests[k].status === "denied";
+  }).length > 0;
+
+  el.innerHTML = '<div class="gate-ico">🔒</div>'
+    + '<div class="gate-t">' + esc(name) + ' needs approval</div>'
+    + '<div class="gate-x">'
+    +   (waiting
+          ? 'Your request is waiting for an admin. It will unlock here as soon as it is approved.'
+          : (denied
+              ? 'Your last request was declined. You can ask again.'
+              : 'Ask an admin for access. A granted request lasts 30 minutes.'))
+    + '</div>'
+    + '<button class="btn btn-primary" style="margin-top:14px"' + (waiting ? ' disabled' : '')
+    +   ' onclick="requestAccess()">' + (waiting ? 'Waiting for approval…' : 'Request access') + '</button>'
+    + '<button class="lock-forgot" style="color:var(--sub)" onclick="goHome()">Back to home</button>';
+}
+
+// ── admin panel ────────────────────────────────────────────────────────────
+function renderAccessAdmin(){
+  const el = document.getElementById("access-admin");
+  if(!el) return;
+  if(!isAdmin()){
+    el.innerHTML = '<div class="gate-x">Only an admin can manage access.</div>';
+    return;
+  }
+  const reqs = Object.keys(ST.requests||{})
+    .filter(function(k){ return ST.requests[k] && ST.requests[k].status === "open"; })
+    .sort(function(a,b){ return ST.requests[b].at - ST.requests[a].at; });
+
+  const live = Object.keys(ST.grants||{})
+    .filter(function(k){ return grantFor(k); })
+    .sort();
+
+  el.innerHTML =
+      '<div class="hb-title">Pending requests</div>'
+    + (reqs.length
+        ? reqs.map(function(k){
+            const r = ST.requests[k];
+            return '<div class="rec-row"><div class="rec-main">'
+              + '<div class="rec-t">' + esc(r.name) + '</div>'
+              + '<div class="rec-x">' + esc(r.email) + ' &middot; ' + esc(stampLabel(r.at)) + '</div></div>'
+              + '<button class="btn-sm btn-green" onclick="approveRequest(\'' + k + '\')">Allow 30 min</button>'
+              + '<button class="rec-b" onclick="denyRequest(\'' + k + '\')">&times;</button></div>';
+          }).join("")
+        : '<div class="gate-x">Nothing waiting.</div>')
+    + '<div class="hb-title" style="margin-top:14px">Active access</div>'
+    + (live.length
+        ? live.map(function(k){
+            const g = ST.grants[k];
+            const mins = Math.max(0, Math.ceil((Number(g.until) - Date.now())/60000));
+            return '<div class="rec-row"><div class="rec-main">'
+              + '<div class="rec-t">' + esc(k) + '</div>'
+              + '<div class="rec-x">' + mins + ' minute(s) left &middot; granted by ' + esc(g.by || "?") + '</div></div>'
+              + '<button class="rec-b" onclick="revokeGrant(\'' + k + '\')" title="Revoke">&times;</button></div>';
+          }).join("")
+        : '<div class="gate-x">Nobody has temporary access right now.</div>');
+}
+
+// A grant expiring should close the section, not leave it open indefinitely.
+setInterval(function(){
+  if(!curModule) return;
+  const mod = MODULES[curModule];
+  if(mod && mod.gated && !hasAccess()){
+    toast("Your 30 minutes are up", 4000);
+    goHome();
+  }
+}, 20000);
 
 // ── DASHBOARD ──────────────────────────────────────────────────────────────
 const MON_NUM = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
