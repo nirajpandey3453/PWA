@@ -13,6 +13,7 @@
 
 <!-- SheetJS for Excel -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://apis.google.com/js/api.js" async defer></script>
 
 <style>
 :root {
@@ -128,6 +129,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .modal-row{display:flex;gap:8px;margin-top:16px}
 .modal-row button{flex:1}
 .sync-pill{font-size:10px;padding:1px 7px;border-radius:10px;background:rgba(255,255,255,0.18);margin-left:6px;white-space:nowrap}
+.sync-btns{display:flex;gap:8px;margin-top:10px}
+.sync-btns button{flex:1;font-size:12px;padding:8px 6px}
+.sync-hint{font-size:11px;color:var(--sub);line-height:1.5;margin-top:9px}
 .btn-red{background:#FFEBEE;color:var(--red);border:none;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:13px}
 .btn-drive{background:#4285F4;color:#fff;font-size:13px;padding:10px 16px;border-radius:12px;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:center}
 
@@ -257,6 +261,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <!-- TRANSFER -->
 <div class="section" id="sec-transfer">
+  <div class="card">
+    <div class="card-title">Family Shared Sync</div>
+    <div class="drive-status ds-no" id="sync-state">
+      <div class="ds-dot"></div>
+      <span id="sync-state-text">Login karo</span>
+    </div>
+    <div class="sync-btns">
+      <button class="btn-sm btn-outline" onclick="connectSharedFile()">&#128279; Shared file connect</button>
+      <button class="btn-sm btn-outline" onclick="shareWithFamily()">&#128101; Family member add</button>
+    </div>
+    <div class="sync-hint">Ek hi file sab log use karte hain. Pehla banda file banata hai, baaki log "Shared file connect" se usko choose karte hain.</div>
+  </div>
+
   <div class="card">
     <div class="card-title">Biwi ko Transfer Record Karo</div>
     <div class="drive-status ds-no" id="drive-status">
@@ -928,7 +945,98 @@ async function saveToGoogleDrive(){
 
 // ── DRIVE AUTO-SYNC ────────────────────────────────────────────────────────
 const SYNC_FILE = "shreelaxmi-data.json";
+// Google Picker needs an API key + the project number. Create the key at
+// Console > APIs & Services > Credentials > Create credentials > API key,
+// and enable both "Google Picker API" and "Google Drive API" for the project.
+const PICKER_API_KEY = "YOUR_PICKER_API_KEY";
+const APP_ID = "260664555067";
 let gFileId = null, syncTimer = null, gSyncing = false, gPendingSync = false;
+let pickerReady = false;
+
+function fileIdKey(){ return "sip_file_" + (gUserSub || "anon"); }
+
+function rememberFile(id){
+  gFileId = id;
+  try{ localStorage.setItem(fileIdKey(), id); }catch{}
+}
+
+function forgetFile(){
+  gFileId = null;
+  try{ localStorage.removeItem(fileIdKey()); }catch{}
+}
+
+function setSyncState(ok,msg){
+  const el = document.getElementById("sync-state");
+  const tx = document.getElementById("sync-state-text");
+  if(el) el.className = "drive-status " + (ok ? "ds-ok" : "ds-no");
+  if(tx) tx.textContent = msg;
+}
+
+// Confirm the remembered file is still reachable for this account.
+async function checkFile(id){
+  try{
+    const r = await fetch("https://www.googleapis.com/drive/v3/files/" + id + "?fields=id,name",
+      {headers:{Authorization:"Bearer " + gToken}});
+    return r.ok;
+  }catch(e){ return false; }
+}
+
+// ── GOOGLE PICKER ──────────────────────────────────────────────────────────
+function loadPicker(cb){
+  if(pickerReady) return cb();
+  if(typeof gapi === "undefined"){ toast("Picker load nahi hua — reload karo"); return; }
+  gapi.load("picker", function(){ pickerReady = true; cb(); });
+}
+
+function connectSharedFile(){
+  if(!gToken){ toast("Pehle Google se login karo!"); return; }
+  if(PICKER_API_KEY === "YOUR_PICKER_API_KEY"){
+    toast("Picker API key set nahi hai", 4000);
+    return;
+  }
+  loadPicker(function(){
+    const view = new google.picker.DocsView(google.picker.ViewId.DOCS)
+      .setMimeTypes("application/json")
+      .setIncludeFolders(false)
+      .setSelectFolderEnabled(false);
+    const picker = new google.picker.PickerBuilder()
+      .setOAuthToken(gToken)
+      .setDeveloperKey(PICKER_API_KEY)
+      .setAppId(APP_ID)
+      .addView(view)
+      .addView(new google.picker.DocsView(google.picker.ViewId.DOCS).setOwnedByMe(false))
+      .setCallback(pickerCallback)
+      .build();
+    picker.setVisible(true);
+  });
+}
+
+function pickerCallback(data){
+  if(!data || data.action !== google.picker.Action.PICKED) return;
+  const doc = data.docs && data.docs[0];
+  if(!doc) return;
+  rememberFile(doc.id);
+  toast("✓ Shared file connect ho gaya!");
+  syncDown();
+}
+
+// Give a family member write access to the shared file.
+async function shareWithFamily(){
+  if(!gToken){ toast("Pehle login karo!"); return; }
+  if(!gFileId){ toast("Pehle sync file banao ya connect karo"); return; }
+  const email = prompt("Family member ka Gmail address:");
+  if(!email) return;
+  try{
+    const r = await fetch("https://www.googleapis.com/drive/v3/files/" + gFileId + "/permissions?sendNotificationEmail=true",
+      {method:"POST",
+       headers:{Authorization:"Bearer " + gToken,"Content-Type":"application/json"},
+       body: JSON.stringify({role:"writer", type:"user", emailAddress: email.trim()})});
+    if(!r.ok) throw new Error("share failed");
+    toast("✓ " + email.trim() + " ko access mil gaya!", 3500);
+  }catch(e){
+    toast("Share fail hua — email check karo");
+  }
+}
 
 function setSync(t){
   const el = document.getElementById("sync-pill");
