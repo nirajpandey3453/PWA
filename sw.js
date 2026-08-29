@@ -1,5 +1,5 @@
-const CACHE = 'sip-tracker-v1';
-const ASSETS = ['/', '/index.html', '/manifest.json'];
+const CACHE = 'sip-tracker-v2';
+const ASSETS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
@@ -13,8 +13,18 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
+// Network-first for page loads so a new deploy is picked up immediately,
+// cache-first for everything else.
 self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('/index.html')))
-  );
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request).then(r => {
+        const copy = r.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy));
+        return r;
+      }).catch(() => caches.match('./index.html'))
+    );
+    return;
+  }
+  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
 });

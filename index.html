@@ -668,6 +668,7 @@ function handleLogin(){
     "google-auth","width=480,height=600");
 
   window.addEventListener("message", function handler(e){
+    if(e.origin !== window.location.origin) return;
     if(e.data && e.data.type==="google_token"){
       gToken = e.data.token;
       gUserName = e.data.name || "User";
@@ -678,18 +679,26 @@ function handleLogin(){
     }
   });
 }
-
-// For demo: handle hash token from redirect
+// Handle the OAuth redirect: if we're the popup, hand the token back to the
+// opener and close; otherwise consume it in place.
 (function(){
   const hash = window.location.hash;
-  if(hash.includes("access_token")){
-    const params = new URLSearchParams(hash.substring(1));
-    gToken = params.get("access_token");
-    history.replaceState(null,"",window.location.pathname);
-    updateLoginUI();
-    updateDriveStatus();
-    toast("✓ Google connected!");
+  if(!hash.includes("access_token")) return;
+
+  const params = new URLSearchParams(hash.substring(1));
+  const token = params.get("access_token");
+
+  if(window.opener && window.opener !== window){
+    window.opener.postMessage({type:"google_token", token}, window.location.origin);
+    window.close();
+    return;
   }
+
+  gToken = token;
+  history.replaceState(null,"",window.location.pathname);
+  updateLoginUI();
+  updateDriveStatus();
+  toast("✓ Google connected!");
 })();
 
 function updateLoginUI(){

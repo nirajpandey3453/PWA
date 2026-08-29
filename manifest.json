@@ -2,7 +2,7 @@
   "name": "Family SIP Tracker",
   "short_name": "SIP Tracker",
   "description": "Family investment tracker with Google Drive sync",
-  "start_url": "/index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#1B2A4A",
   "theme_color": "#0D7377",
