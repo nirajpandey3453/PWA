@@ -1,4 +1,4 @@
-const CACHE = 'sip-tracker-v3';
+const CACHE = 'sip-tracker-v4';
 const ASSETS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', e => {

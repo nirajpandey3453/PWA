@@ -270,6 +270,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="sync-btns">
       <button class="btn-sm btn-outline" onclick="connectSharedFile()">&#128279; Shared file connect</button>
       <button class="btn-sm btn-outline" onclick="shareWithFamily()">&#128101; Family member add</button>
+      <button class="btn-sm btn-outline" onclick="createSharedFile()">&#10133; Nayi file</button>
     </div>
     <div class="sync-hint">Ek hi file sab log use karte hain. Pehla banda file banata hai, baaki log "Shared file connect" se usko choose karte hain.</div>
   </div>
@@ -391,6 +392,7 @@ if(!ST.amts)      ST.amts  = {};
 let gToken = null;
 let gUserName = null;
 let gUserPhoto = null;
+let gUserSub = null;
 
 function plans(){ return DEFAULT_PLANS.map(p=>({...p,
   fund: ST.funds[p.id]||p.fund,
@@ -778,8 +780,9 @@ const SCOPES = "https://www.googleapis.com/auth/drive.file profile email";
 
 function handleLogin(){
   if(gToken){
-    gToken = null; gUserName = null; gUserPhoto = null;
+    gToken = null; gUserName = null; gUserPhoto = null; gUserSub = null;
     gFileId = null; clearTimeout(syncTimer); setSync("");
+    setSyncState(false,"Login karo");
     updateLoginUI();
     updateDriveStatus();
     toast("Logged out");
@@ -842,6 +845,7 @@ async function fetchProfile(){
     const p = await r.json();
     gUserName  = p.given_name || p.name || p.email || "User";
     gUserPhoto = p.picture || null;
+    gUserSub   = p.sub || null;
     updateLoginUI();
     updateDriveStatus();
     syncDown();
@@ -960,11 +964,6 @@ function rememberFile(id){
   try{ localStorage.setItem(fileIdKey(), id); }catch{}
 }
 
-function forgetFile(){
-  gFileId = null;
-  try{ localStorage.removeItem(fileIdKey()); }catch{}
-}
-
 function setSyncState(ok,msg){
   const el = document.getElementById("sync-state");
   const tx = document.getElementById("sync-state-text");
@@ -1051,15 +1050,45 @@ function scheduleSync(){
   syncTimer = setTimeout(syncUp, 1500);
 }
 
-async function findSyncFile(){
+// Find the one shared file: remembered id first, then anything this account
+// has already authorised the app for. Never creates one implicitly, otherwise
+// a second family member would silently start their own copy.
+async function resolveFile(){
   if(gFileId) return gFileId;
+  let saved = null;
+  try{ saved = localStorage.getItem(fileIdKey()); }catch{}
+  if(saved){
+    if(await checkFile(saved)){ gFileId = saved; return saved; }
+    try{ localStorage.removeItem(fileIdKey()); }catch{}
+  }
   const q = encodeURIComponent("name='"+SYNC_FILE+"' and trashed=false");
   const r = await fetch("https://www.googleapis.com/drive/v3/files?spaces=drive&fields=files(id)&q="+q,
     {headers:{Authorization:"Bearer "+gToken}});
   if(!r.ok) throw new Error("search failed");
   const d = await r.json();
-  gFileId = (d.files && d.files[0] && d.files[0].id) || null;
-  return gFileId;
+  const found = d.files && d.files[0] && d.files[0].id;
+  if(found){ rememberFile(found); return found; }
+  return null;
+}
+
+// First person only — everyone else connects to this via the Picker.
+async function createSharedFile(){
+  if(!gToken){ toast("Pehle Google se login karo!"); return; }
+  if(gFileId){ toast("File already connected hai"); return; }
+  try{
+    const meta = await fetch("https://www.googleapis.com/drive/v3/files",{
+      method:"POST",
+      headers:{Authorization:"Bearer "+gToken,"Content-Type":"application/json"},
+      body: JSON.stringify({name:SYNC_FILE,mimeType:"application/json"})
+    });
+    if(!meta.ok) throw new Error("create failed");
+    rememberFile((await meta.json()).id);
+    await syncUp();
+    setSyncState(true,"Nayi shared file ban gayi — ab family member add karo");
+    toast("✓ Shared file ban gayi!");
+  }catch(e){
+    toast("File create fail hua");
+  }
 }
 
 function syncPayload(){
@@ -1070,21 +1099,11 @@ function syncPayload(){
 }
 
 async function syncUp(){
-  if(!gToken) return;
+  if(!gToken || !gFileId) return;
   if(gSyncing){ gPendingSync = true; return; }
   gSyncing = true;
   try{
-    let id = await findSyncFile();
-    if(!id){
-      const meta = await fetch("https://www.googleapis.com/drive/v3/files",{
-        method:"POST",
-        headers:{Authorization:"Bearer "+gToken,"Content-Type":"application/json"},
-        body: JSON.stringify({name:SYNC_FILE,mimeType:"application/json"})
-      });
-      if(!meta.ok) throw new Error("create failed");
-      id = (await meta.json()).id;
-      gFileId = id;
-    }
+    const id = gFileId;
     const up = await fetch("https://www.googleapis.com/upload/drive/v3/files/"+id+"?uploadType=media",{
       method:"PATCH",
       headers:{Authorization:"Bearer "+gToken,"Content-Type":"application/json"},
@@ -1092,9 +1111,10 @@ async function syncUp(){
     });
     if(!up.ok) throw new Error("upload failed");
     setSync("synced");
+    setSyncState(true,"Shared file se synced");
   }catch(e){
-    gFileId = null;
     setSync("sync off");
+    setSyncState(false,"Sync fail — dubara connect karo");
   }finally{
     gSyncing = false;
     if(gPendingSync){ gPendingSync = false; scheduleSync(); }
@@ -1106,8 +1126,12 @@ async function syncDown(){
   if(!gToken) return;
   setSync("syncing…");
   try{
-    const id = await findSyncFile();
-    if(!id){ await syncUp(); return; }
+    const id = await resolveFile();
+    if(!id){
+      setSync("");
+      setSyncState(false,"Shared file nahi mili — connect ya nayi banao");
+      return;
+    }
     const r = await fetch("https://www.googleapis.com/drive/v3/files/"+id+"?alt=media",
       {headers:{Authorization:"Bearer "+gToken}});
     if(!r.ok) throw new Error("download failed");
@@ -1122,12 +1146,14 @@ async function syncDown(){
       try{ localStorage.setItem("sip_state_v2",JSON.stringify(ST)); }catch{}
       refreshAll();
       setSync("synced");
-      toast("✓ Drive se data restore hua!");
+      setSyncState(true,"Shared file se synced");
+      toast("✓ Shared data load ho gaya!");
     } else {
       await syncUp();
     }
   }catch(e){
     setSync("sync off");
+    setSyncState(false,"Sync fail — dubara connect karo");
   }
 }
 
