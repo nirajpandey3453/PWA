@@ -138,6 +138,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .share-row input{flex:1;min-width:0;padding:9px 10px;border:1px solid var(--border);border-radius:10px;font-size:13px;background:var(--bg);color:var(--text)}
 .share-list{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
 .share-chip{font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:3px 9px;color:var(--sub)}
+.nav-home{color:var(--sub)}
+.ss{position:relative}
+.ss-native{display:none}
+.ss-inp{cursor:pointer}
+.ss-list{display:none;position:absolute;top:100%;left:0;right:0;z-index:60;background:var(--card);border:1px solid var(--border);border-radius:11px;margin-top:4px;max-height:210px;overflow-y:auto;box-shadow:0 10px 28px rgba(20,30,60,0.16)}
+.ss-list.open{display:block}
+.ss-opt{padding:10px 11px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--border)}
+.ss-opt:last-child{border-bottom:none}
+.ss-opt.on{background:var(--bg);font-weight:600}
+.ss-none{padding:10px 11px;font-size:12px;color:var(--muted)}
 .topbar-actions{display:flex;align-items:center;gap:8px}
 .home-hi{font-size:20px;font-weight:700;margin:6px 0 3px}
 .home-sub{font-size:12.5px;color:var(--sub);margin-bottom:18px}
@@ -208,7 +218,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .head-chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;border-radius:12px;padding:3px 5px 3px 10px;margin:0 6px 6px 0;border:1px solid var(--border)}
 .head-chip.exp{background:rgba(198,40,40,0.07);color:#B3261E}
 .head-chip.inc{background:rgba(26,122,74,0.09);color:#1A7A4A}
-.head-chip button{background:none;border:none;font-size:14px;line-height:1;cursor:pointer;color:inherit;opacity:0.55;padding:0 3px}
+.head-chip button{background:none;border:none;font-size:13px;line-height:1;cursor:pointer;color:inherit;opacity:0.55;padding:0 2px}
+.head-chip button:active{opacity:1}
 .head-none{font-size:11.5px;color:var(--muted)}
 .yr{border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden}
 .yr-hdr{display:flex;align-items:center;gap:10px;padding:11px 12px;cursor:pointer;background:var(--bg)}
@@ -223,7 +234,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .yr-body.open{display:block}
 .hb-block{margin-bottom:14px}
 .hb-title{font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px}
-.hb-row{margin-bottom:9px}
+.hb-row{margin-bottom:11px}
+.hb-subs{display:none;margin:7px 0 0 10px;border-left:2px solid var(--border);padding-left:9px}
+.hb-subs.open{display:block}
+.hb-top.tap{cursor:pointer}
+.hb-caret{display:inline-block;font-size:10px;color:var(--muted);margin-left:5px;transition:transform .18s}
+.hb-caret.open{transform:rotate(180deg)}
+.hb-n{display:inline-block;font-size:9px;color:var(--muted);border:1px solid var(--border);border-radius:7px;padding:0 5px;margin-left:5px;vertical-align:1px}
+.hb-sub{display:flex;justify-content:space-between;font-size:11px;color:var(--sub);padding:2px 0;font-variant-numeric:tabular-nums}
+.hb-sub.muted{color:var(--muted)}
+.lg-sh{color:var(--sub);font-weight:500}
+.opt{font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0}
 .hb-top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;gap:8px}
 .hb-val{color:var(--sub);font-variant-numeric:tabular-nums;white-space:nowrap}
 .hb-track{height:6px;background:var(--bg);border-radius:4px;overflow:hidden}
@@ -362,6 +383,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <button class="lock-forgot" onclick="forgotPin()">Forgot PIN?</button>
 </div>
 
+<div class="modal-bg" id="head-modal" onclick="if(event.target===this)closeHeadEdit()">
+  <div class="modal-box">
+    <div class="modal-title">Edit Head</div>
+    <div class="modal-sub" id="hm-sub"></div>
+    <label for="hm-name">Name</label>
+    <input id="hm-name" placeholder="Head name">
+    <div id="hm-type-row">
+      <label for="hm-type">Kind</label>
+      <select id="hm-type">
+        <option value="expense">Expense</option>
+        <option value="income">Income</option>
+      </select>
+    </div>
+    <div class="share-err" id="hm-err"></div>
+    <div class="modal-row">
+      <button class="btn-sm btn-outline" onclick="closeHeadEdit()">Cancel</button>
+      <button class="btn-sm btn-green" onclick="saveHeadEdit()">&#10003; Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="pin-modal" onclick="if(event.target===this)closePinModal()">
   <div class="modal-box">
     <div class="modal-title" id="pin-modal-title">Set App PIN</div>
@@ -406,7 +448,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="topbar-sub" id="topbar-sub">Sep 2026 – Aug 2031<span class="sync-pill" id="sync-pill"></span></div>
   </div>
   <div class="topbar-actions">
-  <button class="lock-btn" id="home-btn" onclick="goHome()" title="Home" hidden>🏠</button>
   <button class="lock-btn" id="lock-btn" onclick="openPinModal()" title="App lock">🔓</button>
   <button class="login-btn" id="login-btn" onclick="handleLogin()">
     <img id="login-photo" alt="" referrerpolicy="no-referrer" hidden>
@@ -555,7 +596,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="lg-f2">
       <div><label class="form-label">Head</label>
-        <select class="form-select" id="ex-head"></select></div>
+        <select class="form-select" id="ex-head" onchange="fillSubs('ex')"></select></div>
+      <div><label class="form-label">Subhead <span class="opt">optional</span></label>
+        <select class="form-select" id="ex-sub"></select></div>
+    </div>
+    <div class="lg-f2">
       <div><label class="form-label">Expense by</label>
         <select class="form-select" id="ex-by"></select></div>
     </div>
@@ -574,7 +619,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="lg-f2">
       <div><label class="form-label">Income type</label>
-        <select class="form-select" id="in-head"></select></div>
+        <select class="form-select" id="in-head" onchange="fillSubs('in')"></select></div>
+      <div><label class="form-label">Subhead <span class="opt">optional</span></label>
+        <select class="form-select" id="in-sub"></select></div>
+    </div>
+    <div class="lg-f2">
       <div><label class="form-label">Income by</label>
         <select class="form-select" id="in-by"></select></div>
     </div>
@@ -599,6 +648,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <button class="btn-sm btn-outline" style="width:100%;margin-top:10px" onclick="addHead()">+ Add Head</button>
     <div id="head-list" style="margin-top:12px"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Subheads</div>
+    <div style="font-size:12px;color:var(--sub);line-height:1.5;margin-bottom:10px">
+      Optional detail under a head — Groceries &rsaquo; Vegetables, and so on.
+    </div>
+    <div class="lg-f2">
+      <div><label class="form-label">Under head</label>
+        <select class="form-select" id="sh-head"></select></div>
+      <div><label class="form-label">Subhead name</label>
+        <input class="form-input" id="sh-name" placeholder="e.g. Vegetables"></div>
+    </div>
+    <button class="btn-sm btn-outline" style="width:100%;margin-top:10px" onclick="addSubhead()">+ Add Subhead</button>
+    <div id="sub-list" style="margin-top:12px"></div>
   </div>
 
   <div class="card">
@@ -808,12 +872,13 @@ if(!ST.locked)    ST.locked = {};
 if(!ST.heads)     ST.heads  = {};
 if(!ST.people)    ST.people = {};
 if(!ST.recurring) ST.recurring = {};
+if(!ST.subheads)  ST.subheads = {};
 if(!ST.ledger)    ST.ledger = [];
 // meta[kind][key] = when that single field last changed on any device.
 // Merging per field (not per document) is what stops a stale device from
 // overwriting everything with one edit.
 if(!ST.meta)      ST.meta = {};
-["checks","funds","amts","cats","locked","heads","people","recurring","transfers","ledger","shares"].forEach(k=>{ if(!ST.meta[k]) ST.meta[k] = {}; });
+["checks","funds","amts","cats","locked","heads","subheads","people","recurring","transfers","ledger","shares"].forEach(k=>{ if(!ST.meta[k]) ST.meta[k] = {}; });
 if(!ST.tomb)      ST.tomb = {};
 if(!ST.tomb.transfers) ST.tomb.transfers = {};
 if(!ST.tomb.ledger)    ST.tomb.ledger    = {};
@@ -920,13 +985,15 @@ function showModule(key){
   curModule = key;
   try{ localStorage.setItem("sip_module", key); }catch(e){}
   const nav = document.getElementById("nav");
-  nav.innerHTML = mod.tabs.map(function(t,i){
-    return '<button class="nav-item' + (i===0?" active":"") + '" onclick="showSec(\'' + t.id + '\',this)">'
-      + '<span class="nav-icon">' + t.icon + '</span><span>' + t.label + '</span></button>';
-  }).join("");
+  nav.innerHTML =
+      '<button class="nav-item nav-home" onclick="goHome()">'
+    + '<span class="nav-icon">🏠</span><span>Home</span></button>'
+    + mod.tabs.map(function(t,i){
+        return '<button class="nav-item' + (i===0?" active":"") + '" onclick="showSec(\'' + t.id + '\',this)">'
+          + '<span class="nav-icon">' + t.icon + '</span><span>' + t.label + '</span></button>';
+      }).join("");
   nav.hidden = false;
-  document.getElementById("home-btn").hidden = false;
-  showSec(mod.tabs[0].id, nav.children[0]);
+  showSec(mod.tabs[0].id, nav.children[1]);
 }
 
 function goHome(){
@@ -935,7 +1002,6 @@ function goHome(){
   document.querySelectorAll(".section").forEach(function(x){ x.classList.remove("active"); });
   document.getElementById("sec-home").classList.add("active");
   document.getElementById("nav").hidden = true;
-  document.getElementById("home-btn").hidden = true;
   renderHome();
   window.scrollTo(0,0);
 }
@@ -961,6 +1027,86 @@ function renderHome(){
   }
 }
 
+// Every <select> keeps working exactly as before — it stays in the DOM and
+// still owns .value — but is hidden behind a filterable input, so no read site
+// or population routine had to change.
+function makeSearchable(sel){
+  if(!sel || sel.dataset.ss) return;
+  sel.dataset.ss = "1";
+
+  const wrap = document.createElement("div");
+  wrap.className = "ss";
+  sel.parentNode.insertBefore(wrap, sel);
+  wrap.appendChild(sel);
+  sel.classList.add("ss-native");
+
+  const inp = document.createElement("input");
+  inp.className = "form-input ss-inp";
+  inp.setAttribute("autocomplete","off");
+  inp.setAttribute("placeholder","Type to search…");
+
+  const list = document.createElement("div");
+  list.className = "ss-list";
+  wrap.appendChild(inp);
+  wrap.appendChild(list);
+
+  function optLabel(o){
+    const grp = o.parentNode && o.parentNode.tagName === "OPTGROUP" ? o.parentNode.label : "";
+    return grp ? grp + " · " + o.textContent : o.textContent;
+  }
+  function current(){
+    const o = sel.options[sel.selectedIndex];
+    return o ? optLabel(o) : "";
+  }
+  function close(){ list.classList.remove("open"); inp.value = current(); }
+  function open(q){
+    q = String(q||"").toLowerCase();
+    const hits = Array.prototype.slice.call(sel.options).filter(function(o){
+      return optLabel(o).toLowerCase().indexOf(q) > -1;
+    });
+    list.innerHTML = hits.length
+      ? hits.map(function(o){
+          return '<div class="ss-opt' + (o.value === sel.value ? " on" : "") + '" data-v="'
+            + esc(o.value) + '">' + esc(optLabel(o)) + '</div>';
+        }).join("")
+      : '<div class="ss-none">No match</div>';
+    list.classList.add("open");
+  }
+
+  inp.addEventListener("focus", function(){ inp.select(); open(""); });
+  inp.addEventListener("input", function(){ open(inp.value); });
+  inp.addEventListener("blur",  function(){ setTimeout(close, 160); });
+  inp.addEventListener("keydown", function(e){
+    if(e.key === "Escape"){ close(); inp.blur(); }
+    if(e.key === "Enter"){
+      const first = list.querySelector(".ss-opt");
+      if(first){ e.preventDefault(); first.dispatchEvent(new MouseEvent("mousedown",{bubbles:true})); }
+    }
+  });
+  list.addEventListener("mousedown", function(e){
+    const el = e.target.closest ? e.target.closest(".ss-opt") : null;
+    if(!el) return;
+    e.preventDefault();
+    sel.value = el.getAttribute("data-v");
+    // keep inline onchange handlers working
+    sel.dispatchEvent(new Event("change", {bubbles:true}));
+    close();
+    inp.blur();
+  });
+
+  // Options are re-rendered all over the app; mirror the label when they are.
+  if(window.MutationObserver){
+    new MutationObserver(function(){ inp.value = current(); })
+      .observe(sel, {childList:true});
+  }
+  inp.value = current();
+}
+
+function enhanceSelects(){
+  const all = document.querySelectorAll("select");
+  for(let i=0;i<all.length;i++) makeSearchable(all[i]);
+}
+
 function showSec(id,el){
   document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
   document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
@@ -971,7 +1117,7 @@ function showSec(id,el){
   if(id==="tracker")  renderTracker();
   if(id==="lgd")      { seedHeads(); renderPeriodSel(); renderLedgerDash(); }
   if(id==="lgadd")    renderLedgerAll();
-  if(id==="lgheads")  { seedHeads(); seedPeople(); renderHeads(); renderPeopleManager(); renderPeopleList(); renderRecurringForm(); }
+  if(id==="lgheads")  { seedHeads(); seedPeople(); renderHeads(); renderSubheads(); renderPeopleManager(); renderPeopleList(); renderRecurringForm(); }
   if(id==="lglog")    renderLedger();
   if(id==="transfer") renderTransfer();
   if(id==="funds")    renderFunds();
@@ -1926,7 +2072,7 @@ function syncPayload(){
   return JSON.stringify({
     checks: ST.checks, transfers: ST.transfers,
     funds: ST.funds, amts: ST.amts, cats: ST.cats, locked: ST.locked,
-    heads: ST.heads, people: ST.people, recurring: ST.recurring,
+    heads: ST.heads, subheads: ST.subheads, people: ST.people, recurring: ST.recurring,
     ledger: ST.ledger, shares: ST.shares,
     meta: ST.meta, tomb: ST.tomb,
     updatedAt: ST.updatedAt || 0
@@ -2005,7 +2151,7 @@ function applyMerge(rem){
   if(!rem) return false;
   try{ localStorage.setItem("sip_backup", JSON.stringify(ST)); }catch{}
   let changed = false;
-  ["checks","funds","amts","cats","locked","heads","people","recurring","shares"].forEach(function(kind){
+  ["checks","funds","amts","cats","locked","heads","subheads","people","recurring","shares"].forEach(function(kind){
     const out = {val:{}, ts:{}};
     if(mergeField(kind, rem, out)) changed = true;
     ST[kind] = out.val;
@@ -2205,6 +2351,87 @@ function headList(type){
     .sort(function(a,b){ return a.name.localeCompare(b.name); });
 }
 
+// Subheads are optional and always belong to exactly one head.
+function subList(headId){
+  return Object.keys(ST.subheads||{})
+    .filter(function(id){ return ST.subheads[id] && ST.subheads[id].head === headId; })
+    .map(function(id){ return {id:id, name:ST.subheads[id].name}; })
+    .sort(function(a,b){ return a.name.localeCompare(b.name); });
+}
+
+function subName(id){
+  const x = (ST.subheads||{})[id];
+  return x ? x.name : "";
+}
+
+function addSubhead(){
+  const el   = document.getElementById("sh-name");
+  const head = document.getElementById("sh-head").value;
+  const name = (el.value||"").trim();
+  if(!head){ toast("Pick a head first"); return; }
+  if(!name){ toast("Enter a subhead name"); return; }
+  if(subList(head).some(function(x){ return x.name.toLowerCase() === name.toLowerCase(); })){
+    toast("That subhead already exists under this head"); return;
+  }
+  const id = "s_" + Date.now().toString(36);
+  ST.subheads[id] = {name:name, head:head};
+  touch("subheads", id);
+  save(ST);
+  el.value = "";
+  renderSubheads(); fillSubs("ex"); fillSubs("in");
+  toast("✓ Subhead added");
+}
+
+function delSubhead(id){
+  const nm = subName(id);
+  const used = (ST.ledger||[]).some(function(e){ return e.sub === id; });
+  if(!confirm(used
+      ? "Entries already use " + nm + ".\n\nRemove it anyway? Those entries keep the head but lose the subhead label."
+      : "Remove " + nm + "?")) return;
+  ST.subheads[id] = null;     // null, not delete, so the removal can merge
+  touch("subheads", id);
+  save(ST);
+  renderSubheads(); fillSubs("ex"); fillSubs("in"); renderLedger();
+  toast("Subhead removed");
+}
+
+function renderSubheads(){
+  const sel = document.getElementById("sh-head");
+  if(sel){
+    const keep = sel.value;
+    const all = headList("expense").concat(headList("income"));
+    sel.innerHTML = all.map(function(h){
+      return '<option value="'+h.id+'">'+esc(h.name)+'</option>'; }).join("");
+    if(keep) sel.value = keep;
+  }
+  const el = document.getElementById("sub-list");
+  if(!el) return;
+  const heads = headList("expense").concat(headList("income"))
+    .filter(function(h){ return subList(h.id).length; });
+  el.innerHTML = heads.length
+    ? heads.map(function(h){
+        return '<div class="head-group"><div class="head-group-t">' + esc(h.name) + '</div>'
+          + subList(h.id).map(function(x){
+              return '<span class="head-chip">' + esc(x.name)
+                + '<button onclick="delSubhead(\'' + x.id + '\')" title="Remove">&times;</button></span>';
+            }).join("")
+          + '</div>';
+      }).join("")
+    : '<span class="head-none">None yet</span>';
+}
+
+// Repopulate the optional subhead picker whenever its head changes.
+function fillSubs(pre){
+  const headSel = document.getElementById(pre + "-head");
+  const sel     = document.getElementById(pre + "-sub");
+  if(!headSel || !sel) return;
+  const keep = sel.value;
+  const list = subList(headSel.value);
+  sel.innerHTML = '<option value="">— none —</option>'
+    + list.map(function(x){ return '<option value="'+x.id+'">'+esc(x.name)+'</option>'; }).join("");
+  if(keep && list.some(function(x){ return x.id === keep; })) sel.value = keep;
+}
+
 function headName(id){
   const h = ST.heads[id];
   return h ? h.name : "(removed head)";
@@ -2370,12 +2597,61 @@ function renderHeads(){
           ? list.map(function(h){
               return '<span class="head-chip '+(type==="income"?"inc":"exp")+'">'
                 + esc(h.name)
+                + '<button onclick="openHeadEdit(\'' + h.id + '\')" title="Edit">&#9998;</button>'
                 + '<button onclick="delHead(\'' + h.id + '\')" title="Remove">&times;</button></span>';
             }).join("")
           : '<span class="head-none">None yet</span>')
       + '</div>';
   };
   el.innerHTML = mk("expense","Expense heads") + mk("income","Income types");
+}
+
+let editHeadId = null;
+
+function openHeadEdit(id){
+  const h = ST.heads[id];
+  if(!h) return;
+  editHeadId = id;
+  const used = (ST.ledger||[]).filter(function(e){ return e.head === id; }).length;
+  document.getElementById("hm-name").value = h.name;
+  document.getElementById("hm-type").value = h.type;
+  // Changing the kind under existing entries would leave expense rows filed
+  // against an income head, so that option only exists while it is unused.
+  document.getElementById("hm-type-row").hidden = used > 0;
+  document.getElementById("hm-sub").textContent = used
+    ? used + (used === 1 ? " entry uses" : " entries use") + " this head — rename only."
+    : "Not used by any entry yet, so the kind can still change.";
+  document.getElementById("hm-err").textContent = "";
+  document.getElementById("head-modal").classList.add("show");
+}
+
+function closeHeadEdit(){
+  document.getElementById("head-modal").classList.remove("show");
+  editHeadId = null;
+}
+
+function saveHeadEdit(){
+  if(!editHeadId) return;
+  const cur  = ST.heads[editHeadId];
+  const err  = document.getElementById("hm-err");
+  const name = document.getElementById("hm-name").value.trim();
+  const type = document.getElementById("hm-type-row").hidden
+             ? cur.type
+             : document.getElementById("hm-type").value;
+
+  if(!name){ err.textContent = "Name cannot be empty."; return; }
+  const clash = headList(type).some(function(h){
+    return h.id !== editHeadId && h.name.toLowerCase() === name.toLowerCase();
+  });
+  if(clash){ err.textContent = "Another " + type + " head already has that name."; return; }
+
+  ST.heads[editHeadId] = {name:name, type:type};
+  touch("heads", editHeadId);
+  save(ST);
+  closeHeadEdit();
+  renderHeads(); renderHeadOptions(); renderRecurringForm();
+  renderLedger(); renderPeriodSel(); renderLedgerDash();
+  toast("✓ Head updated");
 }
 
 function addHead(){
@@ -2414,6 +2690,8 @@ function addEntry(type){
   const head = document.getElementById(pre+"-head").value;
   const amt  = Number(document.getElementById(pre+"-amt").value);
   const note = document.getElementById(pre+"-note").value.trim();
+  const subEl = document.getElementById(pre+"-sub");
+  const sub   = (subEl && subEl.value) || "";
   const byEl = document.getElementById(pre+"-by");
   const by   = ((byEl && byEl.value) || "").trim() || currentPerson();
 
@@ -2422,7 +2700,7 @@ function addEntry(type){
   if(!head){ toast("Add a head first"); return; }
   if(!isFinite(amt) || amt <= 0){ toast("Enter a valid amount"); return; }
 
-  addLedgerRow({date:date, type:type, head:head, amt:amt, note:note, by:by});
+  addLedgerRow({date:date, type:type, head:head, sub:sub, amt:amt, note:note, by:by});
   document.getElementById(pre+"-amt").value = "";
   document.getElementById(pre+"-note").value = "";
   renderLedger(); renderPeriodSel(); renderLedgerDash(); renderPeopleList();
@@ -2448,7 +2726,7 @@ function addLedgerRow(row){
   // Generated rows key off srcKey so every device agrees on the id.
   const id = row.srcKey ? hashId(row.srcKey)
                         : Date.now() + Math.floor(Math.random()*1000);
-  ST.ledger.unshift({id:id, date:row.date, type:row.type, head:row.head,
+  ST.ledger.unshift({id:id, date:row.date, type:row.type, head:row.head, sub:row.sub||"",
                      amt:Number(row.amt), note:row.note||"", by:row.by,
                      src: row.src || null, srcKey: row.srcKey || null,
                      createdBy: row.createdBy || currentPerson(),
@@ -2474,7 +2752,7 @@ function ledgerByYear(){
     const d = String(e.date||"");
     if(d.length < 7) return;
     const y = d.slice(0,4), ym = d.slice(0,7);
-    if(!out[y]) out[y] = {income:0, expense:0, months:{}, heads:{}, people:{}};
+    if(!out[y]) out[y] = {income:0, expense:0, months:{}, heads:{}, subs:{}, people:{}};
     const Y = out[y];
     if(!Y.months[ym]) Y.months[ym] = {income:0, expense:0, rows:[]};
 
@@ -2488,6 +2766,10 @@ function ledgerByYear(){
 
     if(!Y.heads[e.head]) Y.heads[e.head] = {income:0, expense:0};
     Y.heads[e.head][kind] += amt;
+    if(!Y.subs) Y.subs = {};
+    if(!Y.subs[e.head]) Y.subs[e.head] = {};
+    const sk = e.sub || "";
+    Y.subs[e.head][sk] = (Y.subs[e.head][sk] || 0) + amt;
 
     if(!Y.people[who]) Y.people[who] = {income:0, expense:0};
     Y.people[who][kind] += amt;
@@ -2503,7 +2785,16 @@ function toggleYear(y){
   if(c) c.classList.toggle("open", open);
 }
 
-function headBreakdown(Y, kind){
+function toggleHb(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const open = el.classList.toggle("open");
+  const c = document.getElementById(id + "-c");
+  if(c) c.classList.toggle("open", open);
+}
+
+function headBreakdown(Y, kind, scope){
+  scope = scope || "d";
   const ids = Object.keys(Y.heads).filter(function(h){ return Y.heads[h][kind] > 0; });
   if(!ids.length) return "";
   ids.sort(function(a,b){ return Y.heads[b][kind] - Y.heads[a][kind]; });
@@ -2511,10 +2802,38 @@ function headBreakdown(Y, kind){
   const rows = ids.map(function(h){
     const v = Y.heads[h][kind];
     const pct = total ? Math.round(v/total*100) : 0;
+
+    // Subhead split, collapsed until the head is tapped.
+    let subs = "", caret = "", click = "";
+    const sm = (Y.subs || {})[h];
+    if(sm){
+      const keys = Object.keys(sm).filter(function(k){ return k && sm[k] > 0 && subName(k); })
+                         .sort(function(a,b){ return sm[b] - sm[a]; });
+      if(keys.length){
+        const boxId = "hb_" + scope + "_" + kind + "_" + h;
+        const other = v - keys.reduce(function(a,k){ return a + sm[k]; }, 0);
+        subs = '<div class="hb-subs" id="' + boxId + '">'
+          + keys.map(function(k){
+              return '<div class="hb-sub"><span>&rsaquo; ' + esc(subName(k)) + '</span>'
+                + '<span>' + fmt(sm[k]) + ' &middot; ' + (v ? Math.round(sm[k]/v*100) : 0) + '%</span></div>';
+            }).join("")
+          + (other > 0
+              ? '<div class="hb-sub muted"><span>&rsaquo; unassigned</span><span>' + fmt(other)
+                + ' &middot; ' + (v ? Math.round(other/v*100) : 0) + '%</span></div>'
+              : "")
+          + '</div>';
+        caret = '<span class="hb-caret" id="' + boxId + '-c">&#8964;</span>'
+              + '<span class="hb-n">' + keys.length + '</span>';
+        click = ' onclick="toggleHb(\'' + boxId + '\')"';
+      }
+    }
+
     return '<div class="hb-row">'
-      + '<div class="hb-top"><span>' + esc(headName(h)) + '</span>'
+      + '<div class="hb-top' + (click ? " tap" : "") + '"' + click + '>'
+      +   '<span>' + esc(headName(h)) + caret + '</span>'
       +   '<span class="hb-val">' + fmt(v) + ' &middot; ' + pct + '%</span></div>'
       + '<div class="hb-track"><div class="hb-fill ' + kind + '" style="width:' + pct + '%"></div></div>'
+      + subs
       + '</div>';
   }).join("");
   return '<div class="hb-block"><div class="hb-title">'
@@ -2563,7 +2882,9 @@ function renderLedger(){
         return '<div class="lg-row">'
           + '<div class="lg-day">' + esc(dayLabel(e.date)) + '</div>'
           + '<div class="lg-main">'
-          +   '<div class="lg-head">' + esc(headName(e.head)) + '</div>'
+          +   '<div class="lg-head">' + esc(headName(e.head))
+          +     (e.sub && subName(e.sub) ? ' <span class="lg-sh">&rsaquo; ' + esc(subName(e.sub)) + '</span>' : '')
+          +     '</div>'
           +   '<div class="lg-sub"><span class="lg-by">' + esc(e.by || "Unknown") + '</span>'
           +     '<span class="lg-cb">added by ' + esc(e.createdBy || e.by || "Unknown")
           +       (e.createdAt ? ' &middot; ' + esc(stampLabel(e.createdAt)) : '') + '</span>'
@@ -2595,7 +2916,7 @@ function renderLedger(){
       +   '<div class="fw-chev' + (open ? " open" : "") + '" id="yr-chev-' + y + '">&#8964;</div>'
       + '</div>'
       + '<div class="yr-body' + (open ? " open" : "") + '" id="yr-body-' + y + '">'
-      +   headBreakdown(Y,"expense") + headBreakdown(Y,"income") + peopleBreakdown(Y)
+      +   headBreakdown(Y,"expense","y"+y) + headBreakdown(Y,"income","y"+y) + peopleBreakdown(Y)
       +   monthsHTML
       + '</div></div>';
   }).join("");
@@ -2645,13 +2966,16 @@ function entriesIn(year, month){
 }
 
 function sumUp(rows){
-  const out = {income:0, expense:0, heads:{}, people:{}, count:rows.length, top:null};
+  const out = {income:0, expense:0, heads:{}, subs:{}, people:{}, count:rows.length, top:null};
   rows.forEach(function(e){
     const amt = Number(e.amt)||0;
     const kind = e.type === "income" ? "income" : "expense";
     out[kind] += amt;
     if(!out.heads[e.head]) out.heads[e.head] = {income:0, expense:0};
     out.heads[e.head][kind] += amt;
+    if(!out.subs[e.head]) out.subs[e.head] = {};
+    const sk = e.sub || "";
+    out.subs[e.head][sk] = (out.subs[e.head][sk] || 0) + amt;
     const who = e.by || "Unknown";
     if(!out.people[who]) out.people[who] = {income:0, expense:0};
     out.people[who][kind] += amt;
@@ -2702,8 +3026,8 @@ function renderLedgerDash(){
     return;
   }
 
-  const bars = headBreakdown({heads:cur.heads}, "expense")
-             + headBreakdown({heads:cur.heads}, "income")
+  const bars = headBreakdown({heads:cur.heads, subs:cur.subs}, "expense", "d")
+             + headBreakdown({heads:cur.heads, subs:cur.subs}, "income", "d")
              + peopleBreakdown({people:cur.people});
 
   // Smart notes about the selected window.
@@ -2776,6 +3100,8 @@ function renderLedgerAll(){
   renderRecurringForm();
   renderHeads();
   renderHeadOptions();
+  renderSubheads();
+  fillSubs("ex"); fillSubs("in");
   renderPeriodSel();
   renderLedgerDash();
   renderLedger();
@@ -3386,6 +3712,7 @@ renderDash();
   try{ last = localStorage.getItem("sip_module"); }catch(e){}
   if(last && MODULES[last]) showModule(last); else goHome();
 })();
+enhanceSelects();
 updateLockUI();
 updateAuthGate();
 if(hasPin()) lockApp();
