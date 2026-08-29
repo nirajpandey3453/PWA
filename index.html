@@ -424,6 +424,7 @@ let gToken = null;
 let gUserName = null;
 let gUserPhoto = null;
 let gUserSub = null;
+let gTokenExp = 0;
 
 function plans(){ return DEFAULT_PLANS.map(p=>({...p,
   fund: ST.funds[p.id]||p.fund,
@@ -813,6 +814,51 @@ function exportExcel(){
   }
 }
 
+// ── SESSION ────────────────────────────────────────────────────────────────
+// The implicit flow hands back a ~1 hour access token and no refresh token.
+// Without persisting it, every page reload (and every PWA relaunch) wiped
+// gToken and looked exactly like a logout.
+const AUTH_KEY = "sip_auth";
+
+function saveSession(){
+  try{
+    localStorage.setItem(AUTH_KEY, JSON.stringify({
+      token: gToken, exp: gTokenExp,
+      name: gUserName, photo: gUserPhoto, sub: gUserSub
+    }));
+  }catch{}
+}
+
+function clearSession(){
+  try{ localStorage.removeItem(AUTH_KEY); }catch{}
+}
+
+function restoreSession(){
+  let a = null;
+  try{ a = JSON.parse(localStorage.getItem(AUTH_KEY)||"null"); }catch{}
+  if(!a || !a.token) return false;
+  if(!a.exp || Date.now() >= Number(a.exp)){ clearSession(); return false; }
+  gToken     = a.token;
+  gTokenExp  = Number(a.exp);
+  gUserName  = a.name  || null;
+  gUserPhoto = a.photo || null;
+  gUserSub   = a.sub   || null;
+  return true;
+}
+
+// Token died while the app was open — drop it and ask for a fresh login.
+function sessionExpired(){
+  gToken = null; gTokenExp = 0;
+  gUserName = null; gUserPhoto = null; gUserSub = null;
+  gFileId = null; clearTimeout(syncTimer);
+  clearSession();
+  updateLoginUI();
+  updateDriveStatus();
+  setSync("");
+  setSyncState(false,"Session khatam — dubara login karo");
+  toast("Session expire ho gaya — dubara login karo", 4000);
+}
+
 // ── GOOGLE DRIVE ───────────────────────────────────────────────────────────
 const CLIENT_ID = "260664555067-cv9pos03d69rgn6ckn0th2inb2ngdqqi.apps.googleusercontent.com";
 // drive.file : app sees only files it created, so an invited member must pick
@@ -826,7 +872,8 @@ const SCOPES = "https://www.googleapis.com/auth/drive.file profile email";
 
 function handleLogin(){
   if(gToken){
-    gToken = null; gUserName = null; gUserPhoto = null; gUserSub = null;
+    gToken = null; gUserName = null; gUserPhoto = null; gUserSub = null; gTokenExp = 0;
+    clearSession();
     gFileId = null; clearTimeout(syncTimer); setSync("");
     setSyncState(false,"Login karo");
     updateLoginUI();
@@ -849,7 +896,9 @@ function handleLogin(){
     if(e.origin !== window.location.origin) return;
     if(e.data && e.data.type==="google_token"){
       gToken = e.data.token;
+      gTokenExp = Number(e.data.exp) || 0;
       gUserName = e.data.name || "User";
+      saveSession();
       updateLoginUI();
       updateDriveStatus();
       fetchProfile();
@@ -866,14 +915,18 @@ function handleLogin(){
 
   const params = new URLSearchParams(hash.substring(1));
   const token = params.get("access_token");
+  // expires_in is seconds; keep a 60s margin so we never use a dying token
+  const exp = Date.now() + (Number(params.get("expires_in")||3600) - 60) * 1000;
 
   if(window.opener && window.opener !== window){
-    window.opener.postMessage({type:"google_token", token}, window.location.origin);
+    window.opener.postMessage({type:"google_token", token, exp}, window.location.origin);
     window.close();
     return;
   }
 
   gToken = token;
+  gTokenExp = exp;
+  saveSession();
   history.replaceState(null,"",window.location.pathname);
   updateLoginUI();
   updateDriveStatus();
@@ -887,11 +940,13 @@ async function fetchProfile(){
   try{
     const r = await fetch("https://www.googleapis.com/oauth2/v3/userinfo",
       {headers:{Authorization:"Bearer "+gToken}});
+    if(r.status === 401){ sessionExpired(); return; }
     if(!r.ok) return;
     const p = await r.json();
     gUserName  = p.given_name || p.name || p.email || "User";
     gUserPhoto = p.picture || null;
     gUserSub   = p.sub || null;
+    saveSession();
     updateLoginUI();
     updateDriveStatus();
     syncDown();
@@ -1127,6 +1182,7 @@ async function resolveFile(){
   const q = encodeURIComponent("name='"+SYNC_FILE+"' and trashed=false");
   const r = await fetch("https://www.googleapis.com/drive/v3/files?spaces=drive&fields=files(id)&q="+q,
     {headers:{Authorization:"Bearer "+gToken}});
+  if(r.status === 401){ sessionExpired(); throw new Error("unauthorized"); }
   if(!r.ok) throw new Error("search failed");
   const d = await r.json();
   const found = d.files && d.files[0] && d.files[0].id;
@@ -1167,6 +1223,7 @@ function syncPayload(){
 async function downloadRemote(){
   const r = await fetch("https://www.googleapis.com/drive/v3/files/"+gFileId+"?alt=media",
     {headers:{Authorization:"Bearer "+gToken}});
+  if(r.status === 401){ sessionExpired(); throw new Error("unauthorized"); }
   if(!r.ok) throw new Error("download failed");
   const txt = await r.text();
   if(!txt.trim()) return null;
@@ -1247,6 +1304,7 @@ async function uploadState(){
     headers:{Authorization:"Bearer "+gToken,"Content-Type":"application/json"},
     body: syncPayload()
   });
+  if(up.status === 401){ sessionExpired(); throw new Error("unauthorized"); }
   if(!up.ok) throw new Error("upload failed");
 }
 
@@ -1297,8 +1355,17 @@ document.addEventListener("visibilitychange", function(){
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 if("serviceWorker" in navigator){
+// A refresh should not look like a logout: reuse the stored token if it is
+// still inside its lifetime, then let fetchProfile() refresh name/photo/sync.
   navigator.serviceWorker.register("sw.js").catch(()=>{});
 }
+
+if(!gToken && restoreSession()){
+  updateLoginUI();
+  updateDriveStatus();
+  fetchProfile();
+}
+
 renderSummary();
 </script>
 </body>
