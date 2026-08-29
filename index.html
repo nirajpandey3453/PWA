@@ -16,7 +16,6 @@
 
 <!-- SheetJS for Excel -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://apis.google.com/js/api.js" async defer></script>
 
 <style>
 :root {
@@ -140,7 +139,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .share-list{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
 .share-chip{font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:3px 9px;color:var(--sub)}
 .topbar-actions{display:flex;align-items:center;gap:8px}
+.home-hi{font-size:20px;font-weight:700;margin:6px 0 3px}
+.home-sub{font-size:12.5px;color:var(--sub);margin-bottom:18px}
+.home-grid{display:flex;flex-direction:column;gap:13px}
+.home-tile{display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;width:100%;padding:20px 18px;border-radius:18px;border:1px solid var(--border);background:var(--card);cursor:pointer;color:var(--text)}
+.home-tile:active{transform:scale(0.99)}
+.home-tile.ledger{border-left:4px solid var(--teal)}
+.home-tile.invest{border-left:4px solid var(--gold)}
+.home-ico{font-size:32px;line-height:1}
+.home-t{font-size:17px;font-weight:700}
+.home-x{font-size:12px;color:var(--sub);line-height:1.45}
+.home-stat{font-size:11.5px;color:var(--muted);margin-top:5px;font-variant-numeric:tabular-nums}
 .lock-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;width:32px;height:32px;border-radius:50%;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0}
+.auth-gate{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(244,246,251,0.7);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
+.auth-gate.show{display:flex}
+.auth-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:26px 22px;max-width:330px;width:100%;text-align:center;box-shadow:0 14px 44px rgba(20,30,60,0.18)}
+.auth-logo{width:64px;height:64px;border-radius:16px;margin-bottom:12px}
+.auth-t{font-size:17px;font-weight:700;margin-bottom:6px}
+.auth-x{font-size:12.5px;color:var(--sub);line-height:1.55;margin-bottom:18px}
+.auth-btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;padding:13px;border-radius:13px;border:1px solid var(--border);background:#fff;color:#1a1a2e;font-size:14.5px;font-weight:600;cursor:pointer}
+.auth-btn:active{background:#F1F4F9}
+.auth-g{font-weight:800;color:#4285F4;font-size:16px}
 .lock-screen{position:fixed;inset:0;background:#1B2A4A;z-index:500;display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;color:#fff}
 .lock-screen.show{display:flex}
 .lock-logo{width:70px;height:70px;border-radius:18px;margin-bottom:14px}
@@ -166,6 +185,86 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
 .legend-name{flex:1;color:var(--text)}
 .legend-val{color:var(--sub);font-variant-numeric:tabular-nums}
+.month-item.locked{background:linear-gradient(0deg,rgba(0,0,0,0.015),rgba(0,0,0,0.015)),var(--card)}
+.badge-lock{background:#E8EBF0;color:#5A6577}
+.fin-row{display:flex;justify-content:center;padding:4px 12px 13px}
+.fin-btn{background:none;border:1px dashed var(--border);border-radius:10px;padding:8px 15px;font-size:12px;font-weight:600;color:var(--sub);cursor:pointer}
+.fin-btn.on{border-style:solid;border-color:var(--green);color:var(--green)}
+.check-toggle:disabled{opacity:0.5;cursor:not-allowed}
+.row-edit:disabled{opacity:0.22;cursor:not-allowed}
+.fw-head{display:flex;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;padding-bottom:7px;border-bottom:1px solid var(--border);margin-bottom:4px}
+.card-exp{border-left:3px solid #C62828}
+.card-inc{border-left:3px solid #1A7A4A}
+.btn-red-solid{width:100%;padding:14px;border-radius:14px;font-size:15px;font-weight:600;border:none;cursor:pointer;background:#C62828;color:#fff}
+.lgd-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.lgd-s{background:var(--bg);border-radius:10px;padding:9px 7px;text-align:center}
+.lgd-l{font-size:9.5px;color:var(--sub);margin-bottom:3px}
+.lgd-v{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.lg-form .form-label{margin-top:8px}
+.lg-f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lg-hint{font-size:11px;color:var(--sub);margin-top:9px;line-height:1.5}
+.head-group{margin-bottom:11px}
+.head-group-t{font-size:11px;font-weight:600;color:var(--sub);margin-bottom:6px}
+.head-chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;border-radius:12px;padding:3px 5px 3px 10px;margin:0 6px 6px 0;border:1px solid var(--border)}
+.head-chip.exp{background:rgba(198,40,40,0.07);color:#B3261E}
+.head-chip.inc{background:rgba(26,122,74,0.09);color:#1A7A4A}
+.head-chip button{background:none;border:none;font-size:14px;line-height:1;cursor:pointer;color:inherit;opacity:0.55;padding:0 3px}
+.head-none{font-size:11.5px;color:var(--muted)}
+.yr{border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.yr-hdr{display:flex;align-items:center;gap:10px;padding:11px 12px;cursor:pointer;background:var(--bg)}
+.yr-name{font-size:15px;font-weight:700;flex:1}
+.yr-sums{display:flex;gap:8px;font-size:11px;font-variant-numeric:tabular-nums;flex-wrap:wrap;justify-content:flex-end}
+.yr-sums .net{font-weight:700}
+.yr-sums .net.pos{color:#1A7A4A}
+.yr-sums .net.neg{color:#B3261E}
+.inc{color:#1A7A4A}
+.exp{color:#B3261E}
+.yr-body{display:none;padding:11px 12px 4px}
+.yr-body.open{display:block}
+.hb-block{margin-bottom:14px}
+.hb-title{font-size:11px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px}
+.hb-row{margin-bottom:9px}
+.hb-top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;gap:8px}
+.hb-val{color:var(--sub);font-variant-numeric:tabular-nums;white-space:nowrap}
+.hb-track{height:6px;background:var(--bg);border-radius:4px;overflow:hidden}
+.hb-fill{height:100%;border-radius:4px}
+.hb-fill.expense{background:#C62828}
+.hb-fill.income{background:#1A7A4A}
+.pp-row{display:flex;justify-content:space-between;font-size:12px;padding:5px 0;border-bottom:1px solid var(--border)}
+.pp-row:last-child{border-bottom:none}
+.pp-name{font-weight:600}
+.lg-month{margin-bottom:13px}
+.lg-month-hdr{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;font-weight:700;padding-bottom:6px;border-bottom:1px solid var(--border);margin-bottom:3px}
+.lg-month-sum{font-size:11px;font-weight:600;font-variant-numeric:tabular-nums}
+.lg-row{display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-bottom:1px solid var(--border)}
+.lg-row:last-child{border-bottom:none}
+.lg-day{font-size:10.5px;color:var(--muted);width:44px;flex-shrink:0;padding-top:2px;font-variant-numeric:tabular-nums}
+.lg-main{flex:1;min-width:0}
+.lg-head{font-size:12.5px;font-weight:600}
+.lg-sub{font-size:10.5px;color:var(--sub);margin-top:2px;display:flex;gap:6px;flex-wrap:wrap}
+.lg-by{background:var(--bg);border-radius:7px;padding:0 6px;font-weight:600}
+.lg-cb{color:var(--muted)}
+.lg-amt{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;padding-top:1px}
+.lg-del{background:none;border:none;color:var(--muted);font-size:16px;line-height:1;cursor:pointer;padding:0 2px;flex-shrink:0}
+.fw-item{border-bottom:1px solid var(--border)}
+.fw-item:last-of-type{border-bottom:none}
+.fw-row{display:flex;align-items:flex-start;gap:10px;padding:9px 0;cursor:pointer}
+.fw-chev{font-size:11px;color:var(--muted);transition:transform .18s;flex-shrink:0;align-self:center}
+.fw-chev.open{transform:rotate(180deg)}
+.fwm{display:none;padding:0 0 9px 2px}
+.fwm.open{display:block}
+.fwm-row{display:flex;justify-content:space-between;align-items:baseline;font-size:11.5px;color:var(--sub);padding:4px 0 4px 11px;border-left:2px solid var(--border)}
+.fwm-row span:last-child{font-variant-numeric:tabular-nums;font-weight:600;color:var(--text)}
+.fwm-empty{font-size:11px;color:var(--muted);padding:3px 0 7px 13px}
+.fw-main{flex:1;min-width:0}
+.fw-name{font-size:12.5px;font-weight:600;line-height:1.35}
+.fw-meta{font-size:10.5px;color:var(--sub);margin-top:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cat-chip{font-size:9.5px;padding:1.5px 6px;border-radius:8px;color:#fff;font-weight:600;white-space:nowrap}
+.fw-nums{text-align:right;flex-shrink:0}
+.fw-mo{font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.fw-inv{font-size:11px;color:var(--sub);margin-top:4px;font-variant-numeric:tabular-nums}
+.fw-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:12px;padding-top:11px;border-top:2px solid var(--border);font-size:13.5px;font-weight:700}
+.fw-total2{display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;font-size:11.5px;color:var(--sub);font-weight:600}
 .catbar{margin-bottom:12px}
 .catbar-top{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;margin-bottom:5px}
 .catbar-name{font-weight:600}
@@ -232,6 +331,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </head>
 <body>
 
+<div class="auth-gate" id="auth-gate">
+  <div class="auth-card">
+    <img class="auth-logo" src="icons/icon-192.png" alt="">
+    <div class="auth-t">Shree Laxmi Tracker</div>
+    <div class="auth-x">Sign in with Google to open the tracker. Your ledger and
+      investments load from the shared family file.</div>
+    <button class="auth-btn" onclick="handleLogin()">
+      <span class="auth-g">G</span> Sign in with Google
+    </button>
+  </div>
+</div>
+
 <div class="lock-screen" id="lock-screen">
   <img class="lock-logo" src="icons/icon-192.png" alt="">
   <div class="lock-title">Shree Laxmi Tracker</div>
@@ -285,6 +396,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="topbar-sub" id="topbar-sub">Sep 2026 – Aug 2031<span class="sync-pill" id="sync-pill"></span></div>
   </div>
   <div class="topbar-actions">
+  <button class="lock-btn" id="home-btn" onclick="goHome()" title="Home" hidden>🏠</button>
   <button class="lock-btn" id="lock-btn" onclick="openPinModal()" title="App lock">🔓</button>
   <button class="login-btn" id="login-btn" onclick="handleLogin()">
     <img id="login-photo" alt="" referrerpolicy="no-referrer" hidden>
@@ -296,7 +408,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <!-- SECTIONS -->
 <!-- SUMMARY -->
-<div class="section active" id="sec-dash">
+<div class="section" id="sec-dash">
   <div class="stat-grid">
     <div class="stat-card"><div class="stat-label">Invested so far</div><div class="stat-val teal" id="d-invested">₹0</div></div>
     <div class="stat-card"><div class="stat-label">Months done</div><div class="stat-val navy" id="d-months">0/60</div></div>
@@ -314,6 +426,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
     </div>
     <div class="legend" id="cat-legend"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Fund-wise Amounts</div>
+    <div id="fund-list"></div>
   </div>
 
   <div class="card">
@@ -382,6 +499,109 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div id="month-list"></div>
 </div>
 
+<datalist id="people-list"></datalist>
+
+<!-- HOME -->
+<div class="section active" id="sec-home">
+  <div class="home-hi" id="home-hi">Shree Laxmi Tracker</div>
+  <div class="home-sub">Pick what you want to work on.</div>
+  <div class="home-grid">
+    <button class="home-tile ledger" onclick="showModule('ledger')">
+      <span class="home-ico">🧾</span>
+      <span class="home-t">Monthly Ledger</span>
+      <span class="home-x">Income, expenses, heads and year-wise reports</span>
+      <span class="home-stat" id="home-lg"></span>
+    </button>
+    <button class="home-tile invest" onclick="showModule('invest')">
+      <span class="home-ico">📈</span>
+      <span class="home-t">Investment</span>
+      <span class="home-x">SIP tracker, funds, transfers and dashboard</span>
+      <span class="home-stat" id="home-iv"></span>
+    </button>
+  </div>
+</div>
+
+<!-- LEDGER: INSIGHTS -->
+<div class="section" id="sec-lgd">
+  <div class="card">
+    <div class="card-title">Insights</div>
+    <div class="lg-f2">
+      <div><label class="form-label">Year</label>
+        <select class="form-select" id="lgd-year" onchange="onPeriodChange()"></select></div>
+      <div><label class="form-label">Month</label>
+        <select class="form-select" id="lgd-month" onchange="onPeriodChange()"></select></div>
+    </div>
+    <div id="lgd-body" style="margin-top:13px"></div>
+  </div>
+</div>
+
+<!-- LEDGER: ADD -->
+<div class="section" id="sec-lgadd">
+  <div class="card card-exp">
+    <div class="card-title">Add Expense</div>
+    <div class="lg-f2">
+      <div><label class="form-label">Date</label>
+        <input class="form-input" type="date" id="ex-date"></div>
+      <div><label class="form-label">Amount (₹)</label>
+        <input class="form-input" type="number" inputmode="numeric" min="0" id="ex-amt" placeholder="0"></div>
+    </div>
+    <div class="lg-f2">
+      <div><label class="form-label">Head</label>
+        <select class="form-select" id="ex-head"></select></div>
+      <div><label class="form-label">Expense by</label>
+        <input class="form-input" id="ex-by" list="people-list" placeholder="Who paid"></div>
+    </div>
+    <label class="form-label">Note</label>
+    <input class="form-input" id="ex-note" placeholder="What was this for? (optional)">
+    <button class="btn btn-red-solid" style="margin-top:12px" onclick="addEntry('expense')">− Add Expense</button>
+  </div>
+
+  <div class="card card-inc">
+    <div class="card-title">Add Income</div>
+    <div class="lg-f2">
+      <div><label class="form-label">Date</label>
+        <input class="form-input" type="date" id="in-date"></div>
+      <div><label class="form-label">Amount (₹)</label>
+        <input class="form-input" type="number" inputmode="numeric" min="0" id="in-amt" placeholder="0"></div>
+    </div>
+    <div class="lg-f2">
+      <div><label class="form-label">Income type</label>
+        <select class="form-select" id="in-head"></select></div>
+      <div><label class="form-label">Income by</label>
+        <input class="form-input" id="in-by" list="people-list" placeholder="Who received"></div>
+    </div>
+    <label class="form-label">Note</label>
+    <input class="form-input" id="in-note" placeholder="Source or reference (optional)">
+    <button class="btn btn-green" style="margin-top:12px;width:100%;padding:14px;border-radius:14px;font-size:15px" onclick="addEntry('income')">+ Add Income</button>
+  </div>
+</div>
+
+<!-- LEDGER: HEADS -->
+<div class="section" id="sec-lgheads">
+  <div class="card">
+    <div class="card-title">Heads</div>
+    <div class="lg-f2">
+      <div><label class="form-label">New head</label>
+        <input class="form-input" id="hd-name" placeholder="e.g. Insurance"></div>
+      <div><label class="form-label">Kind</label>
+        <select class="form-select" id="hd-type">
+          <option value="expense">Expense</option>
+          <option value="income">Income</option>
+        </select></div>
+    </div>
+    <button class="btn-sm btn-outline" style="width:100%;margin-top:10px" onclick="addHead()">+ Add Head</button>
+    <div id="head-list" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<!-- LEDGER: LOG -->
+<div class="section" id="sec-lglog">
+  <div class="card">
+    <div class="card-title">Year-wise Log</div>
+    <div id="ledger-list"></div>
+  </div>
+</div>
+
 <!-- TRANSFER -->
 <div class="section" id="sec-transfer">
   <div class="card">
@@ -391,7 +611,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <span id="sync-state-text">Sign in</span>
     </div>
     <div class="sync-btns">
-      <button class="btn-sm btn-outline" onclick="connectSharedFile()">&#128279; Connect shared file</button>
+      <button class="btn-sm btn-outline" onclick="reconnectSharedFile()">&#128260; Re-scan Drive</button>
       <button class="btn-sm btn-outline" onclick="createSharedFile()">&#10133; New file</button>
     </div>
     <div class="share-row">
@@ -403,14 +623,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="sync-btns" style="margin-top:6px">
       <button class="btn-sm btn-outline" onclick="openInDrive()">&#128194; Open in Drive</button>
     </div>
-    <div class="sync-hint">Everyone shares one file. The first person creates it, then the others pick it once using "Shared file connect".</div>
+    <div class="sync-hint">Everyone uses one file. The first person taps "New file", then adds each family email below — after that the others just sign in and the app finds it on its own.</div>
   </div>
 
   <div class="card">
-    <div class="card-title">Record Transfer to Wife</div>
+    <div class="card-title">Record Transfer</div>
     <div class="drive-status ds-no" id="drive-status">
       <div class="ds-dot"></div>
       <span id="drive-status-text">Google Drive not connected — sign in</span>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Direction</label>
+      <select class="form-select" id="t-dir">
+        <option value="wife">Husband &rarr; Wife</option>
+        <option value="husband">Wife &rarr; Husband</option>
+      </select>
     </div>
     <div class="form-group">
       <label class="form-label">Date</label>
@@ -454,6 +681,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 <!-- FUNDS -->
 <div class="section" id="sec-funds">
+  <div class="card">
+    <div class="card-title">Ledger Link</div>
+    <div style="font-size:12px;color:var(--sub);line-height:1.55">
+      Ticking a SIP in the Tracker files it in the Ledger as an
+      <b>Investment</b> expense automatically. Use this once if you ticked
+      months before that link existed.
+    </div>
+    <button class="btn-sm btn-outline" style="width:100%;margin-top:11px" onclick="backfillSips()">
+      Post ticked SIPs to the Ledger
+    </button>
+  </div>
   <div class="card" style="margin-bottom:10px">
     <div style="font-size:13px;color:var(--sub);line-height:1.6">Rename a fund — it is remembered next time and carries through to the Excel export.</div>
   </div>
@@ -470,23 +708,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- BOTTOM NAV -->
-<nav class="bottom-nav">
-  <button class="nav-item active" onclick="showSec('dash',this)">
-    <span class="nav-icon">🧭</span><span>Dashboard</span>
-  </button>
-  <button class="nav-item" onclick="showSec('summary',this)">
-    <span class="nav-icon">📊</span><span>Summary</span>
-  </button>
-  <button class="nav-item" onclick="showSec('tracker',this)">
-    <span class="nav-icon">📅</span><span>Tracker</span>
-  </button>
-  <button class="nav-item" onclick="showSec('transfer',this)">
-    <span class="nav-icon">💸</span><span>Transfer</span>
-  </button>
-  <button class="nav-item" onclick="showSec('funds',this)">
-    <span class="nav-icon">✏️</span><span>Funds</span>
-  </button>
-</nav>
+<nav class="bottom-nav" id="nav" hidden></nav>
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
@@ -531,13 +753,17 @@ if(!ST.transfers) ST.transfers = [];
 if(!ST.funds)     ST.funds = {};
 if(!ST.amts)      ST.amts  = {};
 if(!ST.cats)      ST.cats  = {};
+if(!ST.locked)    ST.locked = {};
+if(!ST.heads)     ST.heads  = {};
+if(!ST.ledger)    ST.ledger = [];
 // meta[kind][key] = when that single field last changed on any device.
 // Merging per field (not per document) is what stops a stale device from
 // overwriting everything with one edit.
 if(!ST.meta)      ST.meta = {};
-["checks","funds","amts","cats","transfers","shares"].forEach(k=>{ if(!ST.meta[k]) ST.meta[k] = {}; });
+["checks","funds","amts","cats","locked","heads","transfers","ledger","shares"].forEach(k=>{ if(!ST.meta[k]) ST.meta[k] = {}; });
 if(!ST.tomb)      ST.tomb = {};
 if(!ST.tomb.transfers) ST.tomb.transfers = {};
+if(!ST.tomb.ledger)    ST.tomb.ledger    = {};
 if(!ST.shares)    ST.shares = {};
 if(!ST.meta.shares) ST.meta.shares = {};
 (function migrate(){
@@ -569,12 +795,26 @@ function plans(){ return DEFAULT_PLANS.map(p=>({...p,
 
 // Actual money in, counted per plan per ticked month — a partly-done month
 // still counts for the plans that were paid.
+function isLocked(mi){ return !!(ST.locked && ST.locked[mi]); }
+
+// A finalised month keeps the amounts it was finalised with, so editing a
+// plan later re-prices future months only — never recorded history.
+function amountFor(mi, p){
+  const L = ST.locked && ST.locked[mi];
+  if(L && L.amts && L.amts[p.id] != null) return Number(L.amts[p.id]);
+  return Number(p.amt);
+}
+
 function investedByPlan(){
   const out = {};
   plans().forEach(function(p){
-    let n = 0;
-    for(let m=0;m<MONTHS.length;m++) if(ST.checks[m+"_"+p.id]) n++;
-    out[p.id] = {plan:p, months:n, amount:n*Number(p.amt)};
+    let n = 0, amount = 0;
+    for(let m=0;m<MONTHS.length;m++){
+      if(!ST.checks[m+"_"+p.id]) continue;
+      n++;
+      amount += amountFor(m, p);
+    }
+    out[p.id] = {plan:p, months:n, amount:amount};
   });
   return out;
 }
@@ -602,6 +842,72 @@ function toast(msg,dur=2500){
 }
 
 // ── NAV ────────────────────────────────────────────────────────────────────
+// Two front doors: the ledger and the investment tracker each own a nav.
+const MODULES = {
+  ledger: {name:"Monthly Ledger", tabs:[
+    {id:"lgd",     icon:"📈",  label:"Insights"},
+    {id:"lgadd",   icon:"➕",  label:"Add"},
+    {id:"lgheads", icon:"🏷️", label:"Heads"},
+    {id:"lglog",   icon:"🧾",  label:"Log"}
+  ]},
+  invest: {name:"Investment", tabs:[
+    {id:"dash",     icon:"🧭", label:"Dashboard"},
+    {id:"summary",  icon:"📊", label:"Summary"},
+    {id:"tracker",  icon:"📅", label:"Tracker"},
+    {id:"transfer", icon:"💸", label:"Transfer"},
+    {id:"funds",    icon:"✏️", label:"Funds"}
+  ]}
+};
+
+let curModule = null;
+
+function showModule(key){
+  const mod = MODULES[key];
+  if(!mod) return;
+  curModule = key;
+  try{ localStorage.setItem("sip_module", key); }catch(e){}
+  const nav = document.getElementById("nav");
+  nav.innerHTML = mod.tabs.map(function(t,i){
+    return '<button class="nav-item' + (i===0?" active":"") + '" onclick="showSec(\'' + t.id + '\',this)">'
+      + '<span class="nav-icon">' + t.icon + '</span><span>' + t.label + '</span></button>';
+  }).join("");
+  nav.hidden = false;
+  document.getElementById("home-btn").hidden = false;
+  showSec(mod.tabs[0].id, nav.children[0]);
+}
+
+function goHome(){
+  curModule = null;
+  try{ localStorage.removeItem("sip_module"); }catch(e){}
+  document.querySelectorAll(".section").forEach(function(x){ x.classList.remove("active"); });
+  document.getElementById("sec-home").classList.add("active");
+  document.getElementById("nav").hidden = true;
+  document.getElementById("home-btn").hidden = true;
+  renderHome();
+  window.scrollTo(0,0);
+}
+
+// A line of live context on each tile so the home screen is not just a menu.
+function renderHome(){
+  const hi = document.getElementById("home-hi");
+  if(hi) hi.textContent = gUserName ? ("Hello, " + gUserName) : "Shree Laxmi Tracker";
+
+  const lg = document.getElementById("home-lg");
+  if(lg){
+    seedHeads();
+    const y = String(new Date().getFullYear());
+    const r = sumUp(entriesIn(y,""));
+    lg.textContent = r.count
+      ? y + ": +" + fmt(r.income) + " · −" + fmt(r.expense)
+      : "No entries yet";
+  }
+  const iv = document.getElementById("home-iv");
+  if(iv){
+    const done = completeMonths().filter(Boolean).length;
+    iv.textContent = fmt(totalInvested()) + " invested · " + done + "/" + MONTHS.length + " months";
+  }
+}
+
 function showSec(id,el){
   document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
   document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
@@ -610,6 +916,10 @@ function showSec(id,el){
   if(id==="dash")     renderDash();
   if(id==="summary")  renderSummary();
   if(id==="tracker")  renderTracker();
+  if(id==="lgd")      { seedHeads(); renderPeriodSel(); renderLedgerDash(); }
+  if(id==="lgadd")    renderLedgerAll();
+  if(id==="lgheads")  { seedHeads(); renderHeads(); }
+  if(id==="lglog")    renderLedger();
   if(id==="transfer") renderTransfer();
   if(id==="funds")    renderFunds();
 }
@@ -617,20 +927,25 @@ function showSec(id,el){
 // ── SUMMARY ────────────────────────────────────────────────────────────────
 function renderSummary(){
   const ps = plans();
+  const N = MONTHS.length;
   let done = 0;
-  for(let m=0;m<60;m++){
+  for(let m=0;m<N;m++){
     if(ps.every(p=>ST.checks[m+"_"+p.id])) done++;
   }
-  const invested = done * monthlyTotal();
+  // Count every ticked plan-month at that plan is own amount. The old
+  // "complete months x current monthly total" showed zero for a month where
+  // six of seven plans were paid, and re-priced past months whenever an
+  // amount was edited.
+  const invested = totalInvested();
   const transferred = ST.transfers.reduce((a,t)=>a+Number(t.amt),0);
-  const pct = Math.round(done/60*100);
+  const pct = Math.round(done/N*100);
 
   document.getElementById("s-invested").textContent = fmt(invested);
-  document.getElementById("s-months").textContent = done+"/60";
+  document.getElementById("s-months").textContent = done+"/"+N;
   document.getElementById("s-transfer").textContent = fmt(transferred);
-  document.getElementById("s-next").textContent = done<60 ? MONTHS[done] : "Complete! 🎉";
+  document.getElementById("s-next").textContent = done<N ? MONTHS[done] : "Complete! 🎉";
   document.getElementById("prog").style.width = pct+"%";
-  document.getElementById("prog-lbl").textContent = pct+"% — "+done+"/60 months";
+  document.getElementById("prog-lbl").textContent = pct+"% — "+done+"/"+N+" months";
 
   const mt = monthlyTotal();
   document.getElementById("plan-card-title").textContent = "Monthly Plan — "+fmt(mt);
@@ -681,8 +996,9 @@ function renderTracker(){
     const isLTCG = mo.startsWith("Mar");
     const isGlide = mi===28;
 
+    const lk = isLocked(mi);
     const div = document.createElement("div");
-    div.className = "month-item";
+    div.className = "month-item" + (lk ? " locked" : "");
 
     let badgeHTML = allDone
       ? `<span class="month-badge badge-done">✓ Done</span>`
@@ -691,6 +1007,7 @@ function renderTracker(){
         : `<span class="month-badge badge-pending">Pending</span>`;
 
     if(isLTCG) badgeHTML += `<span class="month-badge badge-ltcg">⭐ LTCG</span>`;
+    if(lk)     badgeHTML += `<span class="month-badge badge-lock">🔒</span>`;
 
     div.innerHTML = `
       <div class="month-hdr" onclick="toggleMonth(${mi},this)">
@@ -715,13 +1032,19 @@ function renderTracker(){
               </div>
             </div>
             <div class="check-amt">${fmt(p.amt)}</div>
-            <button class="row-edit" title="Edit fund / amount"
+            <button class="row-edit" ${lk?'disabled':''}
+              title="${lk?'Finalised — unlock this month first':'Edit fund / amount'}"
               onclick="event.stopPropagation();openEdit('${p.id}')">&#9998;</button>
-            <button class="check-toggle ${ST.checks[mi+'_'+p.id]?'done':''}"
+            <button class="check-toggle ${ST.checks[mi+'_'+p.id]?'done':''}" ${lk?'disabled':''}
               onclick="toggleCheck(${mi},'${p.id}',this)">
               ${ST.checks[mi+'_'+p.id]?'✓':''}
             </button>
           </div>`).join("")}
+        <div class="fin-row">
+          <button class="fin-btn ${lk?'on':''}" onclick="toggleFinalise(${mi})">
+            ${lk?'🔒 Finalised — tap to unlock':'🔓 Finalise this month'}
+          </button>
+        </div>
       </div>`;
     ml.appendChild(div);
   });
@@ -734,11 +1057,36 @@ function toggleMonth(mi,hdr){
   chev.classList.toggle("open",open);
 }
 
+function toggleFinalise(mi){
+  if(isLocked(mi)){
+    if(!confirm("Unlock "+MONTHS[mi]+"?\n\nIts ticks become editable again, and its amounts go back to following the current plan values.")) return;
+    ST.locked[mi] = null;
+    touch("locked", mi);
+    save(ST);
+    refreshAll();
+    toast(MONTHS[mi]+" unlocked");
+    return;
+  }
+  const snap = {};
+  plans().forEach(function(p){ snap[p.id] = Number(p.amt); });
+  ST.locked[mi] = {at: Date.now(), amts: snap};
+  touch("locked", mi);
+  save(ST);
+  refreshAll();
+  toast("✓ "+MONTHS[mi]+" finalised");
+}
+
 function toggleCheck(mi,pid,btn){
+  if(isLocked(mi)){ toast(MONTHS[mi]+" is finalised — unlock it to make changes"); return; }
   const key = mi+"_"+pid;
   ST.checks[key] = !ST.checks[key];
   touch("checks",key);
+  // Mirror the payment into the ledger as an Investment expense.
+  const pl = plans().filter(function(p){ return p.id === pid; })[0];
+  if(ST.checks[key]){ if(pl) postSip(mi, pl); }
+  else unpostSip(key);
   save(ST);
+  if(document.getElementById("ledger-list")){ renderLedger(); renderPeriodSel(); renderLedgerDash(); }
   btn.classList.toggle("done",ST.checks[key]);
   btn.textContent = ST.checks[key]?"✓":"";
   const ps = plans();
@@ -752,6 +1100,7 @@ function toggleCheck(mi,pid,btn){
       : `<span class="month-badge badge-pending">Pending</span>`;
   const mo = MONTHS[mi];
   if(mo.startsWith("Mar")) html += `<span class="month-badge badge-ltcg">⭐ LTCG</span>`;
+  if(isLocked(mi)) html += `<span class="month-badge badge-lock">🔒</span>`;
   html += `<div class="chevron open" id="chev-${mi}">&#8964;</div>`;
   hdr.innerHTML = html;
   if(allDone) toast("✓ "+MONTHS[mi]+" complete!");
@@ -776,49 +1125,143 @@ function addTransfer(){
   document.getElementById("err-amt").style.display = (amt&&Number(amt)>0)?"none":"block"; if(!amt||Number(amt)<=0) ok=false;
   if(!ok) return;
 
+  const dirEl = document.getElementById("t-dir");
+  const dir   = dirEl ? dirEl.value : "wife";
+  const to    = (dir === "husband") ? "Husband" : "Wife";
+  const from  = (dir === "husband") ? "Wife" : "Husband";
+
+  // Mirror the transfer into the receiver's ledger as income, and keep the
+  // ledger row id so deleting the transfer removes that entry too.
+  const lgId = addLedgerRow({
+    date: date, type: "income", head: ensureTransferHead(), amt: Number(amt),
+    by: to, note: "Transfer from " + from + " via " + mode + (note ? " — " + note : "")
+  });
+
   const tid = Date.now();
-  ST.transfers.unshift({id:tid,date,amt:Number(amt),mode,note:note||"Transfer to wife"});
+  ST.transfers.unshift({id:tid, date:date, amt:Number(amt), mode:mode, dir:dir, lgId:lgId,
+                        note: note || ("Transfer to " + to)});
   touch("transfers",tid);
   save(ST);
   document.getElementById("t-amt").value="";
   document.getElementById("t-note").value="";
   renderTransferLog();
-  toast("✓ Transfer saved!");
+  if(document.getElementById("ledger-list")){ renderLedger(); renderPeriodSel(); renderLedgerDash(); }
+  toast("✓ Transfer saved and added to " + to + "'s income");
 }
 
 function delTransfer(id){
-  if(!confirm("Delete this transfer?")) return;
+  if(!confirm("Delete this transfer?\n\nIts matching income entry in the ledger goes too.")) return;
+  const row = ST.transfers.filter(function(t){ return t.id===id; })[0];
+  if(row && row.lgId){
+    ST.ledger = ST.ledger.filter(function(e){ return e.id !== row.lgId; });
+    ST.tomb.ledger[row.lgId] = Date.now();
+  }
   ST.transfers = ST.transfers.filter(t=>t.id!==id);
   ST.tomb.transfers[id] = Date.now();
   save(ST);
   renderTransferLog();
+  if(document.getElementById("ledger-list")){ renderLedger(); renderPeriodSel(); renderLedgerDash(); }
   toast("Transfer deleted");
+}
+
+function toggleTYear(y){
+  const bd = document.getElementById("tyr-body-"+y);
+  const ch = document.getElementById("tyr-chev-"+y);
+  if(!bd) return;
+  const open = bd.classList.toggle("open");
+  if(ch) ch.classList.toggle("open", open);
+}
+
+// Transfers grouped year > month, with a per-year rollup.
+function transfersByYear(){
+  const out = {};
+  (ST.transfers||[]).forEach(function(t){
+    const d = String(t.date||"");
+    if(d.length < 7) return;
+    const y = d.slice(0,4), ym = d.slice(0,7);
+    if(!out[y]) out[y] = {total:0, wife:0, husband:0, months:{}};
+    if(!out[y].months[ym]) out[y].months[ym] = {total:0, rows:[]};
+    const amt = Number(t.amt)||0;
+    out[y].total += amt;
+    out[y][t.dir === "husband" ? "husband" : "wife"] += amt;
+    out[y].months[ym].total += amt;
+    out[y].months[ym].rows.push(t);
+  });
+  return out;
 }
 
 function renderTransferLog(){
   const log = document.getElementById("transfer-log");
+  if(!log) return;
+  const grand = (ST.transfers||[]).reduce(function(a,t){ return a+Number(t.amt); },0);
+  const tot = document.getElementById("t-total");
+  if(tot) tot.textContent = fmt(grand);
+
   if(!ST.transfers.length){
-    log.innerHTML='<div class="empty">No records yet</div>';
-    document.getElementById("t-total").textContent="₹0";
+    log.innerHTML = '<div class="empty">No records yet</div>';
     return;
   }
-  const total = ST.transfers.reduce((a,t)=>a+Number(t.amt),0);
-  document.getElementById("t-total").textContent = fmt(total);
-  log.innerHTML = ST.transfers.map(t=>`
-    <div class="log-item">
-      <div class="log-info">
-        <div class="log-date">${t.date}</div>
-        <div class="log-note">${t.note}</div>
-        <div class="log-mode">${t.mode}</div>
-      </div>
-      <div class="log-right">
-        <div class="log-amt">${fmt(t.amt)}</div>
-        <button class="btn-red" onclick="delTransfer(${t.id})">🗑</button>
-      </div>
-    </div>`).join("");
+
+  const data = transfersByYear();
+  const years = Object.keys(data).sort().reverse();
+  const thisYear = String(new Date().getFullYear());
+
+  log.innerHTML = years.map(function(y){
+    const Y = data[y];
+    const months = Object.keys(Y.months).sort().reverse();
+    const open = (y === thisYear || years.length === 1);
+    const avg = Math.round(Y.total / months.length);
+    let big = months[0];
+    months.forEach(function(m){ if(Y.months[m].total > Y.months[big].total) big = m; });
+
+    const stats = '<div class="lgd-stats" style="margin-bottom:12px">'
+      + '<div class="lgd-s"><div class="lgd-l">Sent</div><div class="lgd-v">'+fmt(Y.total)+'</div></div>'
+      + '<div class="lgd-s"><div class="lgd-l">To Wife</div><div class="lgd-v">'+fmt(Y.wife)+'</div></div>'
+      + '<div class="lgd-s"><div class="lgd-l">To Husband</div><div class="lgd-v">'+fmt(Y.husband)+'</div></div>'
+      + '<div class="lgd-s"><div class="lgd-l">Avg / month</div><div class="lgd-v">'+fmt(avg)+'</div></div>'
+      + '</div>'
+      + '<div class="ins info"><div class="ins-ico">📅</div><div>'
+      +   '<div class="ins-t">Heaviest month: '+monthLabel(big)+'</div>'
+      +   '<div class="ins-x">'+fmt(Y.months[big].total)+' across '+Y.months[big].rows.length
+      +     ' transfer(s), out of '+months.length+' active month(s) in '+y+'.</div></div></div>';
+
+    const monthsHTML = months.map(function(ym){
+      const M = Y.months[ym];
+      const rows = M.rows.slice().sort(function(x,z){
+        if(x.date === z.date) return Number(z.id) - Number(x.id);
+        return x.date < z.date ? 1 : -1;
+      }).map(function(t){
+        return '<div class="lg-row">'
+          + '<div class="lg-day">' + esc(dayLabel(t.date)) + '</div>'
+          + '<div class="lg-main">'
+          +   '<div class="lg-head">to ' + (t.dir === "husband" ? "Husband" : "Wife") + '</div>'
+          +   '<div class="lg-sub"><span class="lg-by">' + esc(t.mode || "") + '</span>'
+          +     (t.note ? '<span class="lg-note">' + esc(t.note) + '</span>' : '')
+          +   '</div>'
+          + '</div>'
+          + '<div class="lg-amt">' + fmt(t.amt) + '</div>'
+          + '<button class="lg-del" onclick="delTransfer(' + t.id + ')" title="Delete">&times;</button>'
+          + '</div>';
+      }).join("");
+
+      return '<div class="lg-month">'
+        + '<div class="lg-month-hdr"><span>' + monthLabel(ym) + '</span>'
+        +   '<span class="lg-month-sum">' + fmt(M.total) + '</span></div>'
+        + rows + '</div>';
+    }).join("");
+
+    return '<div class="yr">'
+      + '<div class="yr-hdr" onclick="toggleTYear(\'' + y + '\')">'
+      +   '<div class="yr-name">' + y + '</div>'
+      +   '<div class="yr-sums"><span>' + fmt(Y.total) + '</span></div>'
+      +   '<div class="fw-chev' + (open ? " open" : "") + '" id="tyr-chev-' + y + '">&#8964;</div>'
+      + '</div>'
+      + '<div class="yr-body' + (open ? " open" : "") + '" id="tyr-body-' + y + '">'
+      +   stats + monthsHTML
+      + '</div></div>';
+  }).join("");
 }
 
-// ── FUND EDIT ──────────────────────────────────────────────────────────────
 function renderFunds(){
   ["H","W","D"].forEach(owner=>{
     const elId = "fe-"+owner.toLowerCase();
@@ -909,6 +1352,7 @@ function refreshAll(){
   renderDash();
   renderTracker();
   renderTransferLog();
+  if(document.getElementById("ledger-list")) renderLedger();
   renderShares();
   if(document.getElementById("fe-h")) renderFunds();
   open.forEach(id=>{
@@ -1032,14 +1476,13 @@ function sessionExpired(){
 
 // ── GOOGLE DRIVE ───────────────────────────────────────────────────────────
 const CLIENT_ID = "260664555067-cv9pos03d69rgn6ckn0th2inb2ngdqqi.apps.googleusercontent.com";
-// drive.file : app sees only files it created, so an invited member must pick
-//              the shared file once via the Picker. Non-sensitive scope, no
-//              Google verification needed.
-// drive      : app finds the shared file by itself for everyone, no Picker
-//              step at all. RESTRICTED scope — fine while the app stays in
-//              Testing with family added as test users, but publishing it
-//              would require Google verification.
-const SCOPES = "https://www.googleapis.com/auth/drive.file profile email";
+// Full "drive" scope, deliberately. Under drive.file the app can only see
+// files it created FOR THAT USER, so a family member the file was shared with
+// still could not read it — Drive permission is not app authorisation.
+// This is a RESTRICTED scope: the app must stay in Testing mode with each
+// family member added under Audience > Test users. Publishing it would
+// require Google verification.
+const SCOPES = "https://www.googleapis.com/auth/drive profile email";
 
 function handleLogin(){
   if(gToken){
@@ -1125,6 +1568,12 @@ async function fetchProfile(){
   }catch(e){ /* keep the fallback label */ }
 }
 
+// No token, no app: blur everything behind a sign-in prompt.
+function updateAuthGate(){
+  const g = document.getElementById("auth-gate");
+  if(g) g.classList.toggle("show", !gToken);
+}
+
 function updateLoginUI(){
   const btn  = document.getElementById("login-btn");
   const img  = document.getElementById("login-photo");
@@ -1143,6 +1592,7 @@ function updateLoginUI(){
     img.hidden = true; img.removeAttribute("src");
     icon.hidden = false; icon.textContent = "G";
   }
+  updateAuthGate();
 }
 
 function updateDriveStatus(){
@@ -1222,13 +1672,8 @@ async function saveToGoogleDrive(){
 
 // ── DRIVE AUTO-SYNC ────────────────────────────────────────────────────────
 const SYNC_FILE = "shreelaxmi-data.json";
-// Google Picker needs an API key + the project number. Create the key at
-// Console > APIs & Services > Credentials > Create credentials > API key,
-// and enable both "Google Picker API" and "Google Drive API" for the project.
-const PICKER_API_KEY = "YOUR_PICKER_API_KEY";
-const APP_ID = "260664555067";
 let gFileId = null, syncTimer = null, gSyncing = false, gPendingSync = false;
-let pickerReady = false;
+let gDupes = 0, gPendingSave = false;
 
 function fileIdKey(){ return "sip_file_" + (gUserSub || "anon"); }
 
@@ -1253,42 +1698,13 @@ async function checkFile(id){
   }catch(e){ return false; }
 }
 
-// ── GOOGLE PICKER ──────────────────────────────────────────────────────────
-function loadPicker(cb){
-  if(pickerReady) return cb();
-  if(typeof gapi === "undefined"){ toast("Picker failed to load — reload the page"); return; }
-  gapi.load("picker", function(){ pickerReady = true; cb(); });
-}
-
-function connectSharedFile(){
+// Forget the file this device latched onto and search again — the escape
+// hatch if a device ends up pointed at the wrong copy.
+function reconnectSharedFile(){
   if(!gToken){ toast("Sign in with Google first"); return; }
-  if(PICKER_API_KEY === "YOUR_PICKER_API_KEY"){
-    toast("Picker API key is not set", 4000);
-    return;
-  }
-  loadPicker(function(){
-    const view = new google.picker.DocsView(google.picker.ViewId.DOCS)
-      .setMimeTypes("application/json")
-      .setIncludeFolders(false)
-      .setSelectFolderEnabled(false);
-    const picker = new google.picker.PickerBuilder()
-      .setOAuthToken(gToken)
-      .setDeveloperKey(PICKER_API_KEY)
-      .setAppId(APP_ID)
-      .addView(view)
-      .addView(new google.picker.DocsView(google.picker.ViewId.DOCS).setOwnedByMe(false))
-      .setCallback(pickerCallback)
-      .build();
-    picker.setVisible(true);
-  });
-}
-
-function pickerCallback(data){
-  if(!data || data.action !== google.picker.Action.PICKED) return;
-  const doc = data.docs && data.docs[0];
-  if(!doc) return;
-  rememberFile(doc.id);
-  toast("✓ Shared file connected");
+  gFileId = null;
+  try{ localStorage.removeItem(fileIdKey()); }catch{}
+  toast("Looking for the shared file...");
   syncDown();
 }
 
@@ -1358,9 +1774,18 @@ function setSync(t){
 // Debounced — every save() queues an upload 1.5s later.
 function scheduleSync(){
   if(!gToken) return;
+  gPendingSave = true;
   clearTimeout(syncTimer);
   setSync("saving…");
   syncTimer = setTimeout(syncNow, 1500);
+}
+
+// Closing or backgrounding the app must not strand a queued upload.
+function flushSync(){
+  if(!gPendingSave || !gToken || !gFileId || gSyncing) return;
+  clearTimeout(syncTimer);
+  syncTimer = null;
+  syncNow();
 }
 
 // Find the one shared file: remembered id first, then anything this account
@@ -1374,14 +1799,18 @@ async function resolveFile(){
     if(await checkFile(saved)){ gFileId = saved; return saved; }
     try{ localStorage.removeItem(fileIdKey()); }catch{}
   }
+  // Oldest first: if someone accidentally made a second copy, the original
+  // shared file is the one everybody should converge on.
   const q = encodeURIComponent("name='"+SYNC_FILE+"' and trashed=false");
-  const r = await fetch("https://www.googleapis.com/drive/v3/files?spaces=drive&fields=files(id)&q="+q,
+  const r = await fetch("https://www.googleapis.com/drive/v3/files"
+    + "?spaces=drive&orderBy=createdTime&fields=files(id,ownedByMe,createdTime)&q="+q,
     {headers:{Authorization:"Bearer "+gToken}});
   if(r.status === 401){ sessionExpired(); throw new Error("unauthorized"); }
   if(!r.ok) throw new Error("search failed");
   const d = await r.json();
-  const found = d.files && d.files[0] && d.files[0].id;
-  if(found){ rememberFile(found); return found; }
+  const files = (d && d.files) || [];
+  gDupes = files.length;
+  if(files.length){ rememberFile(files[0].id); return files[0].id; }
   return null;
 }
 
@@ -1408,7 +1837,8 @@ async function createSharedFile(){
 function syncPayload(){
   return JSON.stringify({
     checks: ST.checks, transfers: ST.transfers,
-    funds: ST.funds, amts: ST.amts, cats: ST.cats, shares: ST.shares,
+    funds: ST.funds, amts: ST.amts, cats: ST.cats, locked: ST.locked,
+    heads: ST.heads, ledger: ST.ledger, shares: ST.shares,
     meta: ST.meta, tomb: ST.tomb,
     updatedAt: ST.updatedAt || 0
   });
@@ -1437,7 +1867,10 @@ function mergeField(kind, rem, out){
     const a = Number(lt[k]||0), b = Number(rt[k]||0);
     const takeRemote = (k in rv) && (b > a || !(k in lv));
     if(takeRemote){
-      if(lv[k] !== rv[k]) changed = true;
+      const same = (lv[k] === rv[k]) ||
+        (lv[k] && rv[k] && typeof lv[k] === "object" && typeof rv[k] === "object" &&
+         JSON.stringify(lv[k]) === JSON.stringify(rv[k]));
+      if(!same) changed = true;
       out.val[k] = rv[k];
     } else {
       out.val[k] = lv[k];
@@ -1447,8 +1880,9 @@ function mergeField(kind, rem, out){
   return changed;
 }
 
-// Transfers are rows, not fields: union by id, then apply delete tombstones.
-function mergeTransfers(rem){
+// Row lists (transfers, ledger) merge by id: union both sides, newest stamp
+// wins per row, then delete tombstones are applied.
+function mergeRows(kind, rem){
   const rows = {}, ts = {};
   const take = function(arr, meta){
     (arr||[]).forEach(function(t){
@@ -1456,23 +1890,24 @@ function mergeTransfers(rem){
       if(!(t.id in rows) || w > ts[t.id]){ rows[t.id] = t; ts[t.id] = w; }
     });
   };
-  take(ST.transfers, ST.meta.transfers);
-  take(rem && rem.transfers, rem && rem.meta && rem.meta.transfers);
+  take(ST[kind], ST.meta[kind]);
+  take(rem && rem[kind], rem && rem.meta && rem.meta[kind]);
 
-  const tomb = Object.assign({}, (rem && rem.tomb && rem.tomb.transfers) || {});
-  Object.keys(ST.tomb.transfers).forEach(function(id){
-    tomb[id] = Math.max(Number(tomb[id]||0), Number(ST.tomb.transfers[id]||0));
+  const mine = (ST.tomb && ST.tomb[kind]) || {};
+  const tomb = Object.assign({}, (rem && rem.tomb && rem.tomb[kind]) || {});
+  Object.keys(mine).forEach(function(id){
+    tomb[id] = Math.max(Number(tomb[id]||0), Number(mine[id]||0));
   });
   Object.keys(tomb).forEach(function(id){
     if(Number(tomb[id]) >= Number(ts[id]||0)) delete rows[id];
   });
 
-  const before = JSON.stringify(ST.transfers.map(function(t){return t.id;}));
+  const before = JSON.stringify((ST[kind]||[]).map(function(t){return t.id;}));
   const list = Object.keys(rows).map(function(k){return rows[k];})
                      .sort(function(a,b){return Number(b.id)-Number(a.id);});
-  ST.meta.transfers = ts;
-  ST.tomb.transfers = tomb;
-  ST.transfers = list;
+  ST.meta[kind] = ts;
+  ST.tomb[kind] = tomb;
+  ST[kind] = list;
   return JSON.stringify(list.map(function(t){return t.id;})) !== before;
 }
 
@@ -1481,13 +1916,14 @@ function applyMerge(rem){
   if(!rem) return false;
   try{ localStorage.setItem("sip_backup", JSON.stringify(ST)); }catch{}
   let changed = false;
-  ["checks","funds","amts","cats","shares"].forEach(function(kind){
+  ["checks","funds","amts","cats","locked","heads","shares"].forEach(function(kind){
     const out = {val:{}, ts:{}};
     if(mergeField(kind, rem, out)) changed = true;
     ST[kind] = out.val;
     ST.meta[kind] = out.ts;
   });
-  if(mergeTransfers(rem)) changed = true;
+  if(mergeRows("transfers", rem)) changed = true;
+  if(mergeRows("ledger", rem))    changed = true;
   ST.updatedAt = Math.max(Number(ST.updatedAt||0), Number(rem.updatedAt||0));
   try{ localStorage.setItem("sip_state_v2", JSON.stringify(ST)); }catch{}
   return changed;
@@ -1513,8 +1949,11 @@ async function syncNow(){
     const rem = await downloadRemote();
     const changed = applyMerge(rem);
     await uploadState();
+    gPendingSave = false;
     setSync("synced");
-    setSyncState(true,"Synced with shared file");
+    setSyncState(true, gDupes > 1
+      ? "Synced — but "+gDupes+" copies of the file exist, delete the extras in Drive"
+      : "Synced with shared file");
     if(changed){ refreshAll(); toast("✓ Family data updated"); }
   }catch(e){
     setSync("sync off");
@@ -1545,8 +1984,11 @@ async function syncDown(){
 // Keep devices converging without anyone hitting refresh.
 setInterval(function(){ if(gToken && gFileId && !gSyncing) syncNow(); }, 60000);
 document.addEventListener("visibilitychange", function(){
-  if(!document.hidden && gToken && gFileId && !gSyncing) syncNow();
+  if(document.hidden) flushSync();
+  else if(gToken && gFileId && !gSyncing) syncNow();
 });
+window.addEventListener("pagehide", flushSync);
+window.addEventListener("beforeunload", flushSync);
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 if("serviceWorker" in navigator){
@@ -1559,6 +2001,584 @@ if(!gToken && restoreSession()){
   updateLoginUI();
   updateDriveStatus();
   fetchProfile();
+}
+
+// ── MONTHLY LEDGER ─────────────────────────────────────────────────────────
+// Heads are user-defined buckets, each either an expense or an income type.
+// Entries are dated rows pointing at a head, stamped with whoever logged them.
+// Everything here rides the shared Drive file.
+const MON_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+const DEFAULT_HEADS = [
+  {id:"e_groceries", name:"Groceries",     type:"expense"},
+  {id:"e_rent",      name:"Rent / EMI",    type:"expense"},
+  {id:"e_utilities", name:"Utilities",     type:"expense"},
+  {id:"e_transport", name:"Transport",     type:"expense"},
+  {id:"e_education", name:"Education",     type:"expense"},
+  {id:"e_medical",   name:"Medical",       type:"expense"},
+  {id:"e_other",     name:"Other",         type:"expense"},
+  {id:"i_salary",    name:"Salary",        type:"income"},
+  {id:"i_business",  name:"Business",      type:"income"},
+  {id:"i_rent",      name:"Rent Received", type:"income"},
+  {id:"i_interest",  name:"Interest",      type:"income"},
+  {id:"i_dividend",  name:"Dividend",      type:"income"},
+  {id:"i_transfer",  name:"Transfer",      type:"income"},
+  {id:"i_other",     name:"Other Income",  type:"income"}
+];
+
+// Recorded transfers post themselves here, so the head must exist even for
+// users whose heads were seeded before this head was introduced.
+function ensureTransferHead(){
+  if(!ST.heads["i_transfer"]){
+    ST.heads["i_transfer"] = {name:"Transfer", type:"income"};
+    touch("heads","i_transfer");
+  }
+  return "i_transfer";
+}
+
+// Ticking a SIP posts an expense here, so the money shows up in the ledger.
+function ensureInvestHead(){
+  if(!ST.heads["e_investment"]){
+    ST.heads["e_investment"] = {name:"Investment", type:"expense"};
+    touch("heads","e_investment");
+  }
+  return "e_investment";
+}
+
+const OWNER_NAME = {H:"Husband", W:"Wife", D:"Daughter"};
+
+// A tracker month has no day, so file the entry on the 1st.
+function sipDate(mi){
+  const p = String(MONTHS[mi]).split(" ");
+  const m = (MON_NUM[p[0]] || 0) + 1;
+  return p[1] + "-" + (m < 10 ? "0" : "") + m + "-01";
+}
+
+// Rows created by the tracker carry srcKey, so un-ticking can find them again
+// without keeping a separate synced index.
+function postSip(mi, p){
+  const key = mi + "_" + p.id;
+  if((ST.ledger||[]).some(function(e){ return e.srcKey === key; })) return;
+  addLedgerRow({
+    date: sipDate(mi), type: "expense", head: ensureInvestHead(),
+    amt: amountFor(mi, p), by: OWNER_NAME[p.owner] || currentPerson(),
+    note: p.label + " — " + p.fund,
+    src: "sip", srcKey: key
+  });
+}
+
+function unpostSip(key){
+  const hit = (ST.ledger||[]).filter(function(e){ return e.srcKey === key; });
+  if(!hit.length) return;
+  hit.forEach(function(e){ ST.tomb.ledger[e.id] = Date.now(); });
+  ST.ledger = ST.ledger.filter(function(e){ return e.srcKey !== key; });
+}
+
+// One-off catch-up for ticks made before the tracker started posting.
+function backfillSips(){
+  const ps = plans();
+  let n = 0;
+  for(let m=0;m<MONTHS.length;m++){
+    for(let i=0;i<ps.length;i++){
+      const key = m + "_" + ps[i].id;
+      if(!ST.checks[key]) continue;
+      if((ST.ledger||[]).some(function(e){ return e.srcKey === key; })) continue;
+      postSip(m, ps[i]);
+      n++;
+    }
+  }
+  if(!n){ toast("Every ticked SIP is already in the ledger"); return; }
+  save(ST);
+  if(document.getElementById("ledger-list")){ renderLedger(); renderPeriodSel(); renderLedgerDash(); }
+  toast("✓ Posted " + n + " SIP payment(s) to the ledger", 4000);
+}
+
+let lgYear = "", lgMonth = "";   // "" on month means the whole year
+
+// Fixed ids, so two devices seeding independently produce the same heads and
+// the merge collapses them instead of creating duplicates.
+function seedHeads(){
+  if(Object.keys(ST.heads).length) return;
+  DEFAULT_HEADS.forEach(function(h){
+    ST.heads[h.id] = {name:h.name, type:h.type};
+    if(ST.meta.heads[h.id] == null) ST.meta.heads[h.id] = 1;
+  });
+  save(ST);   // otherwise the defaults never reach Drive
+}
+
+function headList(type){
+  return Object.keys(ST.heads)
+    .filter(function(id){ return ST.heads[id] && (!type || ST.heads[id].type === type); })
+    .map(function(id){ return {id:id, name:ST.heads[id].name, type:ST.heads[id].type}; })
+    .sort(function(a,b){ return a.name.localeCompare(b.name); });
+}
+
+function headName(id){
+  const h = ST.heads[id];
+  return h ? h.name : "(removed head)";
+}
+
+// Whoever is signed in owns the entry by default.
+function currentPerson(){ return gUserName || gUserEmail || "Me"; }
+
+// Everyone we already know about: the signed-in user, anyone who has logged an
+// entry, and anyone the shared file was shared with.
+function knownPeople(){
+  const set = {};
+  set[currentPerson()] = 1;
+  (ST.ledger||[]).forEach(function(e){ if(e.by) set[e.by] = 1; });
+  Object.keys(ST.shares||{}).forEach(function(m){ if(ST.shares[m]) set[m] = 1; });
+  return Object.keys(set).sort();
+}
+
+function renderPeopleList(){
+  const dl = document.getElementById("people-list");
+  if(!dl) return;
+  dl.innerHTML = knownPeople().map(function(n){
+    return '<option value="' + esc(n) + '"></option>';
+  }).join("");
+}
+
+function monthLabel(ym){
+  const p = String(ym).split("-");
+  return (MON_SHORT[Number(p[1])-1] || "?") + " " + p[0];
+}
+
+// When the row was actually keyed in, as opposed to the date it is filed under.
+function stampLabel(ms){
+  if(!ms) return "";
+  const d = new Date(Number(ms));
+  if(isNaN(d.getTime())) return "";
+  const hh = d.getHours(), mm = ("0"+d.getMinutes()).slice(-2);
+  const ap = hh >= 12 ? "pm" : "am";
+  const h12 = ((hh + 11) % 12) + 1;
+  return d.getDate()+" "+MON_SHORT[d.getMonth()]+" "+d.getFullYear()+", "+h12+":"+mm+" "+ap;
+}
+
+function dayLabel(d){
+  const p = String(d).split("-");
+  return p[2] + " " + (MON_SHORT[Number(p[1])-1] || "");
+}
+
+// ── heads ──────────────────────────────────────────────────────────────────
+function fillHeadSelect(elId, type){
+  const sel = document.getElementById(elId);
+  if(!sel) return;
+  const list = headList(type);
+  const keep = sel.value;
+  sel.innerHTML = list.length
+    ? list.map(function(h){ return '<option value="'+h.id+'">'+esc(h.name)+'</option>'; }).join("")
+    : '<option value="">No heads yet — add one below</option>';
+  if(keep) sel.value = keep;
+}
+
+function renderHeadOptions(){
+  fillHeadSelect("ex-head","expense");
+  fillHeadSelect("in-head","income");
+}
+
+function renderHeads(){
+  const el = document.getElementById("head-list");
+  if(!el) return;
+  const mk = function(type,label){
+    const list = headList(type);
+    return '<div class="head-group"><div class="head-group-t">'+label+'</div>'
+      + (list.length
+          ? list.map(function(h){
+              return '<span class="head-chip '+(type==="income"?"inc":"exp")+'">'
+                + esc(h.name)
+                + '<button onclick="delHead(\'' + h.id + '\')" title="Remove">&times;</button></span>';
+            }).join("")
+          : '<span class="head-none">None yet</span>')
+      + '</div>';
+  };
+  el.innerHTML = mk("expense","Expense heads") + mk("income","Income types");
+}
+
+function addHead(){
+  const nameEl = document.getElementById("hd-name");
+  const name = (nameEl.value||"").trim();
+  const type = document.getElementById("hd-type").value;
+  if(!name){ toast("Enter a head name"); return; }
+  if(headList(type).some(function(h){ return h.name.toLowerCase() === name.toLowerCase(); })){
+    toast("That head already exists"); return;
+  }
+  const id = (type === "income" ? "i_" : "e_") + Date.now().toString(36);
+  ST.heads[id] = {name:name, type:type};
+  touch("heads", id);
+  save(ST);
+  nameEl.value = "";
+  renderHeads(); renderHeadOptions();
+  toast("✓ Head added");
+}
+
+function delHead(id){
+  const used = (ST.ledger||[]).some(function(e){ return e.head === id; });
+  if(!confirm(used
+      ? "This head is used by existing entries.\n\nRemove it anyway? Those entries will show it as removed."
+      : "Remove this head?")) return;
+  ST.heads[id] = null;          // null, not delete, so the removal can merge
+  touch("heads", id);
+  save(ST);
+  renderHeads(); renderHeadOptions(); renderLedger(); renderLedgerDash();
+  toast("Head removed");
+}
+
+// ── entries: one form each for expense and income ──────────────────────────
+function addEntry(type){
+  const pre  = (type === "income" ? "in" : "ex");
+  const date = document.getElementById(pre+"-date").value;
+  const head = document.getElementById(pre+"-head").value;
+  const amt  = Number(document.getElementById(pre+"-amt").value);
+  const note = document.getElementById(pre+"-note").value.trim();
+  const byEl = document.getElementById(pre+"-by");
+  const by   = ((byEl && byEl.value) || "").trim() || currentPerson();
+
+  if(!date){ toast("Pick a date"); return; }
+  if(!head){ toast("Add a head first"); return; }
+  if(!isFinite(amt) || amt <= 0){ toast("Enter a valid amount"); return; }
+
+  addLedgerRow({date:date, type:type, head:head, amt:amt, note:note, by:by});
+  document.getElementById(pre+"-amt").value = "";
+  document.getElementById(pre+"-note").value = "";
+  renderLedger(); renderPeriodSel(); renderLedgerDash(); renderPeopleList();
+  toast(type === "income" ? "✓ Income added" : "✓ Expense added");
+}
+
+// Single insertion point, so recorded transfers and manual entries agree.
+function addLedgerRow(row){
+  const id = Date.now() + Math.floor(Math.random()*1000);
+  ST.ledger.unshift({id:id, date:row.date, type:row.type, head:row.head,
+                     amt:Number(row.amt), note:row.note||"", by:row.by,
+                     src: row.src || null, srcKey: row.srcKey || null,
+                     createdBy: row.createdBy || currentPerson(),
+                     createdAt: row.createdAt || Date.now()});
+  touch("ledger", id);
+  save(ST);
+  return id;
+}
+
+function delEntry(id){
+  if(!confirm("Delete this entry?")) return;
+  ST.ledger = ST.ledger.filter(function(e){ return e.id !== id; });
+  ST.tomb.ledger[id] = Date.now();
+  save(ST);
+  renderLedger(); renderPeriodSel(); renderLedgerDash();
+  toast("Entry deleted");
+}
+
+// ── year-wise rollup ───────────────────────────────────────────────────────
+function ledgerByYear(){
+  const out = {};
+  (ST.ledger||[]).forEach(function(e){
+    const d = String(e.date||"");
+    if(d.length < 7) return;
+    const y = d.slice(0,4), ym = d.slice(0,7);
+    if(!out[y]) out[y] = {income:0, expense:0, months:{}, heads:{}, people:{}};
+    const Y = out[y];
+    if(!Y.months[ym]) Y.months[ym] = {income:0, expense:0, rows:[]};
+
+    const amt  = Number(e.amt) || 0;
+    const kind = e.type === "income" ? "income" : "expense";
+    const who  = e.by || "Unknown";
+
+    Y[kind] += amt;
+    Y.months[ym][kind] += amt;
+    Y.months[ym].rows.push(e);
+
+    if(!Y.heads[e.head]) Y.heads[e.head] = {income:0, expense:0};
+    Y.heads[e.head][kind] += amt;
+
+    if(!Y.people[who]) Y.people[who] = {income:0, expense:0};
+    Y.people[who][kind] += amt;
+  });
+  return out;
+}
+
+function toggleYear(y){
+  const b = document.getElementById("yr-body-"+y);
+  const c = document.getElementById("yr-chev-"+y);
+  if(!b) return;
+  const open = b.classList.toggle("open");
+  if(c) c.classList.toggle("open", open);
+}
+
+function headBreakdown(Y, kind){
+  const ids = Object.keys(Y.heads).filter(function(h){ return Y.heads[h][kind] > 0; });
+  if(!ids.length) return "";
+  ids.sort(function(a,b){ return Y.heads[b][kind] - Y.heads[a][kind]; });
+  const total = ids.reduce(function(a,h){ return a + Y.heads[h][kind]; }, 0);
+  const rows = ids.map(function(h){
+    const v = Y.heads[h][kind];
+    const pct = total ? Math.round(v/total*100) : 0;
+    return '<div class="hb-row">'
+      + '<div class="hb-top"><span>' + esc(headName(h)) + '</span>'
+      +   '<span class="hb-val">' + fmt(v) + ' &middot; ' + pct + '%</span></div>'
+      + '<div class="hb-track"><div class="hb-fill ' + kind + '" style="width:' + pct + '%"></div></div>'
+      + '</div>';
+  }).join("");
+  return '<div class="hb-block"><div class="hb-title">'
+    + (kind === "income" ? "Income by type" : "Expense by head")
+    + '</div>' + rows + '</div>';
+}
+
+function peopleBreakdown(Y){
+  const names = Object.keys(Y.people);
+  if(!names.length) return "";
+  names.sort(function(a,b){ return Y.people[b].expense - Y.people[a].expense; });
+  return '<div class="hb-block"><div class="hb-title">By person</div>'
+    + names.map(function(n){
+        const p = Y.people[n];
+        return '<div class="pp-row"><span class="pp-name">' + esc(n) + '</span>'
+          + '<span><span class="inc">+' + fmt(p.income) + '</span> '
+          + '<span class="exp">−' + fmt(p.expense) + '</span></span></div>';
+      }).join("")
+    + '</div>';
+}
+
+function renderLedger(){
+  const el = document.getElementById("ledger-list");
+  if(!el) return;
+  const data = ledgerByYear();
+  const years = Object.keys(data).sort().reverse();
+
+  if(!years.length){
+    el.innerHTML = '<div class="empty">No entries yet. Add your first one above.</div>';
+    return;
+  }
+  const thisYear = String(new Date().getFullYear());
+
+  el.innerHTML = years.map(function(y){
+    const Y = data[y];
+    const net = Y.income - Y.expense;
+    const months = Object.keys(Y.months).sort().reverse();
+    const open = (y === thisYear || years.length === 1);
+
+    const monthsHTML = months.map(function(ym){
+      const M = Y.months[ym];
+      const rows = M.rows.slice().sort(function(a,b){
+        if(a.date === b.date) return Number(b.id) - Number(a.id);
+        return a.date < b.date ? 1 : -1;
+      }).map(function(e){
+        return '<div class="lg-row">'
+          + '<div class="lg-day">' + esc(dayLabel(e.date)) + '</div>'
+          + '<div class="lg-main">'
+          +   '<div class="lg-head">' + esc(headName(e.head)) + '</div>'
+          +   '<div class="lg-sub"><span class="lg-by">' + esc(e.by || "Unknown") + '</span>'
+          +     '<span class="lg-cb">added by ' + esc(e.createdBy || e.by || "Unknown")
+          +       (e.createdAt ? ' &middot; ' + esc(stampLabel(e.createdAt)) : '') + '</span>'
+          +     (e.note ? '<span class="lg-note">' + esc(e.note) + '</span>' : '')
+          +   '</div>'
+          + '</div>'
+          + '<div class="lg-amt ' + (e.type === "income" ? "inc" : "exp") + '">'
+          +   (e.type === "income" ? "+" : "−") + fmt(e.amt) + '</div>'
+          + '<button class="lg-del" onclick="delEntry(' + e.id + ')" title="Delete">&times;</button>'
+          + '</div>';
+      }).join("");
+
+      return '<div class="lg-month">'
+        + '<div class="lg-month-hdr"><span>' + monthLabel(ym) + '</span>'
+        +   '<span class="lg-month-sum"><span class="inc">+' + fmt(M.income) + '</span> '
+        +   '<span class="exp">−' + fmt(M.expense) + '</span></span></div>'
+        + rows + '</div>';
+    }).join("");
+
+    return '<div class="yr">'
+      + '<div class="yr-hdr" onclick="toggleYear(\'' + y + '\')">'
+      +   '<div class="yr-name">' + y + '</div>'
+      +   '<div class="yr-sums">'
+      +     '<span class="inc">+' + fmt(Y.income) + '</span>'
+      +     '<span class="exp">−' + fmt(Y.expense) + '</span>'
+      +     '<span class="net ' + (net >= 0 ? "pos" : "neg") + '">'
+      +        (net >= 0 ? "+" : "−") + fmt(Math.abs(net)) + '</span>'
+      +   '</div>'
+      +   '<div class="fw-chev' + (open ? " open" : "") + '" id="yr-chev-' + y + '">&#8964;</div>'
+      + '</div>'
+      + '<div class="yr-body' + (open ? " open" : "") + '" id="yr-body-' + y + '">'
+      +   headBreakdown(Y,"expense") + headBreakdown(Y,"income") + peopleBreakdown(Y)
+      +   monthsHTML
+      + '</div></div>';
+  }).join("");
+}
+
+// ── period-selectable insights ─────────────────────────────────────────────
+function ledgerYears(){
+  const set = {};
+  (ST.ledger||[]).forEach(function(e){
+    const y = String(e.date||"").slice(0,4);
+    if(y.length === 4) set[y] = 1;
+  });
+  const now = String(new Date().getFullYear());
+  set[now] = 1;
+  return Object.keys(set).sort().reverse();
+}
+
+function renderPeriodSel(){
+  const ys = document.getElementById("lgd-year");
+  const ms = document.getElementById("lgd-month");
+  if(!ys || !ms) return;
+  const years = ledgerYears();
+  if(!lgYear || years.indexOf(lgYear) === -1) lgYear = years[0];
+  ys.innerHTML = years.map(function(y){
+    return '<option value="'+y+'"'+(y===lgYear?' selected':'')+'>'+y+'</option>';
+  }).join("");
+  let out = '<option value=""'+(lgMonth===""?' selected':'')+'>Whole year</option>';
+  for(let i=0;i<12;i++){
+    const mm = (i+1<10?"0":"")+(i+1);
+    out += '<option value="'+mm+'"'+(lgMonth===mm?' selected':'')+'>'+MON_SHORT[i]+'</option>';
+  }
+  ms.innerHTML = out;
+}
+
+function onPeriodChange(){
+  lgYear  = document.getElementById("lgd-year").value;
+  lgMonth = document.getElementById("lgd-month").value;
+  renderLedgerDash();
+}
+
+// Entries inside an arbitrary year/month window.
+function entriesIn(year, month){
+  const pre = month ? (year + "-" + month) : year;
+  return (ST.ledger||[]).filter(function(e){
+    return String(e.date||"").indexOf(pre) === 0;
+  });
+}
+
+function sumUp(rows){
+  const out = {income:0, expense:0, heads:{}, people:{}, count:rows.length, top:null};
+  rows.forEach(function(e){
+    const amt = Number(e.amt)||0;
+    const kind = e.type === "income" ? "income" : "expense";
+    out[kind] += amt;
+    if(!out.heads[e.head]) out.heads[e.head] = {income:0, expense:0};
+    out.heads[e.head][kind] += amt;
+    const who = e.by || "Unknown";
+    if(!out.people[who]) out.people[who] = {income:0, expense:0};
+    out.people[who][kind] += amt;
+    if(kind === "expense" && (!out.top || amt > out.top.amt)) out.top = e;
+  });
+  return out;
+}
+
+// The period immediately before the selected one, for a like-for-like delta.
+function previousPeriod(){
+  if(lgMonth){
+    let y = Number(lgYear), m = Number(lgMonth) - 1;
+    if(m < 1){ m = 12; y -= 1; }
+    return {year:String(y), month:(m<10?"0":"")+m,
+            label:MON_SHORT[m-1]+" "+y};
+  }
+  return {year:String(Number(lgYear)-1), month:"", label:String(Number(lgYear)-1)};
+}
+
+function deltaChip(now, was){
+  if(!was) return "";
+  const pct = Math.round((now-was)/was*100);
+  if(pct === 0) return '<span class="dl flat">same as before</span>';
+  const up = pct > 0;
+  return '<span class="dl '+(up?"up":"down")+'">'+(up?"▲":"▼")+' '+Math.abs(pct)+'% vs '+"previous"+'</span>';
+}
+
+function renderLedgerDash(){
+  const el = document.getElementById("lgd-body");
+  if(!el) return;
+
+  const cur  = sumUp(entriesIn(lgYear, lgMonth));
+  const prevP = previousPeriod();
+  const prev = sumUp(entriesIn(prevP.year, prevP.month));
+  const net  = cur.income - cur.expense;
+  const rate = cur.income ? Math.round(net/cur.income*100) : 0;
+
+  const stats = '<div class="lgd-stats">'
+    + '<div class="lgd-s"><div class="lgd-l">Income</div><div class="lgd-v inc">'+fmt(cur.income)+'</div></div>'
+    + '<div class="lgd-s"><div class="lgd-l">Expense</div><div class="lgd-v exp">'+fmt(cur.expense)+'</div></div>'
+    + '<div class="lgd-s"><div class="lgd-l">Net</div><div class="lgd-v '+(net>=0?"inc":"exp")+'">'
+    +   (net<0?"−":"")+fmt(Math.abs(net))+'</div></div>'
+    + '<div class="lgd-s"><div class="lgd-l">Saved</div><div class="lgd-v">'+(cur.income?rate+"%":"—")+'</div></div>'
+    + '</div>';
+
+  if(!cur.count){
+    el.innerHTML = stats + '<div class="empty">No entries in this period.</div>';
+    return;
+  }
+
+  const bars = headBreakdown({heads:cur.heads}, "expense")
+             + headBreakdown({heads:cur.heads}, "income")
+             + peopleBreakdown({people:cur.people});
+
+  // Smart notes about the selected window.
+  const notes = [];
+  const eIds = Object.keys(cur.heads).filter(function(h){ return cur.heads[h].expense > 0; })
+                     .sort(function(a,b){ return cur.heads[b].expense - cur.heads[a].expense; });
+  if(eIds.length){
+    const shareOf = cur.expense ? Math.round(cur.heads[eIds[0]].expense/cur.expense*100) : 0;
+    notes.push({i:"🥇", h:"Biggest head: "+headName(eIds[0]),
+      x:fmt(cur.heads[eIds[0]].expense)+" — "+shareOf+"% of everything spent in this period."});
+  }
+  if(!cur.income && cur.expense){
+    notes.push({i:"🔴", h:"Spent more than earned",
+      x:"No income recorded in this period, but "+fmt(cur.expense)+" went out."});
+  } else if(cur.income){
+    notes.push(rate >= 20
+      ? {i:"🌱", h:"Saved "+rate+"% of income", x:"Net "+fmt(net)+" kept aside this period."}
+      : rate >= 0
+        ? {i:"⚖️", h:"Saved "+rate+"% of income", x:"Thin margin — "+fmt(net)+" left after expenses."}
+        : {i:"🔴", h:"Spent more than earned", x:"Short by "+fmt(Math.abs(net))+" this period."});
+  }
+  if(prev.expense){
+    const d = cur.expense - prev.expense;
+    const p = Math.round(d/prev.expense*100);
+    notes.push({i: d>0 ? "📈" : "📉",
+      h:"Spending "+(d>0?"up":"down")+" "+Math.abs(p)+"% vs "+prevP.label,
+      x:fmt(prev.expense)+" → "+fmt(cur.expense)+"."});
+  }
+  if(cur.top){
+    notes.push({i:"💥", h:"Largest single expense",
+      x:fmt(cur.top.amt)+" on "+headName(cur.top.head)+" ("+dayLabel(cur.top.date)+")"
+        +(cur.top.note?" — "+cur.top.note:"")+"."});
+  }
+  if(lgMonth === "" && cur.expense){
+    const ms = {};
+    entriesIn(lgYear,"").forEach(function(e){
+      if(e.type === "income") return;
+      const k = String(e.date).slice(0,7);
+      ms[k] = (ms[k]||0) + (Number(e.amt)||0);
+    });
+    const keys = Object.keys(ms);
+    if(keys.length){
+      const avg = Math.round(cur.expense/keys.length);
+      keys.sort(function(a,b){ return ms[b]-ms[a]; });
+      notes.push({i:"📊", h:"Averaging "+fmt(avg)+" a month",
+        x:"Across "+keys.length+" month(s) with activity. Heaviest was "+monthLabel(keys[0])+" at "+fmt(ms[keys[0]])+"."});
+    }
+  }
+
+  const notesHTML = '<div class="hb-block"><div class="hb-title">Insights</div>'
+    + notes.map(function(n){
+        return '<div class="ins info"><div class="ins-ico">'+n.i+'</div><div>'
+          + '<div class="ins-t">'+esc(n.h)+'</div><div class="ins-x">'+esc(n.x)+'</div></div></div>';
+      }).join("") + '</div>';
+
+  el.innerHTML = stats + notesHTML + bars;
+}
+
+function renderLedgerAll(){
+  seedHeads();
+  const today = new Date().toISOString().slice(0,10);
+  ["ex-date","in-date"].forEach(function(id){
+    const d = document.getElementById(id);
+    if(d && !d.value) d.value = today;
+  });
+  ["ex-by","in-by"].forEach(function(id){
+    const b = document.getElementById(id);
+    if(b && !b.value) b.value = currentPerson();
+  });
+  renderPeopleList();
+  renderHeads();
+  renderHeadOptions();
+  renderPeriodSel();
+  renderLedgerDash();
+  renderLedger();
 }
 
 // ── DASHBOARD ──────────────────────────────────────────────────────────────
@@ -1701,6 +2721,63 @@ function renderDonut(cats, total){
   svg.innerHTML = out;
 }
 
+// One row per fund: monthly cost, total in, and a month-by-month breakdown.
+// Amounts come from amountFor(), so a finalised month shows what it was
+// actually finalised at rather than today's plan value.
+function toggleFund(pid){
+  const body = document.getElementById("fwm-"+pid);
+  const chev = document.getElementById("fwc-"+pid);
+  if(!body) return;
+  const open = body.classList.toggle("open");
+  if(chev) chev.classList.toggle("open", open);
+}
+
+function renderFundList(){
+  const el = document.getElementById("fund-list");
+  if(!el) return;
+  const inv = investedByPlan();
+  let totMo = 0, totInv = 0;
+
+  const rows = plans().map(function(p){
+    const d = inv[p.id];
+    totMo  += Number(p.amt);
+    totInv += d.amount;
+
+    let months = "";
+    for(let m=0;m<MONTHS.length;m++){
+      if(!ST.checks[m+"_"+p.id]) continue;
+      months += '<div class="fwm-row"><span>' + MONTHS[m] + (isLocked(m) ? ' &#128274;' : '')
+             +  '</span><span>' + fmt(amountFor(m,p)) + '</span></div>';
+    }
+    if(!months) months = '<div class="fwm-empty">Nothing paid yet.</div>';
+
+    return '<div class="fw-item">'
+      + '<div class="fw-row" onclick="toggleFund(\'' + p.id + '\')">'
+      +   '<div class="fw-main">'
+      +     '<div class="fw-name">' + esc(p.fund) + '</div>'
+      +     '<div class="fw-meta">'
+      +       '<span class="cat-chip" style="background:' + (CAT_COLOR[p.cat]||"#8895A7") + '">' + esc(p.cat||"Uncategorised") + '</span>'
+      +       '<span>' + esc(p.label) + '</span>'
+      +       '<span>&middot;</span><span>' + d.months + ' of ' + MONTHS.length + ' paid</span>'
+      +     '</div>'
+      +   '</div>'
+      +   '<div class="fw-nums">'
+      +     '<div class="fw-mo">' + fmt(p.amt) + '</div>'
+      +     '<div class="fw-inv">' + fmt(d.amount) + '</div>'
+      +   '</div>'
+      +   '<div class="fw-chev" id="fwc-' + p.id + '">&#8964;</div>'
+      + '</div>'
+      + '<div class="fwm" id="fwm-' + p.id + '">' + months + '</div>'
+      + '</div>';
+  }).join("");
+
+  el.innerHTML =
+      '<div class="fw-head"><div style="flex:1">Fund</div><div>Monthly / Invested</div></div>'
+    + rows
+    + '<div class="fw-total"><span>Monthly total</span><span>' + fmt(totMo) + '</span></div>'
+    + '<div class="fw-total2"><span>Invested so far</span><span>' + fmt(totInv) + '</span></div>';
+}
+
 function renderDash(){
   const cats = byCategory();
   const mt = monthlyTotal();
@@ -1714,6 +2791,7 @@ function renderDash(){
 
   renderDonut(cats, mt);
   document.getElementById("donut-val").textContent = shortMoney(mt);
+  renderFundList();
 
   const active = CATS.filter(function(c){ return cats[c] && cats[c].monthly > 0; });
 
@@ -1941,7 +3019,13 @@ document.addEventListener("visibilitychange", function(){
 
 renderSummary();
 renderDash();
+(function(){
+  let last = null;
+  try{ last = localStorage.getItem("sip_module"); }catch(e){}
+  if(last && MODULES[last]) showModule(last); else goHome();
+})();
 updateLockUI();
+updateAuthGate();
 if(hasPin()) lockApp();
 </script>
 </body>
