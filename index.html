@@ -687,9 +687,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="lg-f2">
       <div><label class="form-label">Head</label>
-        <select class="form-select" id="rc-head"></select></div>
+        <select class="form-select" id="rc-head" onchange="fillSubs('rc')"></select></div>
       <div><label class="form-label">Amount (₹)</label>
         <input class="form-input" type="number" inputmode="numeric" min="0" id="rc-amt" placeholder="0"></div>
+    </div>
+    <div class="lg-f2">
+      <div style="grid-column:1 / span 2">
+        <label class="form-label">Subhead <span class="opt">optional</span></label>
+        <select class="form-select" id="rc-sub"></select></div>
     </div>
     <div class="lg-f2">
       <div><label class="form-label">For</label>
@@ -3159,6 +3164,7 @@ function runRecurring(){
           date: ymDay(ym, r.day),
           type: head.type,
           head: r.head,
+          sub:  r.sub || "",
           amt:  Number(r.amt),
           by:   r.by,
           note: r.note || (head.name + " (recurring)"),
@@ -3176,6 +3182,7 @@ function runRecurring(){
 
 function addRecurring(){
   const head = document.getElementById("rc-head").value;
+  const sub  = (document.getElementById("rc-sub") || {}).value || "";
   const amt  = Number(document.getElementById("rc-amt").value);
   const by   = document.getElementById("rc-by").value;
   const day  = Number(document.getElementById("rc-day").value);
@@ -3189,7 +3196,7 @@ function addRecurring(){
   if(!isFinite(day) || day < 1 || day > 31){ toast("Day must be 1 to 31"); return; }
 
   const id = "r_" + Date.now().toString(36);
-  ST.recurring[id] = {head:head, amt:amt, by:by, day:day, from:from, to:"",
+  ST.recurring[id] = {head:head, sub:sub, amt:amt, by:by, day:day, from:from, to:"",
                       note:note, active:true};
   touch("recurring", id);
   save(ST);
@@ -3232,7 +3239,9 @@ function renderRecurring(){
     const off = r.active === false;
     return '<div class="rec-row' + (off ? " off" : "") + '">'
       + '<div class="rec-main">'
-      +   '<div class="rec-t">' + esc(nm) + ' &middot; ' + fmt(r.amt) + '</div>'
+      +   '<div class="rec-t">' + esc(nm)
+      +     (r.sub && subName(r.sub) ? ' <span class="lg-sh">&rsaquo; ' + esc(subName(r.sub)) + '</span>' : '')
+      +     ' &middot; ' + fmt(r.amt) + '</div>'
       +   '<div class="rec-x">' + (inc ? "income" : "expense") + ' &middot; ' + esc(r.by)
       +     ' &middot; day ' + r.day + ' &middot; from ' + monthLabel(r.from)
       +     (off ? ' &middot; paused' : '') + '</div>'
@@ -3266,6 +3275,7 @@ function renderRecurringForm(){
   }
   const from = document.getElementById("rc-from");
   if(from && !from.value) from.value = ymNow();
+  fillSubs("rc");
   renderRecurring();
 }
 
