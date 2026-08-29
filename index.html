@@ -6,10 +6,10 @@
 <meta name="theme-color" content="#0D7377">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="SIP Tracker">
+<meta name="apple-mobile-web-app-title" content="Shree Laxmi Tracker">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<title>Family SIP Tracker</title>
+<title>Shree Laxmi Tracker</title>
 
 <!-- SheetJS for Excel -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -33,6 +33,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .topbar-sub{font-size:11px;opacity:0.7;margin-top:2px}
 .login-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:6px 12px;border-radius:20px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:5px}
 .login-btn.signed{background:rgba(13,115,119,0.6)}
+.login-btn img{width:20px;height:20px;border-radius:50%;object-fit:cover;flex:0 0 auto}
 .avatar{width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,0.4)}
 
 /* ── BOTTOM NAV ── */
@@ -115,6 +116,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .btn-sm{padding:8px 16px;border-radius:10px;font-size:13px;font-weight:600;border:none;cursor:pointer}
 .btn-green{background:var(--green);color:#fff}
 .btn-gold{background:var(--gold);color:#fff}
+.row-edit{background:none;border:none;font-size:15px;line-height:1;cursor:pointer;padding:4px 6px;opacity:0.55;flex-shrink:0}
+.row-edit:active{opacity:1}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:none;align-items:center;justify-content:center;z-index:200;padding:20px}
+.modal-bg.show{display:flex}
+.modal-box{background:var(--card);border-radius:16px;padding:18px;width:100%;max-width:360px;border:1px solid var(--border)}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:2px}
+.modal-sub{font-size:12px;color:var(--sub);margin-bottom:14px}
+.modal-box label{display:block;font-size:12px;font-weight:600;color:var(--sub);margin:10px 0 5px}
+.modal-box input{width:100%;padding:10px;border:1px solid var(--border);border-radius:10px;font-size:14px;box-sizing:border-box;background:var(--bg);color:var(--text)}
+.modal-row{display:flex;gap:8px;margin-top:16px}
+.modal-row button{flex:1}
+.sync-pill{font-size:10px;padding:1px 7px;border-radius:10px;background:rgba(255,255,255,0.18);margin-left:6px;white-space:nowrap}
 .btn-red{background:#FFEBEE;color:var(--red);border:none;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:13px}
 .btn-drive{background:#4285F4;color:#fff;font-size:13px;padding:10px 16px;border-radius:12px;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:center}
 
@@ -166,13 +179,29 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </head>
 <body>
 
+<div class="modal-bg" id="edit-modal" onclick="if(event.target===this)closeEdit()">
+  <div class="modal-box">
+    <div class="modal-title" id="em-title">Plan</div>
+    <div class="modal-sub">Fund ka naam aur monthly amount badlo</div>
+    <label for="em-fund">Fund ka naam</label>
+    <input id="em-fund" placeholder="Fund name">
+    <label for="em-amt">Monthly amount (&#8377;)</label>
+    <input id="em-amt" type="number" inputmode="numeric" min="0" step="500" placeholder="20000">
+    <div class="modal-row">
+      <button class="btn-sm btn-outline" onclick="resetEdit()">Reset</button>
+      <button class="btn-sm btn-green" onclick="saveEdit()">&#10003; Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOP BAR -->
 <div class="topbar">
   <div>
-    <div class="topbar-title">💰 Family SIP Tracker</div>
-    <div class="topbar-sub" id="topbar-sub">Sep 2026 – Aug 2031</div>
+    <div class="topbar-title">🪔 Shree Laxmi Tracker</div>
+    <div class="topbar-sub" id="topbar-sub">Sep 2026 – Aug 2031<span class="sync-pill" id="sync-pill"></span></div>
   </div>
   <button class="login-btn" id="login-btn" onclick="handleLogin()">
+    <img id="login-photo" alt="" referrerpolicy="no-referrer" hidden>
     <span id="login-icon">G</span>
     <span id="login-text">Login</span>
   </button>
@@ -195,14 +224,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 
   <div class="card">
-    <div class="card-title">Monthly Plan — ₹1,00,000</div>
-    <div class="owner-hdr"><div class="owner-dot" style="background:var(--blue)"></div><span class="owner-label">👨 Aap (Husband) — ₹60,000</span></div>
+    <div class="card-title" id="plan-card-title">Monthly Plan</div>
+    <div class="owner-hdr"><div class="owner-dot" style="background:var(--blue)"></div><span class="owner-label" id="oh-h">👨 Aap (Husband)</span></div>
     <div id="sum-h"></div>
-    <div class="owner-hdr"><div class="owner-dot" style="background:var(--purple)"></div><span class="owner-label">👩 Biwi (Wife) — ₹27,500</span></div>
+    <div class="owner-hdr"><div class="owner-dot" style="background:var(--purple)"></div><span class="owner-label" id="oh-w">👩 Biwi (Wife)</span></div>
     <div id="sum-w"></div>
-    <div class="owner-hdr"><div class="owner-dot" style="background:var(--green)"></div><span class="owner-label">👧 Beti (SSY) — ₹12,500</span></div>
+    <div class="owner-hdr"><div class="owner-dot" style="background:var(--green)"></div><span class="owner-label" id="oh-d">👧 Beti (SSY)</span></div>
     <div id="sum-d"></div>
-    <div class="total-row"><span class="total-label">Monthly Total</span><span class="total-val">₹1,00,000</span></div>
+    <div class="total-row"><span class="total-label">Monthly Total</span><span class="total-val" id="total-val">₹1,00,000</span></div>
   </div>
 
   <div class="card">
@@ -332,17 +361,26 @@ function loadState(){
   try{ return JSON.parse(localStorage.getItem("sip_state_v2")||"{}"); }catch{ return {}; }
 }
 function save(s){
+  s.updatedAt = Date.now();
   try{ localStorage.setItem("sip_state_v2",JSON.stringify(s)); }catch{}
+  scheduleSync();
 }
 
 let ST = loadState();
 if(!ST.checks)    ST.checks = {};
 if(!ST.transfers) ST.transfers = [];
 if(!ST.funds)     ST.funds = {};
+if(!ST.amts)      ST.amts  = {};
 let gToken = null;
 let gUserName = null;
+let gUserPhoto = null;
 
-function plans(){ return DEFAULT_PLANS.map(p=>({...p,fund:ST.funds[p.id]||p.fund})); }
+function plans(){ return DEFAULT_PLANS.map(p=>({...p,
+  fund: ST.funds[p.id]||p.fund,
+  amt:  (ST.amts[p.id]!=null ? Number(ST.amts[p.id]) : p.amt)})); }
+function monthlyTotal(){ return plans().reduce((a,p)=>a+Number(p.amt),0); }
+function ownerTotal(o){ return plans().filter(p=>p.owner===o).reduce((a,p)=>a+Number(p.amt),0); }
+function esc(v){ return String(v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 function fmt(n){ return "₹"+Number(n).toLocaleString("en-IN"); }
 function toast(msg,dur=2500){
   const t=document.getElementById("toast");
@@ -369,7 +407,7 @@ function renderSummary(){
   for(let m=0;m<60;m++){
     if(ps.every(p=>ST.checks[m+"_"+p.id])) done++;
   }
-  const invested = done * 100000;
+  const invested = done * monthlyTotal();
   const transferred = ST.transfers.reduce((a,t)=>a+Number(t.amt),0);
   const pct = Math.round(done/60*100);
 
@@ -379,6 +417,13 @@ function renderSummary(){
   document.getElementById("s-next").textContent = done<60 ? MONTHS[done] : "Complete! 🎉";
   document.getElementById("prog").style.width = pct+"%";
   document.getElementById("prog-lbl").textContent = pct+"% — "+done+"/60 months";
+
+  const mt = monthlyTotal();
+  document.getElementById("plan-card-title").textContent = "Monthly Plan — "+fmt(mt);
+  document.getElementById("total-val").textContent = fmt(mt);
+  document.getElementById("oh-h").textContent = "👨 Aap (Husband) — "+fmt(ownerTotal("H"));
+  document.getElementById("oh-w").textContent = "👩 Biwi (Wife) — "+fmt(ownerTotal("W"));
+  document.getElementById("oh-d").textContent = "👧 Beti (SSY) — "+fmt(ownerTotal("D"));
 
   ["H","W","D"].forEach(owner=>{
     const el = document.getElementById("sum-"+owner.toLowerCase().replace("D","d"));
@@ -456,6 +501,8 @@ function renderTracker(){
               </div>
             </div>
             <div class="check-amt">${fmt(p.amt)}</div>
+            <button class="row-edit" title="Fund / amount edit karo"
+              onclick="event.stopPropagation();openEdit('${p.id}')">&#9998;</button>
             <button class="check-toggle ${ST.checks[mi+'_'+p.id]?'done':''}"
               onclick="toggleCheck(${mi},'${p.id}',this)">
               ${ST.checks[mi+'_'+p.id]?'✓':''}
@@ -566,7 +613,8 @@ function renderFunds(){
           <span class="fund-badge ${BADGE_CLASS[owner]}">${p.label}</span>
           <span class="fund-amt-label">${fmt(p.amt)}/mo</span>
         </div>
-        <input class="fund-input" id="fi-${p.id}" value="${p.fund}" placeholder="Fund ka naam">
+        <input class="fund-input" id="fi-${p.id}" value="${esc(p.fund)}" placeholder="Fund ka naam">
+        <input class="fund-input" id="fa-${p.id}" type="number" inputmode="numeric" min="0" step="500" value="${p.amt}" placeholder="Monthly amount (₹)">
         <button class="btn btn-sm btn-green" onclick="saveFund('${p.id}')">✓ Save</button>
       </div>`).join("");
   });
@@ -574,10 +622,73 @@ function renderFunds(){
 
 function saveFund(pid){
   const val = document.getElementById("fi-"+pid).value.trim();
+  const el  = document.getElementById("fa-"+pid);
+  const amt = el ? Number(el.value) : NaN;
   if(!val){ toast("Fund name empty hai!"); return; }
+  if(!isFinite(amt) || amt < 0){ toast("Amount sahi daalo!"); return; }
   ST.funds[pid] = val;
+  ST.amts[pid]  = amt;
   save(ST);
-  toast("✓ Fund name saved!");
+  refreshAll();
+  toast("✓ Fund aur amount saved!");
+}
+
+// ── INLINE PLAN EDITOR ─────────────────────────────────────────────────────
+let editPid = null;
+
+function openEdit(pid){
+  const p = plans().find(x=>x.id===pid);
+  if(!p) return;
+  editPid = pid;
+  document.getElementById("em-title").textContent = p.label;
+  document.getElementById("em-fund").value = p.fund;
+  document.getElementById("em-amt").value  = p.amt;
+  document.getElementById("edit-modal").classList.add("show");
+}
+
+function closeEdit(){
+  document.getElementById("edit-modal").classList.remove("show");
+  editPid = null;
+}
+
+function saveEdit(){
+  if(!editPid) return;
+  const f = document.getElementById("em-fund").value.trim();
+  const a = Number(document.getElementById("em-amt").value);
+  if(!f){ toast("Fund name empty hai!"); return; }
+  if(!isFinite(a) || a < 0){ toast("Amount sahi daalo!"); return; }
+  ST.funds[editPid] = f;
+  ST.amts[editPid]  = a;
+  save(ST);
+  closeEdit();
+  refreshAll();
+  toast("✓ Save ho gaya!");
+}
+
+function resetEdit(){
+  if(!editPid) return;
+  delete ST.funds[editPid];
+  delete ST.amts[editPid];
+  save(ST);
+  closeEdit();
+  refreshAll();
+  toast("Default pe reset ho gaya");
+}
+
+// Re-render everything, keeping any expanded months open.
+function refreshAll(){
+  const open = Array.from(document.querySelectorAll(".month-body.open")).map(e=>e.id);
+  renderSummary();
+  renderTracker();
+  renderTransferLog();
+  if(document.getElementById("fe-h")) renderFunds();
+  open.forEach(id=>{
+    const b = document.getElementById(id);
+    if(!b) return;
+    b.classList.add("open");
+    const c = document.getElementById("chev-"+id.replace("body-",""));
+    if(c) c.classList.add("open");
+  });
 }
 
 // ── EXCEL EXPORT ───────────────────────────────────────────────────────────
@@ -637,7 +748,7 @@ function exportExcel(){
     ws3["!cols"] = [{wch:12},{wch:18},{wch:40},{wch:18},{wch:14},{wch:16}];
     XLSX.utils.book_append_sheet(wb, ws3, "Plan Summary");
 
-    XLSX.writeFile(wb, "FamilySIP_Tracker.xlsx");
+    XLSX.writeFile(wb, "ShreeLaxmi_Tracker.xlsx");
     toast("✓ Excel downloaded!");
   }catch(e){
     toast("Export failed — try again");
@@ -646,11 +757,12 @@ function exportExcel(){
 
 // ── GOOGLE DRIVE ───────────────────────────────────────────────────────────
 const CLIENT_ID = "260664555067-cv9pos03d69rgn6ckn0th2inb2ngdqqi.apps.googleusercontent.com";
-const SCOPES = "https://www.googleapis.com/auth/drive.file";
+const SCOPES = "https://www.googleapis.com/auth/drive.file profile email";
 
 function handleLogin(){
   if(gToken){
-    gToken = null; gUserName = null;
+    gToken = null; gUserName = null; gUserPhoto = null;
+    gFileId = null; clearTimeout(syncTimer); setSync("");
     updateLoginUI();
     updateDriveStatus();
     toast("Logged out");
@@ -674,6 +786,7 @@ function handleLogin(){
       gUserName = e.data.name || "User";
       updateLoginUI();
       updateDriveStatus();
+      fetchProfile();
       toast("✓ Google se connected!");
       window.removeEventListener("message",handler);
     }
@@ -698,19 +811,43 @@ function handleLogin(){
   history.replaceState(null,"",window.location.pathname);
   updateLoginUI();
   updateDriveStatus();
+  fetchProfile();
   toast("✓ Google connected!");
 })();
 
+// Pull the signed-in user's name and avatar. Needs the "profile" scope.
+async function fetchProfile(){
+  if(!gToken) return;
+  try{
+    const r = await fetch("https://www.googleapis.com/oauth2/v3/userinfo",
+      {headers:{Authorization:"Bearer "+gToken}});
+    if(!r.ok) return;
+    const p = await r.json();
+    gUserName  = p.given_name || p.name || p.email || "User";
+    gUserPhoto = p.picture || null;
+    updateLoginUI();
+    updateDriveStatus();
+    syncDown();
+  }catch(e){ /* keep the fallback label */ }
+}
+
 function updateLoginUI(){
-  const btn = document.getElementById("login-btn");
+  const btn  = document.getElementById("login-btn");
+  const img  = document.getElementById("login-photo");
+  const icon = document.getElementById("login-icon");
   if(gToken){
     btn.className = "login-btn signed";
     document.getElementById("login-text").textContent = gUserName||"Connected";
-    document.getElementById("login-icon").textContent = "✓";
+    if(gUserPhoto){
+      img.src = gUserPhoto; img.hidden = false; icon.hidden = true;
+    } else {
+      img.hidden = true; icon.hidden = false; icon.textContent = "✓";
+    }
   } else {
     btn.className = "login-btn";
     document.getElementById("login-text").textContent = "Login";
-    document.getElementById("login-icon").textContent = "G";
+    img.hidden = true; img.removeAttribute("src");
+    icon.hidden = false; icon.textContent = "G";
   }
 }
 
@@ -748,7 +885,7 @@ async function saveToGoogleDrive(){
     const blob = new Blob([wbout],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
 
     // Check if file exists
-    const fileName = "FamilySIP_Tracker.xlsx";
+    const fileName = "ShreeLaxmi_Tracker.xlsx";
     const searchRes = await fetch(
       `https://www.googleapis.com/drive/v3/files?q=name='${fileName}'+and+trashed=false&fields=files(id,name)`,
       {headers:{Authorization:"Bearer "+gToken}}
@@ -786,6 +923,103 @@ async function saveToGoogleDrive(){
   }catch(e){
     toast("Drive save failed — Excel download karo");
     exportExcel();
+  }
+}
+
+// ── DRIVE AUTO-SYNC ────────────────────────────────────────────────────────
+const SYNC_FILE = "shreelaxmi-data.json";
+let gFileId = null, syncTimer = null, gSyncing = false, gPendingSync = false;
+
+function setSync(t){
+  const el = document.getElementById("sync-pill");
+  if(el) el.textContent = t;
+}
+
+// Debounced — every save() queues an upload 1.5s later.
+function scheduleSync(){
+  if(!gToken) return;
+  clearTimeout(syncTimer);
+  setSync("saving…");
+  syncTimer = setTimeout(syncUp, 1500);
+}
+
+async function findSyncFile(){
+  if(gFileId) return gFileId;
+  const q = encodeURIComponent("name='"+SYNC_FILE+"' and trashed=false");
+  const r = await fetch("https://www.googleapis.com/drive/v3/files?spaces=drive&fields=files(id)&q="+q,
+    {headers:{Authorization:"Bearer "+gToken}});
+  if(!r.ok) throw new Error("search failed");
+  const d = await r.json();
+  gFileId = (d.files && d.files[0] && d.files[0].id) || null;
+  return gFileId;
+}
+
+function syncPayload(){
+  return JSON.stringify({
+    checks: ST.checks, transfers: ST.transfers,
+    funds: ST.funds, amts: ST.amts, updatedAt: ST.updatedAt || 0
+  });
+}
+
+async function syncUp(){
+  if(!gToken) return;
+  if(gSyncing){ gPendingSync = true; return; }
+  gSyncing = true;
+  try{
+    let id = await findSyncFile();
+    if(!id){
+      const meta = await fetch("https://www.googleapis.com/drive/v3/files",{
+        method:"POST",
+        headers:{Authorization:"Bearer "+gToken,"Content-Type":"application/json"},
+        body: JSON.stringify({name:SYNC_FILE,mimeType:"application/json"})
+      });
+      if(!meta.ok) throw new Error("create failed");
+      id = (await meta.json()).id;
+      gFileId = id;
+    }
+    const up = await fetch("https://www.googleapis.com/upload/drive/v3/files/"+id+"?uploadType=media",{
+      method:"PATCH",
+      headers:{Authorization:"Bearer "+gToken,"Content-Type":"application/json"},
+      body: syncPayload()
+    });
+    if(!up.ok) throw new Error("upload failed");
+    setSync("synced");
+  }catch(e){
+    gFileId = null;
+    setSync("sync off");
+  }finally{
+    gSyncing = false;
+    if(gPendingSync){ gPendingSync = false; scheduleSync(); }
+  }
+}
+
+// On login: keep whichever copy is newer, then make both sides agree.
+async function syncDown(){
+  if(!gToken) return;
+  setSync("syncing…");
+  try{
+    const id = await findSyncFile();
+    if(!id){ await syncUp(); return; }
+    const r = await fetch("https://www.googleapis.com/drive/v3/files/"+id+"?alt=media",
+      {headers:{Authorization:"Bearer "+gToken}});
+    if(!r.ok) throw new Error("download failed");
+    const rem = await r.json();
+    if(rem && Number(rem.updatedAt||0) > Number(ST.updatedAt||0)){
+      ST.checks    = rem.checks    || {};
+      ST.transfers = rem.transfers || [];
+      ST.funds     = rem.funds     || {};
+      ST.amts      = rem.amts      || {};
+      ST.updatedAt = Number(rem.updatedAt)||0;
+      // write directly, not via save(), so this does not bounce straight back up
+      try{ localStorage.setItem("sip_state_v2",JSON.stringify(ST)); }catch{}
+      refreshAll();
+      setSync("synced");
+      toast("✓ Drive se data restore hua!");
+    } else {
+      await syncUp();
+    }
+  }catch(e){
+    setSync("sync off");
   }
 }
 

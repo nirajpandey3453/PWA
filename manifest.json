@@ -1,7 +1,7 @@
 {
-  "name": "Family SIP Tracker",
-  "short_name": "SIP Tracker",
-  "description": "Family investment tracker with Google Drive sync",
+  "name": "Shree Laxmi Tracker",
+  "short_name": "Shree Laxmi",
+  "description": "Shree Laxmi investment tracker with Google Drive sync",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#1B2A4A",
