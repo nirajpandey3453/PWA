@@ -1257,7 +1257,7 @@ function goHome(){
 // A line of live context on each tile so the home screen is not just a menu.
 function renderHome(){
   const hi = document.getElementById("home-hi");
-  if(hi) hi.textContent = gUserName ? ("Hello, " + gUserName) : "Shree Laxmi Home";
+  if(hi) hi.textContent = gUserEmail ? ("Hello, " + displayName()) : "Shree Laxmi Home";
 
   const who = document.getElementById("home-who");
   if(who){
@@ -2096,7 +2096,7 @@ function updateLoginUI(){
   const icon = document.getElementById("login-icon");
   if(gToken){
     btn.className = "login-btn signed";
-    document.getElementById("login-text").textContent = gUserName||"Connected";
+    document.getElementById("login-text").textContent = displayName();
     if(gUserPhoto){
       img.src = gUserPhoto; img.hidden = false; icon.hidden = true;
     } else {
@@ -2117,7 +2117,7 @@ function updateDriveStatus(){
   if(!el) return;
   if(gToken){
     el.className = "drive-status ds-ok";
-    txt.textContent = "Google Drive connected — "+( gUserName||"User");
+    txt.textContent = "Google Drive connected — " + displayName();
   } else {
     el.className = "drive-status ds-no";
     txt.textContent = "Google Drive not connected — sign in";
@@ -2874,8 +2874,19 @@ function headName(id){
   return h ? h.name : "(removed head)";
 }
 
-// Whoever is signed in owns the entry by default.
-function currentPerson(){ return gUserName || gUserEmail || "Me"; }
+// The name shown everywhere: the mapped person if there is one, otherwise
+// whatever Google gave us.
+function displayName(){
+  const p = (typeof myPerson === "function") ? myPerson() : null;
+  return (p && p.name) || gUserName || gUserEmail || "User";
+}
+
+// Whoever is signed in owns the entry by default, under their mapped name so
+// attribution matches the People list rather than the Google profile.
+function currentPerson(){
+  const p = (typeof myPerson === "function") ? myPerson() : null;
+  return (p && p.name) || gUserName || gUserEmail || "Me";
+}
 
 // The people list is managed, not inferred. Seeded with the three plan owners
 // so tracker-posted entries line up with names that already exist here.
@@ -4536,6 +4547,7 @@ function claimIdentity(){
     touch("people", id);
   }
   save(ST);
+  updateLoginUI(); updateDriveStatus();
   return id;
 }
 
@@ -4569,6 +4581,7 @@ function setPersonEmail(id){
   touch("people", id);
   save(ST);
   renderPeopleManager();
+  updateLoginUI(); updateDriveStatus();
   toast(em ? (p.name + " mapped to " + em) : (p.name + " unmapped"));
 }
 
