@@ -279,6 +279,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .ins.warn{border-left:3px solid var(--gold)}
 .ins.bad{border-left:3px solid #C62828}
 .ins.info{border-left:3px solid var(--teal)}
+.dupe-box{margin-top:9px}
+.dupe-t{font-size:11px;color:var(--sub);line-height:1.5;margin:6px 0}
+.dupe-row{font-size:11.5px;padding:6px 8px;border:1px solid var(--border);border-radius:8px;margin-bottom:5px;background:var(--bg)}
+.dupe-id{font-size:10px;color:var(--muted);word-break:break-all;margin-top:2px}
 .share-err{font-size:11px;color:#C62828;margin-top:7px;line-height:1.5;word-break:break-word}
 .btn-red{background:#FFEBEE;color:var(--red);border:none;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:13px}
 .btn-drive{background:#4285F4;color:#fff;font-size:13px;padding:10px 16px;border-radius:12px;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:center}
@@ -499,8 +503,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div id="month-list"></div>
 </div>
 
-<datalist id="people-list"></datalist>
-
 <!-- HOME -->
 <div class="section active" id="sec-home">
   <div class="home-hi" id="home-hi">Shree Laxmi Tracker</div>
@@ -549,7 +551,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div><label class="form-label">Head</label>
         <select class="form-select" id="ex-head"></select></div>
       <div><label class="form-label">Expense by</label>
-        <input class="form-input" id="ex-by" list="people-list" placeholder="Who paid"></div>
+        <select class="form-select" id="ex-by"></select></div>
     </div>
     <label class="form-label">Note</label>
     <input class="form-input" id="ex-note" placeholder="What was this for? (optional)">
@@ -568,7 +570,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div><label class="form-label">Income type</label>
         <select class="form-select" id="in-head"></select></div>
       <div><label class="form-label">Income by</label>
-        <input class="form-input" id="in-by" list="people-list" placeholder="Who received"></div>
+        <select class="form-select" id="in-by"></select></div>
     </div>
     <label class="form-label">Note</label>
     <input class="form-input" id="in-note" placeholder="Source or reference (optional)">
@@ -591,6 +593,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <button class="btn-sm btn-outline" style="width:100%;margin-top:10px" onclick="addHead()">+ Add Head</button>
     <div id="head-list" style="margin-top:12px"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">People</div>
+    <div style="font-size:12px;color:var(--sub);line-height:1.5;margin-bottom:10px">
+      These names fill the <b>Expense by</b> and <b>Income by</b> pickers.
+    </div>
+    <div class="lg-f2">
+      <div style="grid-column:1 / span 2">
+        <label class="form-label">Add a person</label>
+        <input class="form-input" id="pp-name" placeholder="e.g. Mummy">
+      </div>
+    </div>
+    <button class="btn-sm btn-outline" style="width:100%;margin-top:10px" onclick="addPerson()">+ Add Person</button>
+    <div id="people-manage" style="margin-top:12px"></div>
   </div>
 </div>
 
@@ -618,6 +635,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <input id="share-email" type="email" inputmode="email" autocomplete="off" placeholder="family@gmail.com">
       <button class="btn-sm btn-green" onclick="shareWithFamily()">Share</button>
     </div>
+    <div class="dupe-box" id="dupe-list"></div>
     <div class="share-err" id="share-err"></div>
     <div class="share-list" id="share-list"></div>
     <div class="sync-btns" style="margin-top:6px">
@@ -755,12 +773,13 @@ if(!ST.amts)      ST.amts  = {};
 if(!ST.cats)      ST.cats  = {};
 if(!ST.locked)    ST.locked = {};
 if(!ST.heads)     ST.heads  = {};
+if(!ST.people)    ST.people = {};
 if(!ST.ledger)    ST.ledger = [];
 // meta[kind][key] = when that single field last changed on any device.
 // Merging per field (not per document) is what stops a stale device from
 // overwriting everything with one edit.
 if(!ST.meta)      ST.meta = {};
-["checks","funds","amts","cats","locked","heads","transfers","ledger","shares"].forEach(k=>{ if(!ST.meta[k]) ST.meta[k] = {}; });
+["checks","funds","amts","cats","locked","heads","people","transfers","ledger","shares"].forEach(k=>{ if(!ST.meta[k]) ST.meta[k] = {}; });
 if(!ST.tomb)      ST.tomb = {};
 if(!ST.tomb.transfers) ST.tomb.transfers = {};
 if(!ST.tomb.ledger)    ST.tomb.ledger    = {};
@@ -847,7 +866,7 @@ const MODULES = {
   ledger: {name:"Monthly Ledger", tabs:[
     {id:"lgd",     icon:"📈",  label:"Insights"},
     {id:"lgadd",   icon:"➕",  label:"Add"},
-    {id:"lgheads", icon:"🏷️", label:"Heads"},
+    {id:"lgheads", icon:"🏷️", label:"Setup"},
     {id:"lglog",   icon:"🧾",  label:"Log"}
   ]},
   invest: {name:"Investment", tabs:[
@@ -918,7 +937,7 @@ function showSec(id,el){
   if(id==="tracker")  renderTracker();
   if(id==="lgd")      { seedHeads(); renderPeriodSel(); renderLedgerDash(); }
   if(id==="lgadd")    renderLedgerAll();
-  if(id==="lgheads")  { seedHeads(); renderHeads(); }
+  if(id==="lgheads")  { seedHeads(); seedPeople(); renderHeads(); renderPeopleManager(); renderPeopleList(); }
   if(id==="lglog")    renderLedger();
   if(id==="transfer") renderTransfer();
   if(id==="funds")    renderFunds();
@@ -1673,7 +1692,7 @@ async function saveToGoogleDrive(){
 // ── DRIVE AUTO-SYNC ────────────────────────────────────────────────────────
 const SYNC_FILE = "shreelaxmi-data.json";
 let gFileId = null, syncTimer = null, gSyncing = false, gPendingSync = false;
-let gDupes = 0, gPendingSave = false;
+let gDupes = 0, gDupeList = [], gPendingSave = false;
 
 function fileIdKey(){ return "sip_file_" + (gUserSub || "anon"); }
 
@@ -1702,7 +1721,7 @@ async function checkFile(id){
 // hatch if a device ends up pointed at the wrong copy.
 function reconnectSharedFile(){
   if(!gToken){ toast("Sign in with Google first"); return; }
-  gFileId = null;
+  gFileId = null; gDupes = 0; gDupeList = []; renderDupes();
   try{ localStorage.removeItem(fileIdKey()); }catch{}
   toast("Looking for the shared file...");
   syncDown();
@@ -1799,19 +1818,54 @@ async function resolveFile(){
     if(await checkFile(saved)){ gFileId = saved; return saved; }
     try{ localStorage.removeItem(fileIdKey()); }catch{}
   }
-  // Oldest first: if someone accidentally made a second copy, the original
-  // shared file is the one everybody should converge on.
+  const files = await searchFiles();
+  if(files.length){ rememberFile(files[0].id); return files[0].id; }
+  return null;
+}
+
+// Oldest first: if someone accidentally made a second copy, the original
+// shared file is the one everybody should converge on.
+async function searchFiles(){
   const q = encodeURIComponent("name='"+SYNC_FILE+"' and trashed=false");
   const r = await fetch("https://www.googleapis.com/drive/v3/files"
-    + "?spaces=drive&orderBy=createdTime&fields=files(id,ownedByMe,createdTime)&q="+q,
+    + "?spaces=drive&orderBy=createdTime"
+    + "&fields=files(id,ownedByMe,createdTime,owners(emailAddress))&q="+q,
     {headers:{Authorization:"Bearer "+gToken}});
   if(r.status === 401){ sessionExpired(); throw new Error("unauthorized"); }
   if(!r.ok) throw new Error("search failed");
   const d = await r.json();
-  const files = (d && d.files) || [];
-  gDupes = files.length;
-  if(files.length){ rememberFile(files[0].id); return files[0].id; }
-  return null;
+  return (d && d.files) || [];
+}
+
+// Asked explicitly, so the answer is always current rather than left over
+// from whatever the first lookup of the session happened to see.
+async function checkDupes(){
+  if(!gToken) return 0;
+  try{
+    gDupeList = await searchFiles();
+    gDupes = gDupeList.length;
+  }catch(e){
+    gDupeList = []; gDupes = 0;
+  }
+  renderDupes();
+  return gDupes;
+}
+
+function renderDupes(){
+  const el = document.getElementById("dupe-list");
+  if(!el) return;
+  if(gDupes < 2){ el.innerHTML = ""; return; }
+  el.innerHTML = '<div class="dupe-t">' + gDupes + ' files named ' + SYNC_FILE + ':</div>'
+    + gDupeList.map(function(f){
+        const who = (f.owners && f.owners[0] && f.owners[0].emailAddress)
+                  || (f.ownedByMe ? "you" : "someone else");
+        const when = f.createdTime ? String(f.createdTime).slice(0,10) : "";
+        return '<div class="dupe-row">'
+          + (f.id === gFileId ? '<b>in use</b> &middot; ' : '')
+          + esc(who) + (when ? ' &middot; created ' + when : '')
+          + '<div class="dupe-id">' + esc(f.id) + '</div></div>';
+      }).join("")
+    + '<div class="dupe-t">Delete the extras in Drive, then tap Re-scan Drive.</div>';
 }
 
 // First person only — everyone else connects to this via the Picker.
@@ -1838,7 +1892,7 @@ function syncPayload(){
   return JSON.stringify({
     checks: ST.checks, transfers: ST.transfers,
     funds: ST.funds, amts: ST.amts, cats: ST.cats, locked: ST.locked,
-    heads: ST.heads, ledger: ST.ledger, shares: ST.shares,
+    heads: ST.heads, people: ST.people, ledger: ST.ledger, shares: ST.shares,
     meta: ST.meta, tomb: ST.tomb,
     updatedAt: ST.updatedAt || 0
   });
@@ -1916,7 +1970,7 @@ function applyMerge(rem){
   if(!rem) return false;
   try{ localStorage.setItem("sip_backup", JSON.stringify(ST)); }catch{}
   let changed = false;
-  ["checks","funds","amts","cats","locked","heads","shares"].forEach(function(kind){
+  ["checks","funds","amts","cats","locked","heads","people","shares"].forEach(function(kind){
     const out = {val:{}, ts:{}};
     if(mergeField(kind, rem, out)) changed = true;
     ST[kind] = out.val;
@@ -1952,8 +2006,9 @@ async function syncNow(){
     gPendingSave = false;
     setSync("synced");
     setSyncState(true, gDupes > 1
-      ? "Synced — but "+gDupes+" copies of the file exist, delete the extras in Drive"
+      ? "Synced — but "+gDupes+" copies of this file exist"
       : "Synced with shared file");
+    renderDupes();
     if(changed){ refreshAll(); toast("✓ Family data updated"); }
   }catch(e){
     setSync("sync off");
@@ -1975,6 +2030,7 @@ async function syncDown(){
       return;
     }
     await syncNow();
+    checkDupes();
   }catch(e){
     setSync("sync off");
     setSyncState(false,"Sync failed — reconnect");
@@ -2098,7 +2154,8 @@ let lgYear = "", lgMonth = "";   // "" on month means the whole year
 // Fixed ids, so two devices seeding independently produce the same heads and
 // the merge collapses them instead of creating duplicates.
 function seedHeads(){
-  if(Object.keys(ST.heads).length) return;
+  if(!ST.meta.heads) ST.meta.heads = {};
+  if(Object.keys(ST.heads||{}).length) return;
   DEFAULT_HEADS.forEach(function(h){
     ST.heads[h.id] = {name:h.name, type:h.type};
     if(ST.meta.heads[h.id] == null) ST.meta.heads[h.id] = 1;
@@ -2121,22 +2178,113 @@ function headName(id){
 // Whoever is signed in owns the entry by default.
 function currentPerson(){ return gUserName || gUserEmail || "Me"; }
 
-// Everyone we already know about: the signed-in user, anyone who has logged an
-// entry, and anyone the shared file was shared with.
+// The people list is managed, not inferred. Seeded with the three plan owners
+// so tracker-posted entries line up with names that already exist here.
+const DEFAULT_PEOPLE = [
+  {id:"p_husband",  name:"Husband"},
+  {id:"p_wife",     name:"Wife"},
+  {id:"p_daughter", name:"Daughter"}
+];
+
+function seedPeople(){
+  if(!ST.people) ST.people = {};
+  if(!ST.meta.people) ST.meta.people = {};
+  if(Object.keys(ST.people).length) return;
+  DEFAULT_PEOPLE.forEach(function(p){
+    ST.people[p.id] = {name:p.name};
+    if(ST.meta.people[p.id] == null) ST.meta.people[p.id] = 1;
+  });
+  ensurePerson(currentPerson());
+  save(ST);
+}
+
+function peopleNames(){
+  return Object.keys(ST.people||{})
+    .filter(function(id){ return ST.people[id] && ST.people[id].name; })
+    .map(function(id){ return ST.people[id].name; })
+    .sort(function(a,b){ return a.localeCompare(b); });
+}
+
+// Typing a new name in an entry form adds it to the list rather than losing it.
+function ensurePerson(name){
+  name = String(name||"").trim();
+  if(!name) return null;
+  if(!ST.people) ST.people = {};
+  const hit = Object.keys(ST.people).filter(function(id){
+    return ST.people[id] && ST.people[id].name.toLowerCase() === name.toLowerCase();
+  })[0];
+  if(hit) return hit;
+  const id = "p_" + Date.now().toString(36) + Math.floor(Math.random()*100);
+  ST.people[id] = {name:name};
+  touch("people", id);
+  return id;
+}
+
+function addPerson(){
+  const el = document.getElementById("pp-name");
+  const name = (el.value||"").trim();
+  if(!name){ toast("Enter a name"); return; }
+  if(peopleNames().some(function(n){ return n.toLowerCase() === name.toLowerCase(); })){
+    toast("That name is already in the list"); return;
+  }
+  ensurePerson(name);
+  save(ST);
+  el.value = "";
+  renderPeopleManager(); renderPeopleList();
+  toast("✓ " + name + " added");
+}
+
+function delPerson(id){
+  const nm = ST.people[id] && ST.people[id].name;
+  const used = (ST.ledger||[]).some(function(e){ return e.by === nm; });
+  if(!confirm(used
+      ? "Entries are already recorded against " + nm + ".\n\nRemove from the list anyway? Those entries keep the name."
+      : "Remove " + nm + " from the list?")) return;
+  ST.people[id] = null;      // null, not delete, so the removal can merge
+  touch("people", id);
+  save(ST);
+  renderPeopleManager(); renderPeopleList();
+  toast(nm + " removed");
+}
+
+function renderPeopleManager(){
+  const el = document.getElementById("people-manage");
+  if(!el) return;
+  const ids = Object.keys(ST.people||{}).filter(function(id){ return ST.people[id]; })
+    .sort(function(a,b){ return ST.people[a].name.localeCompare(ST.people[b].name); });
+  el.innerHTML = ids.length
+    ? ids.map(function(id){
+        return '<span class="head-chip">' + esc(ST.people[id].name)
+          + '<button onclick="delPerson(\'' + id + '\')" title="Remove">&times;</button></span>';
+      }).join("")
+    : '<span class="head-none">Nobody yet</span>';
+}
+
+// The managed list drives the pickers. Names already used by existing entries
+// are folded in too, so historical data never loses its author.
 function knownPeople(){
   const set = {};
+  peopleNames().forEach(function(n){ set[n] = 1; });
   set[currentPerson()] = 1;
   (ST.ledger||[]).forEach(function(e){ if(e.by) set[e.by] = 1; });
-  Object.keys(ST.shares||{}).forEach(function(m){ if(ST.shares[m]) set[m] = 1; });
   return Object.keys(set).sort();
 }
 
+// Both "by" pickers are fixed lists — a name has to exist in Setup > People
+// before it can be attached to an entry.
 function renderPeopleList(){
-  const dl = document.getElementById("people-list");
-  if(!dl) return;
-  dl.innerHTML = knownPeople().map(function(n){
-    return '<option value="' + esc(n) + '"></option>';
-  }).join("");
+  const names = knownPeople();
+  const me = currentPerson();
+  ["ex-by","in-by"].forEach(function(id){
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    const keep = sel.value;
+    sel.innerHTML = names.length
+      ? names.map(function(n){ return '<option value="'+esc(n)+'">'+esc(n)+'</option>'; }).join("")
+      : '<option value="">Add someone in Setup &gt; People</option>';
+    if(keep && names.indexOf(keep) > -1) sel.value = keep;
+    else if(names.indexOf(me) > -1) sel.value = me;
+  });
 }
 
 function monthLabel(ym){
@@ -2235,6 +2383,7 @@ function addEntry(type){
   const by   = ((byEl && byEl.value) || "").trim() || currentPerson();
 
   if(!date){ toast("Pick a date"); return; }
+  if(!by){ toast("Add someone under Setup > People first"); return; }
   if(!head){ toast("Add a head first"); return; }
   if(!isFinite(amt) || amt <= 0){ toast("Enter a valid amount"); return; }
 
@@ -2564,16 +2713,14 @@ function renderLedgerDash(){
 
 function renderLedgerAll(){
   seedHeads();
+  seedPeople();
   const today = new Date().toISOString().slice(0,10);
   ["ex-date","in-date"].forEach(function(id){
     const d = document.getElementById(id);
     if(d && !d.value) d.value = today;
   });
-  ["ex-by","in-by"].forEach(function(id){
-    const b = document.getElementById(id);
-    if(b && !b.value) b.value = currentPerson();
-  });
   renderPeopleList();
+  renderPeopleManager();
   renderHeads();
   renderHeadOptions();
   renderPeriodSel();
