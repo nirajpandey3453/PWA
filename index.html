@@ -279,6 +279,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .ins.warn{border-left:3px solid var(--gold)}
 .ins.bad{border-left:3px solid #C62828}
 .ins.info{border-left:3px solid var(--teal)}
+.rec-row{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--border);border-radius:10px;margin-bottom:7px;background:var(--bg)}
+.rec-row.off{opacity:0.55}
+.rec-main{flex:1;min-width:0}
+.rec-t{font-size:12.5px;font-weight:600}
+.rec-x{font-size:10.5px;color:var(--sub);margin-top:2px}
+.rec-b{background:none;border:none;color:var(--sub);font-size:13px;cursor:pointer;padding:2px 5px;flex-shrink:0}
 .dupe-box{margin-top:9px}
 .dupe-t{font-size:11px;color:var(--sub);line-height:1.5;margin:6px 0}
 .dupe-row{font-size:11.5px;padding:6px 8px;border:1px solid var(--border);border-radius:8px;margin-bottom:5px;background:var(--bg)}
@@ -609,6 +615,33 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <button class="btn-sm btn-outline" style="width:100%;margin-top:10px" onclick="addPerson()">+ Add Person</button>
     <div id="people-manage" style="margin-top:12px"></div>
   </div>
+
+  <div class="card">
+    <div class="card-title">Recurring</div>
+    <div style="font-size:12px;color:var(--sub);line-height:1.5;margin-bottom:10px">
+      Posts one entry a month automatically, from the starting month up to now.
+    </div>
+    <div class="lg-f2">
+      <div><label class="form-label">Head</label>
+        <select class="form-select" id="rc-head"></select></div>
+      <div><label class="form-label">Amount (₹)</label>
+        <input class="form-input" type="number" inputmode="numeric" min="0" id="rc-amt" placeholder="0"></div>
+    </div>
+    <div class="lg-f2">
+      <div><label class="form-label">For</label>
+        <select class="form-select" id="rc-by"></select></div>
+      <div><label class="form-label">Day of month</label>
+        <input class="form-input" type="number" min="1" max="31" id="rc-day" value="1"></div>
+    </div>
+    <div class="lg-f2">
+      <div><label class="form-label">Starting from</label>
+        <input class="form-input" type="month" id="rc-from"></div>
+      <div><label class="form-label">Note</label>
+        <input class="form-input" id="rc-note" placeholder="optional"></div>
+    </div>
+    <button class="btn-sm btn-outline" style="width:100%;margin-top:11px" onclick="addRecurring()">+ Add Recurring</button>
+    <div id="rec-list" style="margin-top:12px"></div>
+  </div>
 </div>
 
 <!-- LEDGER: LOG -->
@@ -774,12 +807,13 @@ if(!ST.cats)      ST.cats  = {};
 if(!ST.locked)    ST.locked = {};
 if(!ST.heads)     ST.heads  = {};
 if(!ST.people)    ST.people = {};
+if(!ST.recurring) ST.recurring = {};
 if(!ST.ledger)    ST.ledger = [];
 // meta[kind][key] = when that single field last changed on any device.
 // Merging per field (not per document) is what stops a stale device from
 // overwriting everything with one edit.
 if(!ST.meta)      ST.meta = {};
-["checks","funds","amts","cats","locked","heads","people","transfers","ledger","shares"].forEach(k=>{ if(!ST.meta[k]) ST.meta[k] = {}; });
+["checks","funds","amts","cats","locked","heads","people","recurring","transfers","ledger","shares"].forEach(k=>{ if(!ST.meta[k]) ST.meta[k] = {}; });
 if(!ST.tomb)      ST.tomb = {};
 if(!ST.tomb.transfers) ST.tomb.transfers = {};
 if(!ST.tomb.ledger)    ST.tomb.ledger    = {};
@@ -937,7 +971,7 @@ function showSec(id,el){
   if(id==="tracker")  renderTracker();
   if(id==="lgd")      { seedHeads(); renderPeriodSel(); renderLedgerDash(); }
   if(id==="lgadd")    renderLedgerAll();
-  if(id==="lgheads")  { seedHeads(); seedPeople(); renderHeads(); renderPeopleManager(); renderPeopleList(); }
+  if(id==="lgheads")  { seedHeads(); seedPeople(); renderHeads(); renderPeopleManager(); renderPeopleList(); renderRecurringForm(); }
   if(id==="lglog")    renderLedger();
   if(id==="transfer") renderTransfer();
   if(id==="funds")    renderFunds();
@@ -1892,7 +1926,8 @@ function syncPayload(){
   return JSON.stringify({
     checks: ST.checks, transfers: ST.transfers,
     funds: ST.funds, amts: ST.amts, cats: ST.cats, locked: ST.locked,
-    heads: ST.heads, people: ST.people, ledger: ST.ledger, shares: ST.shares,
+    heads: ST.heads, people: ST.people, recurring: ST.recurring,
+    ledger: ST.ledger, shares: ST.shares,
     meta: ST.meta, tomb: ST.tomb,
     updatedAt: ST.updatedAt || 0
   });
@@ -1970,7 +2005,7 @@ function applyMerge(rem){
   if(!rem) return false;
   try{ localStorage.setItem("sip_backup", JSON.stringify(ST)); }catch{}
   let changed = false;
-  ["checks","funds","amts","cats","locked","heads","people","shares"].forEach(function(kind){
+  ["checks","funds","amts","cats","locked","heads","people","recurring","shares"].forEach(function(kind){
     const out = {val:{}, ts:{}};
     if(mergeField(kind, rem, out)) changed = true;
     ST[kind] = out.val;
@@ -2394,9 +2429,25 @@ function addEntry(type){
   toast(type === "income" ? "✓ Income added" : "✓ Expense added");
 }
 
+// cyrb53: a stable 53-bit hash, so the same srcKey yields the same row id on
+// every device.
+function hashId(str){
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for(let i=0;i<str.length;i++){
+    const c = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 2654435761);
+    h2 = Math.imul(h2 ^ c, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1>>>16), 2246822507) ^ Math.imul(h2 ^ (h2>>>13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2>>>16), 2246822507) ^ Math.imul(h1 ^ (h1>>>13), 3266489909);
+  return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+}
+
 // Single insertion point, so recorded transfers and manual entries agree.
 function addLedgerRow(row){
-  const id = Date.now() + Math.floor(Math.random()*1000);
+  // Generated rows key off srcKey so every device agrees on the id.
+  const id = row.srcKey ? hashId(row.srcKey)
+                        : Date.now() + Math.floor(Math.random()*1000);
   ST.ledger.unshift({id:id, date:row.date, type:row.type, head:row.head,
                      amt:Number(row.amt), note:row.note||"", by:row.by,
                      src: row.src || null, srcKey: row.srcKey || null,
@@ -2714,6 +2765,7 @@ function renderLedgerDash(){
 function renderLedgerAll(){
   seedHeads();
   seedPeople();
+  runRecurring();
   const today = new Date().toISOString().slice(0,10);
   ["ex-date","in-date"].forEach(function(id){
     const d = document.getElementById(id);
@@ -2721,11 +2773,174 @@ function renderLedgerAll(){
   });
   renderPeopleList();
   renderPeopleManager();
+  renderRecurringForm();
   renderHeads();
   renderHeadOptions();
   renderPeriodSel();
   renderLedgerDash();
   renderLedger();
+}
+
+// ── RECURRING ENTRIES ──────────────────────────────────────────────────────
+// A rule generates one ledger row per month. Rows are keyed by srcKey and get
+// a DETERMINISTIC id derived from it, so two devices generating the same month
+// produce the same row and the merge collapses them instead of duplicating.
+function ymNow(){
+  const d = new Date();
+  return d.getFullYear() + "-" + (d.getMonth()<9?"0":"") + (d.getMonth()+1);
+}
+
+function ymAdd(ym, n){
+  const p = String(ym).split("-");
+  let y = Number(p[0]), m = Number(p[1]) + n;
+  y += Math.floor((m-1)/12);
+  m = ((m-1) % 12 + 12) % 12 + 1;
+  return y + "-" + (m<10?"0":"") + m;
+}
+
+// Day 31 in February lands on the 28th/29th rather than rolling into March.
+function ymDay(ym, day){
+  const p = String(ym).split("-");
+  const last = new Date(Number(p[0]), Number(p[1]), 0).getDate();
+  const d = Math.min(Math.max(Number(day)||1, 1), last);
+  return ym + "-" + (d<10?"0":"") + d;
+}
+
+function recList(){
+  return Object.keys(ST.recurring||{})
+    .filter(function(id){ return ST.recurring[id]; })
+    .map(function(id){ return Object.assign({id:id}, ST.recurring[id]); })
+    .sort(function(a,b){ return (a.day||1) - (b.day||1); });
+}
+
+// Generate every month that is due but not yet written.
+function runRecurring(){
+  if(!ST.recurring) return 0;
+  const stop = ymNow();
+  let made = 0;
+  Object.keys(ST.recurring).forEach(function(id){
+    const r = ST.recurring[id];
+    if(!r || r.active === false || !r.from) return;
+    const head = ST.heads[r.head];
+    if(!head) return;                      // head was removed; skip quietly
+    let ym = r.from, guard = 0;
+    while(ym <= stop && guard++ < 240){
+      if(r.to && ym > r.to) break;
+      const key = "rec_" + id + "_" + ym;
+      const exists = (ST.ledger||[]).some(function(e){ return e.srcKey === key; });
+      if(!exists){
+        addLedgerRow({
+          date: ymDay(ym, r.day),
+          type: head.type,
+          head: r.head,
+          amt:  Number(r.amt),
+          by:   r.by,
+          note: r.note || (head.name + " (recurring)"),
+          src:  "rec",
+          srcKey: key
+        });
+        made++;
+      }
+      ym = ymAdd(ym, 1);
+    }
+  });
+  if(made) save(ST);
+  return made;
+}
+
+function addRecurring(){
+  const head = document.getElementById("rc-head").value;
+  const amt  = Number(document.getElementById("rc-amt").value);
+  const by   = document.getElementById("rc-by").value;
+  const day  = Number(document.getElementById("rc-day").value);
+  const from = document.getElementById("rc-from").value;
+  const note = document.getElementById("rc-note").value.trim();
+
+  if(!head){ toast("Pick a head first"); return; }
+  if(!isFinite(amt) || amt <= 0){ toast("Enter a valid amount"); return; }
+  if(!by){ toast("Pick who it is for"); return; }
+  if(!from){ toast("Pick the starting month"); return; }
+  if(!isFinite(day) || day < 1 || day > 31){ toast("Day must be 1 to 31"); return; }
+
+  const id = "r_" + Date.now().toString(36);
+  ST.recurring[id] = {head:head, amt:amt, by:by, day:day, from:from, to:"",
+                      note:note, active:true};
+  touch("recurring", id);
+  save(ST);
+  document.getElementById("rc-amt").value = "";
+  document.getElementById("rc-note").value = "";
+  const n = runRecurring();
+  renderRecurring(); renderLedger(); renderPeriodSel(); renderLedgerDash();
+  toast(n ? ("✓ Added — " + n + " month(s) posted") : "✓ Recurring entry added");
+}
+
+function toggleRecurring(id){
+  const r = ST.recurring[id];
+  if(!r) return;
+  r.active = (r.active === false);
+  touch("recurring", id);
+  save(ST);
+  if(r.active) runRecurring();
+  renderRecurring(); renderLedger(); renderPeriodSel(); renderLedgerDash();
+  toast(r.active ? "Resumed" : "Paused — no new months will be posted");
+}
+
+function delRecurring(id){
+  if(!confirm("Remove this recurring entry?\n\nEntries it already posted stay in the ledger.")) return;
+  ST.recurring[id] = null;        // null, not delete, so the removal can merge
+  touch("recurring", id);
+  save(ST);
+  renderRecurring();
+  toast("Recurring entry removed");
+}
+
+function renderRecurring(){
+  const el = document.getElementById("rec-list");
+  if(!el) return;
+  const list = recList();
+  if(!list.length){ el.innerHTML = '<span class="head-none">None yet</span>'; return; }
+  el.innerHTML = list.map(function(r){
+    const h = ST.heads[r.head];
+    const nm = h ? h.name : "(removed head)";
+    const inc = h && h.type === "income";
+    const off = r.active === false;
+    return '<div class="rec-row' + (off ? " off" : "") + '">'
+      + '<div class="rec-main">'
+      +   '<div class="rec-t">' + esc(nm) + ' &middot; ' + fmt(r.amt) + '</div>'
+      +   '<div class="rec-x">' + (inc ? "income" : "expense") + ' &middot; ' + esc(r.by)
+      +     ' &middot; day ' + r.day + ' &middot; from ' + monthLabel(r.from)
+      +     (off ? ' &middot; paused' : '') + '</div>'
+      + '</div>'
+      + '<button class="rec-b" onclick="toggleRecurring(\'' + r.id + '\')">'
+      +   (off ? "&#9654;" : "&#10074;&#10074;") + '</button>'
+      + '<button class="rec-b" onclick="delRecurring(\'' + r.id + '\')">&times;</button>'
+      + '</div>';
+  }).join("");
+}
+
+function renderRecurringForm(){
+  const sel = document.getElementById("rc-head");
+  if(sel){
+    const keep = sel.value;
+    const ex = headList("expense"), inc = headList("income");
+    sel.innerHTML =
+        '<optgroup label="Expense">' + ex.map(function(h){
+          return '<option value="'+h.id+'">'+esc(h.name)+'</option>'; }).join("") + '</optgroup>'
+      + '<optgroup label="Income">' + inc.map(function(h){
+          return '<option value="'+h.id+'">'+esc(h.name)+'</option>'; }).join("") + '</optgroup>';
+    if(keep) sel.value = keep;
+  }
+  const by = document.getElementById("rc-by");
+  if(by){
+    const names = knownPeople(), me = currentPerson(), keep = by.value;
+    by.innerHTML = names.map(function(n){
+      return '<option value="'+esc(n)+'">'+esc(n)+'</option>'; }).join("");
+    if(keep && names.indexOf(keep) > -1) by.value = keep;
+    else if(names.indexOf(me) > -1) by.value = me;
+  }
+  const from = document.getElementById("rc-from");
+  if(from && !from.value) from.value = ymNow();
+  renderRecurring();
 }
 
 // ── DASHBOARD ──────────────────────────────────────────────────────────────
