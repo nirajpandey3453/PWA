@@ -163,6 +163,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .home-tile.locked .home-t,.home-tile.locked .home-x{filter:blur(3px);opacity:0.55}
 .home-tile.locked{position:relative}
 .home-tile.locked:after{content:"🔒";position:absolute;top:18px;right:18px;font-size:18px}
+.hr-box{margin-top:14px;border:1px solid var(--border);border-radius:14px;padding:13px 13px 6px;background:var(--card)}
+.hr-t{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--sub);margin-bottom:9px}
+.hr-t.spaced{margin-top:14px}
+.hr-row{display:flex;align-items:center;gap:8px;padding:0 0 11px}
+.hr-main{flex:1;min-width:0}
+.hr-n{font-size:13px;font-weight:600}
+.hr-x{font-size:10.5px;color:var(--sub);margin-top:2px}
+.hr-b{background:none;border:none;color:var(--muted);font-size:17px;line-height:1;cursor:pointer;padding:0 3px;flex-shrink:0}
 .home-who{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:-12px 0 10px}
 .who-em{font-size:11.5px;color:var(--sub)}
 .who-tag{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--sub);border:1px solid var(--border);border-radius:7px;padding:1px 6px}
@@ -190,7 +198,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sh-chk:active{background:var(--bg)}
 .sh-main{flex:1;min-width:0}
 .sh-name{font-size:13px;font-weight:600}
-.sh-sub{font-size:10.5px;color:var(--muted);margin-top:2px}
+.sh-sub{font-size:10.5px;color:var(--sub);margin-top:3px}
+.sh-sub2{font-size:10px;color:var(--muted);margin-top:2px}
 .home-ico{font-size:32px;line-height:1}
 .home-t{font-size:17px;font-weight:700}
 .home-x{font-size:12px;color:var(--sub);line-height:1.45}
@@ -676,6 +685,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <span class="home-stat" id="home-sh"></span>
     </button>
   </div>
+
+  <div id="home-requests"></div>
 </div>
 
 <!-- LOCKED -->
@@ -696,17 +707,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 
   <div class="card">
+    <div class="card-title">To Buy <span class="opt" id="shop-count"></span></div>
+    <div id="shop-list"></div>
+  </div>
+
+  <div class="card">
     <div class="card-title">Buy Again</div>
     <div style="font-size:12px;color:var(--sub);line-height:1.5;margin-bottom:10px">
       Your most-bought items. Tap one to record a purchase straight away — the
       unit is prefilled from the last time you bought it.
     </div>
     <div class="freq-grid" id="freq-list"></div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">To Buy <span class="opt" id="shop-count"></span></div>
-    <div id="shop-list"></div>
   </div>
 </div>
 
@@ -1288,6 +1299,7 @@ function renderHome(){
     const done = completeMonths().filter(Boolean).length;
     iv.textContent = fmt(totalInvested()) + " invested · " + done + "/" + MONTHS.length + " months";
   }
+  renderHomeRequests();
   const mins = grantMinutesLeft();
   const bn = document.getElementById("home-grant");
   if(bn) bn.textContent = (!isAdmin() && mins) ? ("🔓 " + mins + " minute(s) of access left") : "";
@@ -1847,6 +1859,8 @@ function resetEdit(){
 
 // Re-render everything, keeping any expanded months open.
 function refreshAll(){
+  const home = document.getElementById("sec-home");
+  if(home && home.classList.contains("active")) renderHome();
   const open = Array.from(document.querySelectorAll(".month-body.open")).map(e=>e.id);
   renderSummary();
   renderDash();
@@ -2552,6 +2566,10 @@ if(!gToken && restoreSession()){
 // Everything here rides the shared Drive file.
 const MON_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
+function uid(prefix){
+  return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
+}
+
 // Paid-by is about WHERE the money came from; it never changes whether an
 // expense counts. A card purchase is real spending on the day you buy it.
 const PAY_MODES = [
@@ -2766,7 +2784,7 @@ function addSubhead(){
   if(subList(head).some(function(x){ return x.name.toLowerCase() === name.toLowerCase(); })){
     toast("That subhead already exists under this head"); return;
   }
-  const id = "s_" + Date.now().toString(36);
+  const id = uid("s_");
   ST.subheads[id] = {name:name, head:head};
   touch("subheads", id);
   save(ST);
@@ -2895,7 +2913,7 @@ function ensurePerson(name){
     return ST.people[id] && ST.people[id].name.toLowerCase() === name.toLowerCase();
   })[0];
   if(hit) return hit;
-  const id = "p_" + Date.now().toString(36) + Math.floor(Math.random()*100);
+  const id = uid("p_");
   ST.people[id] = {name:name};
   touch("people", id);
   return id;
@@ -3103,7 +3121,7 @@ function addHead(){
   if(headList(type).some(function(h){ return h.name.toLowerCase() === name.toLowerCase(); })){
     toast("That head already exists"); return;
   }
-  const id = (type === "income" ? "i_" : "e_") + Date.now().toString(36);
+  const id = uid(type === "income" ? "i_" : "e_");
   ST.heads[id] = {name:name, type:type};
   touch("heads", id);
   save(ST);
@@ -3780,7 +3798,7 @@ function addRecurring(){
   if(!from){ toast("Pick the starting month"); return; }
   if(!isFinite(day) || day < 1 || day > 31){ toast("Day must be 1 to 31"); return; }
 
-  const id = "r_" + Date.now().toString(36);
+  const id = uid("r_");
   ST.recurring[id] = {head:head, sub:sub, amt:amt, by:by, day:day, from:from, to:"",
                       note:note, active:true};
   touch("recurring", id);
@@ -3929,7 +3947,7 @@ function ensureItem(name, unit){
     return ST.items[id] && ST.items[id].name.toLowerCase() === name.toLowerCase();
   })[0];
   if(hit) return hit;
-  const id = "it_" + Date.now().toString(36) + Math.floor(Math.random()*100);
+  const id = uid("it_");
   ST.items[id] = {name:name, unit:unit || "pcs"};
   touch("items", id);
   return id;
@@ -4186,15 +4204,39 @@ function unmarkShop(id){
   toast("Moved back to the list");
 }
 
-// Whatever unit this item was last bought in is almost always the right
-// default next time, so it beats the catalogue default.
-function lastUnitFor(itemId, name){
+// The most recent purchase of this item, matched on catalogue id or name.
+function lastBuyOf(itemId, name){
   const key = String(name||"").trim().toLowerCase();
   const hits = shopDone().filter(function(r){
     return (itemId && r.item === itemId)
         || (key && String(r.name||"").trim().toLowerCase() === key);
   }).sort(function(a,b){ return (b.doneAt||0) - (a.doneAt||0); });
-  return hits.length ? (hits[0].unit || "") : "";
+  return hits.length ? hits[0] : null;
+}
+
+// Whatever unit this item was last bought in is almost always the right
+// default next time, so it beats the catalogue default.
+function lastUnitFor(itemId, name){
+  const r = lastBuyOf(itemId, name);
+  return r ? (r.unit || "") : "";
+}
+
+function shortDate(ms){
+  if(!ms) return "";
+  const d = new Date(Number(ms));
+  if(isNaN(d.getTime())) return "";
+  return d.getDate() + " " + MON_SHORT[d.getMonth()] + " " + d.getFullYear();
+}
+
+// How long ago, in plain words, so a stale item is obvious at a glance.
+function agoLabel(ms){
+  if(!ms) return "";
+  const days = Math.floor((Date.now() - Number(ms)) / 86400000);
+  if(days <= 0) return "today";
+  if(days === 1) return "yesterday";
+  if(days < 30) return days + " days ago";
+  const mo = Math.round(days/30);
+  return mo === 1 ? "a month ago" : (mo + " months ago");
 }
 
 // Ranked by how often each item has actually been bought, then alphabetically
@@ -4250,6 +4292,16 @@ function renderFrequent(){
     : '<span class="head-none">No saved items yet</span>';
 }
 
+// "last bought 12 Sep 2026 · 2 kg · 3 weeks ago", or that it is a first buy.
+function lastBuyLine(r){
+  const p = lastBuyOf(r.item, r.name);
+  if(!p) return "not bought before";
+  const u = unitOf(p.unit);
+  return "last bought " + shortDate(p.doneAt)
+       + " · " + fmtQty(Number(p.qty) * u.f, u.base)
+       + " · " + agoLabel(p.doneAt);
+}
+
 function renderShopList(){
   const el = document.getElementById("shop-list");
   if(!el) return;
@@ -4260,7 +4312,8 @@ function renderShopList(){
           + '<button class="sh-chk" onclick="openShopDone(' + r.id + ')" title="Mark bought"></button>'
           + '<div class="sh-main" onclick="openShopDone(' + r.id + ')" style="cursor:pointer">'
           +   '<div class="sh-name">' + esc(r.name) + '</div>'
-          +   '<div class="sh-sub">added by ' + esc(r.createdBy || "?")
+          +   '<div class="sh-sub">' + esc(lastBuyLine(r)) + '</div>'
+          +   '<div class="sh-sub2">added by ' + esc(r.createdBy || "?")
           +     (r.createdAt ? ' &middot; ' + esc(stampLabel(r.createdAt)) : '') + '</div></div>'
           + '<button class="lg-del" onclick="delShopItem(' + r.id + ')">&times;</button>'
           + '</div>';
@@ -4543,7 +4596,7 @@ function requestAccess(){
     return ST.requests[k] && emailKey(ST.requests[k].email) === key && ST.requests[k].status === "open";
   })[0];
   if(open){ toast("Your request is already waiting for an admin"); return; }
-  const id = "rq_" + Date.now().toString(36);
+  const id = uid("rq_");
   ST.requests[id] = {email:key, name:(gUserName || key), at:Date.now(), status:"open"};
   touch("requests", id);
   save(ST);
@@ -4562,7 +4615,7 @@ function approveRequest(id){
   r.status = "granted";
   touch("requests", id);
   save(ST);
-  renderAccessAdmin();
+  renderAccessAdmin(); renderHomeRequests();
   toast("✓ " + r.name + " has 30 minutes of access");
 }
 
@@ -4573,7 +4626,7 @@ function denyRequest(id){
   r.status = "denied";
   touch("requests", id);
   save(ST);
-  renderAccessAdmin();
+  renderAccessAdmin(); renderHomeRequests();
   toast("Request declined");
 }
 
@@ -4583,7 +4636,7 @@ function revokeGrant(key){
   ST.grants[key] = {until: 0, by: currentPerson(), at: Date.now()};
   touch("grants", key);
   save(ST);
-  renderAccessAdmin();
+  renderAccessAdmin(); renderHomeRequests();
   toast("Access revoked");
 }
 
@@ -4598,7 +4651,7 @@ function grantNow(id){
   ST.grants[key] = {until: Date.now() + GRANT_MS, by: currentPerson(), at: Date.now()};
   touch("grants", key);
   save(ST);
-  renderAccessAdmin();
+  renderAccessAdmin(); renderHomeRequests();
   toast("✓ " + p.name + " has 30 minutes of access");
 }
 
@@ -4683,6 +4736,49 @@ function renderAccessAdmin(){
               + '<button class="rec-b" onclick="revokeGrant(\'' + k + '\')" title="Revoke">&times;</button></div>';
           }).join("")
         : '<div class="gate-x">Nobody has temporary access right now.</div>');
+}
+
+// Approvals belong where the admin actually lands, not buried in a settings
+// tab inside a module the requester cannot even open.
+function renderHomeRequests(){
+  const el = document.getElementById("home-requests");
+  if(!el) return;
+  if(!isAdmin()){ el.innerHTML = ""; return; }
+
+  const open = Object.keys(ST.requests||{})
+    .filter(function(k){ return ST.requests[k] && ST.requests[k].status === "open"; })
+    .sort(function(a,b){ return ST.requests[b].at - ST.requests[a].at; });
+
+  const live = Object.keys(ST.grants||{}).filter(function(k){ return grantFor(k); });
+
+  if(!open.length && !live.length){ el.innerHTML = ""; return; }
+
+  el.innerHTML = '<div class="hr-box">'
+    + (open.length
+        ? '<div class="hr-t">' + open.length + ' request' + (open.length>1?'s':'') + ' waiting</div>'
+          + open.map(function(k){
+              const r = ST.requests[k];
+              return '<div class="hr-row">'
+                + '<div class="hr-main"><div class="hr-n">' + esc(r.name) + '</div>'
+                +   '<div class="hr-x">' + esc(r.email) + ' &middot; ' + esc(stampLabel(r.at)) + '</div></div>'
+                + '<button class="btn-sm btn-green" onclick="approveRequest(\'' + k + '\')">Allow 30 min</button>'
+                + '<button class="hr-b" onclick="denyRequest(\'' + k + '\')" title="Decline">&times;</button>'
+                + '</div>';
+            }).join("")
+        : '')
+    + (live.length
+        ? '<div class="hr-t' + (open.length ? ' spaced' : '') + '">Currently allowed</div>'
+          + live.map(function(k){
+              const g = ST.grants[k];
+              const mins = Math.max(0, Math.ceil((Number(g.until) - Date.now())/60000));
+              return '<div class="hr-row">'
+                + '<div class="hr-main"><div class="hr-n">' + esc(k) + '</div>'
+                +   '<div class="hr-x">' + mins + ' minute(s) left</div></div>'
+                + '<button class="hr-b" onclick="revokeGrant(\'' + k + '\')" title="Revoke">&times;</button>'
+                + '</div>';
+            }).join("")
+        : '')
+    + '</div>';
 }
 
 // A grant expiring should close the section, not leave it open indefinitely.
