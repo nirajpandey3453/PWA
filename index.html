@@ -218,6 +218,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .head-chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;border-radius:12px;padding:3px 5px 3px 10px;margin:0 6px 6px 0;border:1px solid var(--border)}
 .head-chip.exp{background:rgba(198,40,40,0.07);color:#B3261E}
 .head-chip.inc{background:rgba(26,122,74,0.09);color:#1A7A4A}
+.head-chip.excl{border-style:dashed}
+.chip-x{font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;opacity:0.7;margin-left:5px}
+.chk-hint{display:block;color:var(--teal);font-weight:600;margin-top:3px}
 .head-chip button{background:none;border:none;font-size:13px;line-height:1;cursor:pointer;color:inherit;opacity:0.55;padding:0 2px}
 .head-chip button:active{opacity:1}
 .head-none{font-size:11.5px;color:var(--muted)}
@@ -264,8 +267,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .lg-head{font-size:12.5px;font-weight:600}
 .lg-sub{font-size:10.5px;color:var(--sub);margin-top:2px;display:flex;gap:6px;flex-wrap:wrap}
 .lg-by{background:var(--bg);border-radius:7px;padding:0 6px;font-weight:600}
+.lg-pay{background:var(--bg);border-radius:7px;padding:0 6px}
+.hint-s{color:var(--muted);font-size:10.5px;line-height:1.45;display:inline-block;margin-top:4px}
+.pm-row{margin-top:8px;padding:9px 10px;border:1px solid var(--border);border-radius:10px;background:var(--bg);font-size:12.5px;color:var(--text)}
+.pm-tag{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--muted);border:1px solid var(--border);border-radius:7px;padding:1px 5px;margin-left:5px}
 .lg-cb{color:var(--muted)}
-.lg-amt{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;padding-top:1px}
+.lg-amt{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;padding-top:1px;text-align:right}
+.lg-amt.card{color:var(--muted);font-weight:600}
+.lg-cardtag{font-size:8.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:0 4px;margin-top:3px;display:inline-block}
+.cardc{color:var(--muted);font-weight:600}
+.card-note{font-size:11px;color:var(--sub);line-height:1.5;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:9px 10px;margin-top:11px}
+.chk{display:flex;align-items:flex-start;gap:8px;font-size:11.5px;color:var(--sub);line-height:1.45;margin-top:11px;cursor:pointer}
+.chk input{margin-top:1px;flex-shrink:0}
 .lg-del{background:none;border:none;color:var(--muted);font-size:16px;line-height:1;cursor:pointer;padding:0 2px;flex-shrink:0}
 .fw-item{border-bottom:1px solid var(--border)}
 .fw-item:last-of-type{border-bottom:none}
@@ -383,6 +396,34 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <button class="lock-forgot" onclick="forgotPin()">Forgot PIN?</button>
 </div>
 
+<div class="modal-bg" id="entry-modal" onclick="if(event.target===this)closeEntryEdit()">
+  <div class="modal-box">
+    <div class="modal-title" id="em2-title">Edit entry</div>
+    <div class="modal-sub" id="em2-src"></div>
+    <label for="em2-date">Date</label>
+    <input id="em2-date" type="date">
+    <label for="em2-amt">Amount (&#8377;)</label>
+    <input id="em2-amt" type="number" inputmode="numeric" min="0">
+    <label for="em2-head">Head</label>
+    <select id="em2-head" onchange="fillEditSubs('')"></select>
+    <label for="em2-sub">Subhead</label>
+    <select id="em2-sub"></select>
+    <label for="em2-by">For</label>
+    <select id="em2-by"></select>
+    <label for="em2-pay">Paid by</label>
+    <select id="em2-pay"></select>
+    <label for="em2-note">Note</label>
+    <input id="em2-note" placeholder="optional">
+    <label class="chk"><input type="checkbox" id="em2-card">
+      <span>Keep out of monthly and yearly totals</span></label>
+    <div class="share-err" id="em2-err"></div>
+    <div class="modal-row">
+      <button class="btn-sm btn-outline" onclick="closeEntryEdit()">Cancel</button>
+      <button class="btn-sm btn-green" onclick="saveEntryEdit()">&#10003; Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="head-modal" onclick="if(event.target===this)closeHeadEdit()">
   <div class="modal-box">
     <div class="modal-title">Edit Head</div>
@@ -396,6 +437,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <option value="income">Income</option>
       </select>
     </div>
+    <label class="chk"><input type="checkbox" id="hm-excl">
+      <span>Settlement head — entries here never count towards monthly or yearly
+      totals. Use it for card bill payments and loan repayments, where the real
+      spending was already recorded.</span></label>
     <div class="share-err" id="hm-err"></div>
     <div class="modal-row">
       <button class="btn-sm btn-outline" onclick="closeHeadEdit()">Cancel</button>
@@ -596,9 +641,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="lg-f2">
       <div><label class="form-label">Head</label>
-        <select class="form-select" id="ex-head" onchange="fillSubs('ex')"></select></div>
+        <select class="form-select" id="ex-head" onchange="fillSubs('ex');syncExclChk('ex')"></select></div>
       <div><label class="form-label">Subhead <span class="opt">optional</span></label>
         <select class="form-select" id="ex-sub"></select></div>
+    </div>
+    <div class="lg-f2">
+      <div><label class="form-label">Paid by</label>
+        <select class="form-select" id="ex-pay" onchange="syncExclChk('ex')"></select></div>
     </div>
     <div class="lg-f2">
       <div><label class="form-label">Expense by</label>
@@ -606,6 +655,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <label class="form-label">Note</label>
     <input class="form-input" id="ex-note" placeholder="What was this for? (optional)">
+    <label class="chk"><input type="checkbox" id="ex-card">
+      <span>Exclude from monthly and yearly totals — e.g. a credit-card bill payment. It still files under its head and subhead.
+      <b id="ex-cardhint" class="chk-hint"></b></span></label>
     <button class="btn btn-red-solid" style="margin-top:12px" onclick="addEntry('expense')">− Add Expense</button>
   </div>
 
@@ -648,6 +700,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <button class="btn-sm btn-outline" style="width:100%;margin-top:10px" onclick="addHead()">+ Add Head</button>
     <div id="head-list" style="margin-top:12px"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Payment Types</div>
+    <div style="font-size:12px;color:var(--sub);line-height:1.5;margin-bottom:6px">
+      Tick a payment type to keep it out of monthly and yearly totals. Those
+      entries are still recorded and grouped by head, so you can see where the
+      money went — they just do not add up twice when you settle the bill.
+    </div>
+    <div id="paymode-list"></div>
   </div>
 
   <div class="card">
@@ -878,12 +940,13 @@ if(!ST.heads)     ST.heads  = {};
 if(!ST.people)    ST.people = {};
 if(!ST.recurring) ST.recurring = {};
 if(!ST.subheads)  ST.subheads = {};
+if(!ST.exclPay)   ST.exclPay = {};
 if(!ST.ledger)    ST.ledger = [];
 // meta[kind][key] = when that single field last changed on any device.
 // Merging per field (not per document) is what stops a stale device from
 // overwriting everything with one edit.
 if(!ST.meta)      ST.meta = {};
-["checks","funds","amts","cats","locked","heads","subheads","people","recurring","transfers","ledger","shares"].forEach(k=>{ if(!ST.meta[k]) ST.meta[k] = {}; });
+["checks","funds","amts","cats","locked","heads","subheads","people","recurring","exclPay","transfers","ledger","shares"].forEach(k=>{ if(!ST.meta[k]) ST.meta[k] = {}; });
 if(!ST.tomb)      ST.tomb = {};
 if(!ST.tomb.transfers) ST.tomb.transfers = {};
 if(!ST.tomb.ledger)    ST.tomb.ledger    = {};
@@ -1122,7 +1185,7 @@ function showSec(id,el){
   if(id==="tracker")  renderTracker();
   if(id==="lgd")      { seedHeads(); renderPeriodSel(); renderLedgerDash(); }
   if(id==="lgadd")    renderLedgerAll();
-  if(id==="lgheads")  { seedHeads(); seedPeople(); renderHeads(); renderSubheads(); renderPeopleManager(); renderPeopleList(); renderRecurringForm(); }
+  if(id==="lgheads")  { seedHeads(); seedPeople(); seedExclPay(); renderHeads(); renderSubheads(); renderPayExcl(); renderPeopleManager(); renderPeopleList(); renderRecurringForm(); }
   if(id==="lglog")    renderLedger();
   if(id==="transfer") renderTransfer();
   if(id==="funds")    renderFunds();
@@ -2078,6 +2141,7 @@ function syncPayload(){
     checks: ST.checks, transfers: ST.transfers,
     funds: ST.funds, amts: ST.amts, cats: ST.cats, locked: ST.locked,
     heads: ST.heads, subheads: ST.subheads, people: ST.people, recurring: ST.recurring,
+    exclPay: ST.exclPay,
     ledger: ST.ledger, shares: ST.shares,
     meta: ST.meta, tomb: ST.tomb,
     updatedAt: ST.updatedAt || 0
@@ -2156,7 +2220,7 @@ function applyMerge(rem){
   if(!rem) return false;
   try{ localStorage.setItem("sip_backup", JSON.stringify(ST)); }catch{}
   let changed = false;
-  ["checks","funds","amts","cats","locked","heads","subheads","people","recurring","shares"].forEach(function(kind){
+  ["checks","funds","amts","cats","locked","heads","subheads","people","recurring","exclPay","shares"].forEach(function(kind){
     const out = {val:{}, ts:{}};
     if(mergeField(kind, rem, out)) changed = true;
     ST[kind] = out.val;
@@ -2251,6 +2315,69 @@ if(!gToken && restoreSession()){
 // Everything here rides the shared Drive file.
 const MON_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
+// Paid-by is about WHERE the money came from; it never changes whether an
+// expense counts. A card purchase is real spending on the day you buy it.
+const PAY_MODES = [
+  {id:"cash", name:"Cash"},
+  {id:"bank", name:"Bank / UPI"},
+  {id:"card", name:"Credit Card"}
+];
+// Seeded once with card excluded, since that is the common case. Every mode is
+// written explicitly so unticking card is remembered rather than re-seeded.
+function seedExclPay(){
+  if(Object.keys(ST.exclPay||{}).length) return;
+  PAY_MODES.forEach(function(p){
+    ST.exclPay[p.id] = (p.id === "card");
+    if(ST.meta.exclPay[p.id] == null) ST.meta.exclPay[p.id] = 1;
+  });
+  save(ST);
+}
+
+function isPayExcluded(pay){ return !!(pay && ST.exclPay && ST.exclPay[pay]); }
+
+function togglePayExcl(id){
+  if(!ST.exclPay) ST.exclPay = {};
+  ST.exclPay[id] = !ST.exclPay[id];
+  touch("exclPay", id);
+  save(ST);
+  renderPayExcl();
+  syncExclChk("ex");
+  renderLedger(); renderPeriodSel(); renderLedgerDash();
+  toast(ST.exclPay[id] ? (payName(id) + " excluded from totals")
+                       : (payName(id) + " now counts in totals"));
+}
+
+function renderPayExcl(){
+  const el = document.getElementById("paymode-list");
+  if(!el) return;
+  el.innerHTML = PAY_MODES.map(function(p){
+    const on = isPayExcluded(p.id);
+    return '<label class="chk pm-row"><input type="checkbox"' + (on ? " checked" : "")
+      + ' onchange="togglePayExcl(\'' + p.id + '\')">'
+      + '<span><b>' + esc(p.name) + '</b>'
+      + (on ? ' <span class="pm-tag">not counted</span>' : '')
+      + '</span></label>';
+  }).join("");
+}
+
+function payName(id){
+  const m = PAY_MODES.filter(function(p){ return p.id === id; })[0];
+  return m ? m.name : "";
+}
+
+// Card purchases minus card bill payments — what is still owed on the card.
+// Cumulative across all time, because that is what "outstanding" means.
+function cardOutstanding(){
+  let spent = 0, paid = 0;
+  (ST.ledger||[]).forEach(function(e){
+    const amt = Number(e.amt) || 0;
+    const h = ST.heads[e.head];
+    if(h && h.bill){ paid += amt; return; }                 // pays the card down
+    if(e.type !== "income" && e.pay === "card") spent += amt;
+  });
+  return {spent:spent, paid:paid, due:spent - paid};
+}
+
 const DEFAULT_HEADS = [
   {id:"e_groceries", name:"Groceries",     type:"expense"},
   {id:"e_rent",      name:"Rent / EMI",    type:"expense"},
@@ -2259,6 +2386,9 @@ const DEFAULT_HEADS = [
   {id:"e_education", name:"Education",     type:"expense"},
   {id:"e_medical",   name:"Medical",       type:"expense"},
   {id:"e_other",     name:"Other",         type:"expense"},
+  // Cash basis: the bill payment IS the month's expense, so this head counts
+  // normally. bill:true marks it as what pays the card down.
+  {id:"e_cardbill",  name:"Card Bill Payment", type:"expense", bill:true},
   {id:"i_salary",    name:"Salary",        type:"income"},
   {id:"i_business",  name:"Business",      type:"income"},
   {id:"i_rent",      name:"Rent Received", type:"income"},
@@ -2276,6 +2406,25 @@ function ensureTransferHead(){
     touch("heads","i_transfer");
   }
   return "i_transfer";
+}
+
+// Users seeded before the settlement head existed still need it.
+function ensureCardBillHead(){
+  if(!ST.heads["e_cardbill"]){
+    ST.heads["e_cardbill"] = {name:"Card Bill Payment", type:"expense", bill:true};
+    touch("heads","e_cardbill");
+  }
+  return "e_cardbill";
+}
+
+// Cash basis. A card purchase is recorded so you can see WHERE the money went,
+// but it does not hit a total — the money has not left your bank yet. It counts
+// later, once, when the card bill is paid.
+function isExcluded(e){
+  if(e.card) return true;                                   // manual one-off
+  const h = ST.heads[e.head];
+  if(h && h.excl) return true;                              // settlement head
+  return e.type !== "income" && isPayExcluded(e.pay);       // per the Setup setting
 }
 
 // Ticking a SIP posts an expense here, so the money shows up in the ledger.
@@ -2341,9 +2490,10 @@ let lgYear = "", lgMonth = "";   // "" on month means the whole year
 // the merge collapses them instead of creating duplicates.
 function seedHeads(){
   if(!ST.meta.heads) ST.meta.heads = {};
+  if(Object.keys(ST.heads||{}).length){ ensureCardBillHead(); }
   if(Object.keys(ST.heads||{}).length) return;
   DEFAULT_HEADS.forEach(function(h){
-    ST.heads[h.id] = {name:h.name, type:h.type};
+    ST.heads[h.id] = {name:h.name, type:h.type, excl:!!h.excl, bill:!!h.bill};
     if(ST.meta.heads[h.id] == null) ST.meta.heads[h.id] = 1;
   });
   save(ST);   // otherwise the defaults never reach Drive
@@ -2426,6 +2576,32 @@ function renderSubheads(){
 }
 
 // Repopulate the optional subhead picker whenever its head changes.
+// Choosing a settlement head forces the exclusion, so it cannot be forgotten.
+function fillPayModes(){
+  const sel = document.getElementById("ex-pay");
+  if(!sel) return;
+  const keep = sel.value;
+  sel.innerHTML = PAY_MODES.map(function(p){
+    return '<option value="'+p.id+'">'+esc(p.name)+'</option>'; }).join("");
+  if(keep) sel.value = keep;
+}
+
+function syncExclChk(pre){
+  const headSel = document.getElementById(pre + "-head");
+  const paySel  = document.getElementById(pre + "-pay");
+  const chk     = document.getElementById(pre + "-card");
+  const hint    = document.getElementById(pre + "-cardhint");
+  if(!headSel || !chk) return;
+  const h    = ST.heads[headSel.value];
+  const byCard = !!(paySel && isPayExcluded(paySel.value));
+  const forced = byCard || !!(h && h.excl);
+  if(forced) chk.checked = true;
+  chk.disabled = forced;
+  if(hint) hint.textContent = byCard
+    ? payName(paySel.value) + " is set to stay out of totals — this is recorded under its head only."
+    : (h && h.excl ? "This head is a settlement, so it never counts." : "");
+}
+
 function fillSubs(pre){
   const headSel = document.getElementById(pre + "-head");
   const sel     = document.getElementById(pre + "-sub");
@@ -2600,8 +2776,9 @@ function renderHeads(){
     return '<div class="head-group"><div class="head-group-t">'+label+'</div>'
       + (list.length
           ? list.map(function(h){
-              return '<span class="head-chip '+(type==="income"?"inc":"exp")+'">'
+              return '<span class="head-chip '+(type==="income"?"inc":"exp")+(ST.heads[h.id].excl?" excl":"")+'">'
                 + esc(h.name)
+                + (ST.heads[h.id].excl ? '<span class="chip-x" title="Never counted in totals">excl</span>' : '')
                 + '<button onclick="openHeadEdit(\'' + h.id + '\')" title="Edit">&#9998;</button>'
                 + '<button onclick="delHead(\'' + h.id + '\')" title="Remove">&times;</button></span>';
             }).join("")
@@ -2620,6 +2797,7 @@ function openHeadEdit(id){
   const used = (ST.ledger||[]).filter(function(e){ return e.head === id; }).length;
   document.getElementById("hm-name").value = h.name;
   document.getElementById("hm-type").value = h.type;
+  document.getElementById("hm-excl").checked = !!h.excl;
   // Changing the kind under existing entries would leave expense rows filed
   // against an income head, so that option only exists while it is unused.
   document.getElementById("hm-type-row").hidden = used > 0;
@@ -2650,11 +2828,13 @@ function saveHeadEdit(){
   });
   if(clash){ err.textContent = "Another " + type + " head already has that name."; return; }
 
-  ST.heads[editHeadId] = {name:name, type:type};
+  ST.heads[editHeadId] = {name:name, type:type,
+                          excl: !!document.getElementById("hm-excl").checked,
+                          bill: !!cur.bill};
   touch("heads", editHeadId);
   save(ST);
   closeHeadEdit();
-  renderHeads(); renderHeadOptions(); renderRecurringForm();
+  renderHeads(); renderHeadOptions(); renderRecurringForm(); syncExclChk("ex");
   renderLedger(); renderPeriodSel(); renderLedgerDash();
   toast("✓ Head updated");
 }
@@ -2699,13 +2879,18 @@ function addEntry(type){
   const sub   = (subEl && subEl.value) || "";
   const byEl = document.getElementById(pre+"-by");
   const by   = ((byEl && byEl.value) || "").trim() || currentPerson();
+  const cardEl = document.getElementById(pre+"-card");
+  const card   = !!(cardEl && cardEl.checked);
+  const payEl  = document.getElementById(pre+"-pay");
+  const pay    = (payEl && payEl.value) || "";
 
   if(!date){ toast("Pick a date"); return; }
   if(!by){ toast("Add someone under Setup > People first"); return; }
   if(!head){ toast("Add a head first"); return; }
   if(!isFinite(amt) || amt <= 0){ toast("Enter a valid amount"); return; }
 
-  addLedgerRow({date:date, type:type, head:head, sub:sub, amt:amt, note:note, by:by});
+  addLedgerRow({date:date, type:type, head:head, sub:sub, amt:amt, note:note, by:by, card:card, pay:pay});
+  if(cardEl) cardEl.checked = false;
   document.getElementById(pre+"-amt").value = "";
   document.getElementById(pre+"-note").value = "";
   renderLedger(); renderPeriodSel(); renderLedgerDash(); renderPeopleList();
@@ -2731,7 +2916,7 @@ function addLedgerRow(row){
   // Generated rows key off srcKey so every device agrees on the id.
   const id = row.srcKey ? hashId(row.srcKey)
                         : Date.now() + Math.floor(Math.random()*1000);
-  ST.ledger.unshift({id:id, date:row.date, type:row.type, head:row.head, sub:row.sub||"",
+  ST.ledger.unshift({id:id, date:row.date, type:row.type, head:row.head, sub:row.sub||"", card:!!row.card, pay:row.pay||"",
                      amt:Number(row.amt), note:row.note||"", by:row.by,
                      src: row.src || null, srcKey: row.srcKey || null,
                      createdBy: row.createdBy || currentPerson(),
@@ -2739,6 +2924,92 @@ function addLedgerRow(row){
   touch("ledger", id);
   save(ST);
   return id;
+}
+
+let editEntryId = null;
+
+function openEntryEdit(id){
+  const e = (ST.ledger||[]).filter(function(r){ return r.id === id; })[0];
+  if(!e){ toast("Entry not found"); return; }
+  editEntryId = id;
+
+  document.getElementById("em2-title").textContent =
+    (e.type === "income" ? "Edit income" : "Edit expense");
+  document.getElementById("em2-date").value = e.date || "";
+  document.getElementById("em2-amt").value  = e.amt;
+  document.getElementById("em2-note").value = e.note || "";
+
+  // Head list follows the entry's own type — an expense stays an expense.
+  const hs = document.getElementById("em2-head");
+  hs.innerHTML = headList(e.type === "income" ? "income" : "expense")
+    .map(function(h){ return '<option value="'+h.id+'">'+esc(h.name)+'</option>'; }).join("");
+  hs.value = e.head;
+
+  fillEditSubs(e.sub || "");
+
+  const bs = document.getElementById("em2-by");
+  const names = knownPeople();
+  bs.innerHTML = names.map(function(n){ return '<option value="'+esc(n)+'">'+esc(n)+'</option>'; }).join("");
+  if(names.indexOf(e.by) > -1) bs.value = e.by;
+
+  const ps = document.getElementById("em2-pay");
+  ps.innerHTML = '<option value="">—</option>'
+    + PAY_MODES.map(function(p){ return '<option value="'+p.id+'">'+esc(p.name)+'</option>'; }).join("");
+  ps.value = e.pay || "";
+
+  document.getElementById("em2-card").checked = !!e.card;
+  document.getElementById("em2-src").textContent = e.src
+    ? "Created automatically by the " + (e.src === "sip" ? "SIP tracker" : "recurring rule")
+      + ". Editing it here is fine, but regenerating may recreate the original."
+    : "";
+  document.getElementById("em2-err").textContent = "";
+  document.getElementById("entry-modal").classList.add("show");
+}
+
+function fillEditSubs(keep){
+  const head = document.getElementById("em2-head").value;
+  const sel  = document.getElementById("em2-sub");
+  const list = subList(head);
+  sel.innerHTML = '<option value="">— none —</option>'
+    + list.map(function(x){ return '<option value="'+x.id+'">'+esc(x.name)+'</option>'; }).join("");
+  if(keep && list.some(function(x){ return x.id === keep; })) sel.value = keep;
+}
+
+function closeEntryEdit(){
+  document.getElementById("entry-modal").classList.remove("show");
+  editEntryId = null;
+}
+
+function saveEntryEdit(){
+  if(editEntryId === null) return;
+  const err = document.getElementById("em2-err");
+  const e   = (ST.ledger||[]).filter(function(r){ return r.id === editEntryId; })[0];
+  if(!e){ closeEntryEdit(); return; }
+
+  const date = document.getElementById("em2-date").value;
+  const amt  = Number(document.getElementById("em2-amt").value);
+  const head = document.getElementById("em2-head").value;
+
+  if(!date){ err.textContent = "Pick a date."; return; }
+  if(!head){ err.textContent = "Pick a head."; return; }
+  if(!isFinite(amt) || amt <= 0){ err.textContent = "Enter a valid amount."; return; }
+
+  e.date = date;
+  e.amt  = amt;
+  e.head = head;
+  e.sub  = document.getElementById("em2-sub").value || "";
+  e.by   = document.getElementById("em2-by").value || e.by;
+  e.pay  = document.getElementById("em2-pay").value || "";
+  e.note = document.getElementById("em2-note").value.trim();
+  e.card = !!document.getElementById("em2-card").checked;
+  e.editedBy = currentPerson();
+  e.editedAt = Date.now();
+
+  touch("ledger", editEntryId);
+  save(ST);
+  closeEntryEdit();
+  renderLedger(); renderPeriodSel(); renderLedgerDash();
+  toast("✓ Entry updated");
 }
 
 function delEntry(id){
@@ -2757,17 +3028,31 @@ function ledgerByYear(){
     const d = String(e.date||"");
     if(d.length < 7) return;
     const y = d.slice(0,4), ym = d.slice(0,7);
-    if(!out[y]) out[y] = {income:0, expense:0, months:{}, heads:{}, subs:{}, people:{}};
+    if(!out[y]) out[y] = {income:0, expense:0, card:0, months:{}, heads:{}, subs:{}, exHeads:{}, exSubs:{}, people:{}};
     const Y = out[y];
-    if(!Y.months[ym]) Y.months[ym] = {income:0, expense:0, rows:[]};
+    if(!Y.months[ym]) Y.months[ym] = {income:0, expense:0, card:0, rows:[]};
 
     const amt  = Number(e.amt) || 0;
     const kind = e.type === "income" ? "income" : "expense";
     const who  = e.by || "Unknown";
 
+    Y.months[ym].rows.push(e);
+
+    // Card settlements are a movement of money already recorded as spending,
+    // so they stay visible in the log but never reach a total.
+    if(isExcluded(e)){
+      Y.card = (Y.card || 0) + amt;
+      Y.months[ym].card = (Y.months[ym].card || 0) + amt;
+      if(!Y.exHeads[e.head]) Y.exHeads[e.head] = {income:0, expense:0};
+      Y.exHeads[e.head][kind] += amt;
+      if(!Y.exSubs[e.head]) Y.exSubs[e.head] = {};
+      const xk = e.sub || "";
+      Y.exSubs[e.head][xk] = (Y.exSubs[e.head][xk] || 0) + amt;
+      return;
+    }
+
     Y[kind] += amt;
     Y.months[ym][kind] += amt;
-    Y.months[ym].rows.push(e);
 
     if(!Y.heads[e.head]) Y.heads[e.head] = {income:0, expense:0};
     Y.heads[e.head][kind] += amt;
@@ -2798,7 +3083,7 @@ function toggleHb(id){
   if(c) c.classList.toggle("open", open);
 }
 
-function headBreakdown(Y, kind, scope){
+function headBreakdown(Y, kind, scope, title){
   scope = scope || "d";
   const ids = Object.keys(Y.heads).filter(function(h){ return Y.heads[h][kind] > 0; });
   if(!ids.length) return "";
@@ -2842,7 +3127,7 @@ function headBreakdown(Y, kind, scope){
       + '</div>';
   }).join("");
   return '<div class="hb-block"><div class="hb-title">'
-    + (kind === "income" ? "Income by type" : "Expense by head")
+    + (title || (kind === "income" ? "Income by type" : "Expense by head"))
     + '</div>' + rows + '</div>';
 }
 
@@ -2891,13 +3176,18 @@ function renderLedger(){
           +     (e.sub && subName(e.sub) ? ' <span class="lg-sh">&rsaquo; ' + esc(subName(e.sub)) + '</span>' : '')
           +     '</div>'
           +   '<div class="lg-sub"><span class="lg-by">' + esc(e.by || "Unknown") + '</span>'
+          +     (e.pay && payName(e.pay) ? '<span class="lg-pay">' + esc(payName(e.pay)) + '</span>' : '')
           +     '<span class="lg-cb">added by ' + esc(e.createdBy || e.by || "Unknown")
           +       (e.createdAt ? ' &middot; ' + esc(stampLabel(e.createdAt)) : '') + '</span>'
+          +     (e.editedAt ? '<span class="lg-cb">edited by ' + esc(e.editedBy || "?")
+          +       ' &middot; ' + esc(stampLabel(e.editedAt)) + '</span>' : '')
           +     (e.note ? '<span class="lg-note">' + esc(e.note) + '</span>' : '')
           +   '</div>'
           + '</div>'
-          + '<div class="lg-amt ' + (e.type === "income" ? "inc" : "exp") + '">'
-          +   (e.type === "income" ? "+" : "−") + fmt(e.amt) + '</div>'
+          + '<div class="lg-amt ' + (isExcluded(e) ? "card" : (e.type === "income" ? "inc" : "exp")) + '">'
+          +   (isExcluded(e) ? "" : (e.type === "income" ? "+" : "−")) + fmt(e.amt)
+          +   (isExcluded(e) ? '<div class="lg-cardtag">excluded</div>' : '') + '</div>'
+          + '<button class="lg-del" onclick="openEntryEdit(' + e.id + ')" title="Edit">&#9998;</button>'
           + '<button class="lg-del" onclick="delEntry(' + e.id + ')" title="Delete">&times;</button>'
           + '</div>';
       }).join("");
@@ -2905,7 +3195,9 @@ function renderLedger(){
       return '<div class="lg-month">'
         + '<div class="lg-month-hdr"><span>' + monthLabel(ym) + '</span>'
         +   '<span class="lg-month-sum"><span class="inc">+' + fmt(M.income) + '</span> '
-        +   '<span class="exp">−' + fmt(M.expense) + '</span></span></div>'
+        +   '<span class="exp">−' + fmt(M.expense) + '</span>'
+        +   (M.card ? ' <span class="cardc">excl ' + fmt(M.card) + '</span>' : '')
+        +   '</span></div>'
         + rows + '</div>';
     }).join("");
 
@@ -2917,11 +3209,15 @@ function renderLedger(){
       +     '<span class="exp">−' + fmt(Y.expense) + '</span>'
       +     '<span class="net ' + (net >= 0 ? "pos" : "neg") + '">'
       +        (net >= 0 ? "+" : "−") + fmt(Math.abs(net)) + '</span>'
+      +     (Y.card ? '<span class="cardc">excl ' + fmt(Y.card) + '</span>' : '')
       +   '</div>'
       +   '<div class="fw-chev' + (open ? " open" : "") + '" id="yr-chev-' + y + '">&#8964;</div>'
       + '</div>'
       + '<div class="yr-body' + (open ? " open" : "") + '" id="yr-body-' + y + '">'
-      +   headBreakdown(Y,"expense","y"+y) + headBreakdown(Y,"income","y"+y) + peopleBreakdown(Y)
+      +   headBreakdown(Y,"expense","y"+y)
+      +   headBreakdown({heads:Y.exHeads, subs:Y.exSubs}, "expense", "yx"+y,
+            "Card spending — where it went (counts when the bill is paid)")
+      +   headBreakdown(Y,"income","y"+y) + peopleBreakdown(Y)
       +   monthsHTML
       + '</div></div>';
   }).join("");
@@ -2971,10 +3267,21 @@ function entriesIn(year, month){
 }
 
 function sumUp(rows){
-  const out = {income:0, expense:0, heads:{}, subs:{}, people:{}, count:rows.length, top:null};
+  const out = {income:0, expense:0, card:0, heads:{}, subs:{}, exHeads:{}, exSubs:{}, people:{}, count:rows.length, top:null};
   rows.forEach(function(e){
     const amt = Number(e.amt)||0;
     const kind = e.type === "income" ? "income" : "expense";
+    // Card settlements never reach a total, but still carry a head for the log.
+    if(isExcluded(e)){
+      // Still grouped by head and subhead, just kept out of every total.
+      out.card += amt;
+      if(!out.exHeads[e.head]) out.exHeads[e.head] = {income:0, expense:0};
+      out.exHeads[e.head][kind] += amt;
+      if(!out.exSubs[e.head]) out.exSubs[e.head] = {};
+      const xk = e.sub || "";
+      out.exSubs[e.head][xk] = (out.exSubs[e.head][xk] || 0) + amt;
+      return;
+    }
     out[kind] += amt;
     if(!out.heads[e.head]) out.heads[e.head] = {income:0, expense:0};
     out.heads[e.head][kind] += amt;
@@ -3026,12 +3333,30 @@ function renderLedgerDash(){
     + '<div class="lgd-s"><div class="lgd-l">Saved</div><div class="lgd-v">'+(cur.income?rate+"%":"—")+'</div></div>'
     + '</div>';
 
+  const co = cardOutstanding();
+  const cardBox = (co.spent || co.paid)
+    ? '<div class="card-note"><b>Credit card</b><br>'
+      + fmt(co.spent) + ' bought on card &middot; ' + fmt(co.paid) + ' bills paid &middot; '
+      + '<b class="' + (co.due > 0 ? "exp" : "inc") + '">' + fmt(Math.abs(co.due))
+      + (co.due > 0 ? ' not yet billed' : (co.due < 0 ? ' paid ahead' : ' settled')) + '</b>'
+      + '<br><span class="hint-s">Card purchases are logged for categorisation only. '
+      + 'They count once, in the month you pay the bill, so nothing is counted twice.</span></div>'
+    : '';
+
+  const cardNote = cur.card
+    ? '<div class="card-note">Not counted this period: ' + fmt(cur.card)
+      + ' — card purchases and other excluded rows. They are grouped by head below so '
+      + 'you can see where the money went; they count when the card bill is paid.</div>'
+    : '';
+
   if(!cur.count){
-    el.innerHTML = stats + '<div class="empty">No entries in this period.</div>';
+    el.innerHTML = stats + cardBox + cardNote + '<div class="empty">No entries in this period.</div>';
     return;
   }
 
   const bars = headBreakdown({heads:cur.heads, subs:cur.subs}, "expense", "d")
+             + headBreakdown({heads:cur.exHeads, subs:cur.exSubs}, "expense", "x",
+                 "Card spending — where it went (counts when the bill is paid)")
              + headBreakdown({heads:cur.heads, subs:cur.subs}, "income", "d")
              + peopleBreakdown({people:cur.people});
 
@@ -3088,12 +3413,13 @@ function renderLedgerDash(){
           + '<div class="ins-t">'+esc(n.h)+'</div><div class="ins-x">'+esc(n.x)+'</div></div></div>';
       }).join("") + '</div>';
 
-  el.innerHTML = stats + notesHTML + bars;
+  el.innerHTML = stats + cardBox + cardNote + notesHTML + bars;
 }
 
 function renderLedgerAll(){
   seedHeads();
   seedPeople();
+  seedExclPay();
   runRecurring();
   const today = new Date().toISOString().slice(0,10);
   ["ex-date","in-date"].forEach(function(id){
@@ -3107,6 +3433,9 @@ function renderLedgerAll(){
   renderHeadOptions();
   renderSubheads();
   fillSubs("ex"); fillSubs("in");
+  fillPayModes();
+  renderPayExcl();
+  syncExclChk("ex");
   renderPeriodSel();
   renderLedgerDash();
   renderLedger();
