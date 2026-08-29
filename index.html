@@ -132,6 +132,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sync-btns{display:flex;gap:8px;margin-top:10px}
 .sync-btns button{flex:1;font-size:12px;padding:8px 6px}
 .sync-hint{font-size:11px;color:var(--sub);line-height:1.5;margin-top:9px}
+.share-row{display:flex;gap:8px;margin-top:10px}
+.share-row input{flex:1;min-width:0;padding:9px 10px;border:1px solid var(--border);border-radius:10px;font-size:13px;background:var(--bg);color:var(--text)}
+.share-list{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
+.share-chip{font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:3px 9px;color:var(--sub)}
 .btn-red{background:#FFEBEE;color:var(--red);border:none;padding:6px 10px;border-radius:8px;cursor:pointer;font-size:13px}
 .btn-drive{background:#4285F4;color:#fff;font-size:13px;padding:10px 16px;border-radius:12px;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:center}
 
@@ -269,9 +273,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     </div>
     <div class="sync-btns">
       <button class="btn-sm btn-outline" onclick="connectSharedFile()">&#128279; Shared file connect</button>
-      <button class="btn-sm btn-outline" onclick="shareWithFamily()">&#128101; Family member add</button>
-      <button class="btn-sm btn-outline" onclick="createSharedFile()">&#10133; Nayi file</button>
+      <button class="btn-sm btn-outline" onclick="createSharedFile()">&#10133; Nayi file banao</button>
     </div>
+    <div class="share-row">
+      <input id="share-email" type="email" inputmode="email" autocomplete="off" placeholder="family@gmail.com">
+      <button class="btn-sm btn-green" onclick="shareWithFamily()">Share</button>
+    </div>
+    <div class="share-list" id="share-list"></div>
     <div class="sync-hint">Ek hi file sab log use karte hain. Pehla banda file banata hai, baaki log "Shared file connect" se usko choose karte hain.</div>
   </div>
 
@@ -389,6 +397,29 @@ if(!ST.checks)    ST.checks = {};
 if(!ST.transfers) ST.transfers = [];
 if(!ST.funds)     ST.funds = {};
 if(!ST.amts)      ST.amts  = {};
+// meta[kind][key] = when that single field last changed on any device.
+// Merging per field (not per document) is what stops a stale device from
+// overwriting everything with one edit.
+if(!ST.meta)      ST.meta = {};
+["checks","funds","amts","transfers","shares"].forEach(k=>{ if(!ST.meta[k]) ST.meta[k] = {}; });
+if(!ST.tomb)      ST.tomb = {};
+if(!ST.tomb.transfers) ST.tomb.transfers = {};
+if(!ST.shares)    ST.shares = {};
+if(!ST.meta.shares) ST.meta.shares = {};
+(function migrate(){
+  // Existing data predates stamps: mark it known-but-old so a peer's newer
+  // edit wins, while our untouched fields still survive a merge.
+  const old = Number(ST.updatedAt||1);
+  Object.keys(ST.checks).forEach(k=>{ if(ST.meta.checks[k]==null) ST.meta.checks[k]=old; });
+  Object.keys(ST.funds ).forEach(k=>{ if(ST.meta.funds[k] ==null) ST.meta.funds[k] =old; });
+  Object.keys(ST.amts  ).forEach(k=>{ if(ST.meta.amts[k]  ==null) ST.meta.amts[k]  =old; });
+  (ST.transfers||[]).forEach(t=>{ if(ST.meta.transfers[t.id]==null) ST.meta.transfers[t.id]=old; });
+})();
+
+function touch(kind,key){
+  if(!ST.meta[kind]) ST.meta[kind] = {};
+  ST.meta[kind][key] = Date.now();
+}
 let gToken = null;
 let gUserName = null;
 let gUserPhoto = null;
@@ -542,6 +573,7 @@ function toggleMonth(mi,hdr){
 function toggleCheck(mi,pid,btn){
   const key = mi+"_"+pid;
   ST.checks[key] = !ST.checks[key];
+  touch("checks",key);
   save(ST);
   btn.classList.toggle("done",ST.checks[key]);
   btn.textContent = ST.checks[key]?"✓":"";
@@ -580,7 +612,9 @@ function addTransfer(){
   document.getElementById("err-amt").style.display = (amt&&Number(amt)>0)?"none":"block"; if(!amt||Number(amt)<=0) ok=false;
   if(!ok) return;
 
-  ST.transfers.unshift({id:Date.now(),date,amt:Number(amt),mode,note:note||"Wife ko transfer"});
+  const tid = Date.now();
+  ST.transfers.unshift({id:tid,date,amt:Number(amt),mode,note:note||"Wife ko transfer"});
+  touch("transfers",tid);
   save(ST);
   document.getElementById("t-amt").value="";
   document.getElementById("t-note").value="";
@@ -591,6 +625,7 @@ function addTransfer(){
 function delTransfer(id){
   if(!confirm("Delete this transfer?")) return;
   ST.transfers = ST.transfers.filter(t=>t.id!==id);
+  ST.tomb.transfers[id] = Date.now();
   save(ST);
   renderTransferLog();
   toast("Transfer deleted");
@@ -647,6 +682,7 @@ function saveFund(pid){
   if(!isFinite(amt) || amt < 0){ toast("Amount sahi daalo!"); return; }
   ST.funds[pid] = val;
   ST.amts[pid]  = amt;
+  touch("funds",pid); touch("amts",pid);
   save(ST);
   refreshAll();
   toast("✓ Fund aur amount saved!");
@@ -678,6 +714,7 @@ function saveEdit(){
   if(!isFinite(a) || a < 0){ toast("Amount sahi daalo!"); return; }
   ST.funds[editPid] = f;
   ST.amts[editPid]  = a;
+  touch("funds",editPid); touch("amts",editPid);
   save(ST);
   closeEdit();
   refreshAll();
@@ -686,8 +723,9 @@ function saveEdit(){
 
 function resetEdit(){
   if(!editPid) return;
-  delete ST.funds[editPid];
-  delete ST.amts[editPid];
+  ST.funds[editPid] = null;
+  ST.amts[editPid]  = null;
+  touch("funds",editPid); touch("amts",editPid);
   save(ST);
   closeEdit();
   refreshAll();
@@ -700,6 +738,7 @@ function refreshAll(){
   renderSummary();
   renderTracker();
   renderTransferLog();
+  renderShares();
   if(document.getElementById("fe-h")) renderFunds();
   open.forEach(id=>{
     const b = document.getElementById(id);
@@ -776,6 +815,13 @@ function exportExcel(){
 
 // ── GOOGLE DRIVE ───────────────────────────────────────────────────────────
 const CLIENT_ID = "260664555067-cv9pos03d69rgn6ckn0th2inb2ngdqqi.apps.googleusercontent.com";
+// drive.file : app sees only files it created, so an invited member must pick
+//              the shared file once via the Picker. Non-sensitive scope, no
+//              Google verification needed.
+// drive      : app finds the shared file by itself for everyone, no Picker
+//              step at all. RESTRICTED scope — fine while the app stays in
+//              Testing with family added as test users, but publishing it
+//              would require Google verification.
 const SCOPES = "https://www.googleapis.com/auth/drive.file profile email";
 
 function handleLogin(){
@@ -1019,22 +1065,39 @@ function pickerCallback(data){
   syncDown();
 }
 
-// Give a family member write access to the shared file.
+// Grant a family member write access, and record them in the shared file so
+// the list shows up on everyone's device.
 async function shareWithFamily(){
-  if(!gToken){ toast("Pehle login karo!"); return; }
-  if(!gFileId){ toast("Pehle sync file banao ya connect karo"); return; }
-  const email = prompt("Family member ka Gmail address:");
-  if(!email) return;
+  const el = document.getElementById("share-email");
+  const email = ((el && el.value) || "").trim().toLowerCase();
+  if(!gToken){ toast("Pehle Google se login karo!"); return; }
+  if(!gFileId){ toast("Pehle 'Nayi file banao' ya connect karo"); return; }
+  if(!/^[^@s]+@[^@s]+.[^@s]+$/.test(email)){ toast("Sahi email daalo"); return; }
+  if(ST.shares[email]){ toast("Ye email already added hai"); return; }
   try{
     const r = await fetch("https://www.googleapis.com/drive/v3/files/" + gFileId + "/permissions?sendNotificationEmail=true",
       {method:"POST",
        headers:{Authorization:"Bearer " + gToken,"Content-Type":"application/json"},
-       body: JSON.stringify({role:"writer", type:"user", emailAddress: email.trim()})});
+       body: JSON.stringify({role:"writer", type:"user", emailAddress: email})});
     if(!r.ok) throw new Error("share failed");
-    toast("✓ " + email.trim() + " ko access mil gaya!", 3500);
+    ST.shares[email] = true;
+    touch("shares", email);
+    save(ST);
+    if(el) el.value = "";
+    renderShares();
+    toast("✓ " + email + " ko access mil gaya!", 3500);
   }catch(e){
     toast("Share fail hua — email check karo");
   }
+}
+
+function renderShares(){
+  const el = document.getElementById("share-list");
+  if(!el) return;
+  const list = Object.keys(ST.shares||{}).filter(function(k){ return ST.shares[k]; });
+  el.innerHTML = list.length
+    ? list.map(function(e){ return '<span class="share-chip">&#128100; ' + esc(e) + '</span>'; }).join("")
+    : '<span class="share-chip">Abhi kisi ko share nahi kiya</span>';
 }
 
 function setSync(t){
@@ -1047,7 +1110,7 @@ function scheduleSync(){
   if(!gToken) return;
   clearTimeout(syncTimer);
   setSync("saving…");
-  syncTimer = setTimeout(syncUp, 1500);
+  syncTimer = setTimeout(syncNow, 1500);
 }
 
 // Find the one shared file: remembered id first, then anything this account
@@ -1083,7 +1146,7 @@ async function createSharedFile(){
     });
     if(!meta.ok) throw new Error("create failed");
     rememberFile((await meta.json()).id);
-    await syncUp();
+    await uploadState();
     setSyncState(true,"Nayi shared file ban gayi — ab family member add karo");
     toast("✓ Shared file ban gayi!");
   }catch(e){
@@ -1094,24 +1157,112 @@ async function createSharedFile(){
 function syncPayload(){
   return JSON.stringify({
     checks: ST.checks, transfers: ST.transfers,
-    funds: ST.funds, amts: ST.amts, updatedAt: ST.updatedAt || 0
+    funds: ST.funds, amts: ST.amts, shares: ST.shares,
+    meta: ST.meta, tomb: ST.tomb,
+    updatedAt: ST.updatedAt || 0
   });
 }
 
-async function syncUp(){
+// Download the shared file, or null if it is still empty.
+async function downloadRemote(){
+  const r = await fetch("https://www.googleapis.com/drive/v3/files/"+gFileId+"?alt=media",
+    {headers:{Authorization:"Bearer "+gToken}});
+  if(!r.ok) throw new Error("download failed");
+  const txt = await r.text();
+  if(!txt.trim()) return null;
+  try{ return JSON.parse(txt); }catch(e){ return null; }
+}
+
+// Field-level merge: for each key the side with the newer stamp wins, so a
+// stale device only overwrites the fields it actually edited.
+function mergeField(kind, rem, out){
+  const lv = ST[kind] || {}, rv = (rem && rem[kind]) || {};
+  const lt = (ST.meta && ST.meta[kind]) || {};
+  const rt = (rem && rem.meta && rem.meta[kind]) || {};
+  let changed = false;
+  const keys = new Set(Object.keys(lv).concat(Object.keys(rv)));
+  keys.forEach(function(k){
+    const a = Number(lt[k]||0), b = Number(rt[k]||0);
+    const takeRemote = (k in rv) && (b > a || !(k in lv));
+    if(takeRemote){
+      if(lv[k] !== rv[k]) changed = true;
+      out.val[k] = rv[k];
+    } else {
+      out.val[k] = lv[k];
+    }
+    out.ts[k] = Math.max(a,b);
+  });
+  return changed;
+}
+
+// Transfers are rows, not fields: union by id, then apply delete tombstones.
+function mergeTransfers(rem){
+  const rows = {}, ts = {};
+  const take = function(arr, meta){
+    (arr||[]).forEach(function(t){
+      const w = Number((meta||{})[t.id]||0);
+      if(!(t.id in rows) || w > ts[t.id]){ rows[t.id] = t; ts[t.id] = w; }
+    });
+  };
+  take(ST.transfers, ST.meta.transfers);
+  take(rem && rem.transfers, rem && rem.meta && rem.meta.transfers);
+
+  const tomb = Object.assign({}, (rem && rem.tomb && rem.tomb.transfers) || {});
+  Object.keys(ST.tomb.transfers).forEach(function(id){
+    tomb[id] = Math.max(Number(tomb[id]||0), Number(ST.tomb.transfers[id]||0));
+  });
+  Object.keys(tomb).forEach(function(id){
+    if(Number(tomb[id]) >= Number(ts[id]||0)) delete rows[id];
+  });
+
+  const before = JSON.stringify(ST.transfers.map(function(t){return t.id;}));
+  const list = Object.keys(rows).map(function(k){return rows[k];})
+                     .sort(function(a,b){return Number(b.id)-Number(a.id);});
+  ST.meta.transfers = ts;
+  ST.tomb.transfers = tomb;
+  ST.transfers = list;
+  return JSON.stringify(list.map(function(t){return t.id;})) !== before;
+}
+
+// Fold the remote copy into ST. Returns true if anything visibly changed.
+function applyMerge(rem){
+  if(!rem) return false;
+  try{ localStorage.setItem("sip_backup", JSON.stringify(ST)); }catch{}
+  let changed = false;
+  ["checks","funds","amts","shares"].forEach(function(kind){
+    const out = {val:{}, ts:{}};
+    if(mergeField(kind, rem, out)) changed = true;
+    ST[kind] = out.val;
+    ST.meta[kind] = out.ts;
+  });
+  if(mergeTransfers(rem)) changed = true;
+  ST.updatedAt = Math.max(Number(ST.updatedAt||0), Number(rem.updatedAt||0));
+  try{ localStorage.setItem("sip_state_v2", JSON.stringify(ST)); }catch{}
+  return changed;
+}
+
+async function uploadState(){
+  const up = await fetch("https://www.googleapis.com/upload/drive/v3/files/"+gFileId+"?uploadType=media",{
+    method:"PATCH",
+    headers:{Authorization:"Bearer "+gToken,"Content-Type":"application/json"},
+    body: syncPayload()
+  });
+  if(!up.ok) throw new Error("upload failed");
+}
+
+// Read, merge, then write — never a blind overwrite of someone else's edits.
+async function syncNow(){
   if(!gToken || !gFileId) return;
   if(gSyncing){ gPendingSync = true; return; }
   gSyncing = true;
+  setSync("syncing…");
   try{
-    const id = gFileId;
-    const up = await fetch("https://www.googleapis.com/upload/drive/v3/files/"+id+"?uploadType=media",{
-      method:"PATCH",
-      headers:{Authorization:"Bearer "+gToken,"Content-Type":"application/json"},
-      body: syncPayload()
-    });
-    if(!up.ok) throw new Error("upload failed");
+    const rem = await downloadRemote();
+    const changed = applyMerge(rem);
+    await uploadState();
     setSync("synced");
     setSyncState(true,"Shared file se synced");
+    if(changed){ refreshAll(); toast("✓ Family ka data update hua"); }
   }catch(e){
     setSync("sync off");
     setSyncState(false,"Sync fail — dubara connect karo");
@@ -1121,7 +1272,6 @@ async function syncUp(){
   }
 }
 
-// On login: keep whichever copy is newer, then make both sides agree.
 async function syncDown(){
   if(!gToken) return;
   setSync("syncing…");
@@ -1132,30 +1282,18 @@ async function syncDown(){
       setSyncState(false,"Shared file nahi mili — connect ya nayi banao");
       return;
     }
-    const r = await fetch("https://www.googleapis.com/drive/v3/files/"+id+"?alt=media",
-      {headers:{Authorization:"Bearer "+gToken}});
-    if(!r.ok) throw new Error("download failed");
-    const rem = await r.json();
-    if(rem && Number(rem.updatedAt||0) > Number(ST.updatedAt||0)){
-      ST.checks    = rem.checks    || {};
-      ST.transfers = rem.transfers || [];
-      ST.funds     = rem.funds     || {};
-      ST.amts      = rem.amts      || {};
-      ST.updatedAt = Number(rem.updatedAt)||0;
-      // write directly, not via save(), so this does not bounce straight back up
-      try{ localStorage.setItem("sip_state_v2",JSON.stringify(ST)); }catch{}
-      refreshAll();
-      setSync("synced");
-      setSyncState(true,"Shared file se synced");
-      toast("✓ Shared data load ho gaya!");
-    } else {
-      await syncUp();
-    }
+    await syncNow();
   }catch(e){
     setSync("sync off");
     setSyncState(false,"Sync fail — dubara connect karo");
   }
 }
+
+// Keep devices converging without anyone hitting refresh.
+setInterval(function(){ if(gToken && gFileId && !gSyncing) syncNow(); }, 60000);
+document.addEventListener("visibilitychange", function(){
+  if(!document.hidden && gToken && gFileId && !gSyncing) syncNow();
+});
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 if("serviceWorker" in navigator){
