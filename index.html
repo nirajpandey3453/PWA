@@ -187,6 +187,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .chip-x.adm{color:#fff;background:var(--teal);border-radius:7px;padding:1px 6px;margin-left:6px}
 .or-line{display:flex;align-items:center;gap:9px;margin:13px 0 4px;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:0.08em}
 .or-line:before,.or-line:after{content:"";flex:1;height:1px;background:var(--border)}
+.view-sw{display:flex;gap:0;border:1px solid var(--border);border-radius:9px;overflow:hidden;margin-bottom:11px;width:fit-content}
+.view-sw button{border:none;background:var(--bg);color:var(--sub);font-size:11.5px;font-weight:600;padding:6px 14px;cursor:pointer}
+.view-sw button.on{background:var(--teal);color:#fff}
+.cons-list{display:flex;flex-direction:column}
+.cl-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.cl-row:last-child{border-bottom:none}
+.cl-rank{width:20px;flex-shrink:0;font-size:11px;font-weight:700;color:var(--muted);text-align:right}
+.cl-main{flex:1;min-width:0}
+.cl-n{font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cl-bar{height:4px;background:var(--bg);border-radius:3px;overflow:hidden;margin-top:5px}
+.cl-bar div{height:100%;background:var(--teal);border-radius:3px}
+.cl-nums{text-align:right;flex-shrink:0}
+.cl-q{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
+.cl-x{font-size:10px;color:var(--muted)}
+.cons-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.cons-card{border:1px solid var(--border);border-radius:12px;padding:11px 12px;background:var(--bg)}
+.cons-n{font-size:12px;font-weight:600;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cons-q{font-size:16px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
+.cons-x{font-size:10px;color:var(--muted);margin-top:2px}
+.cons-bar{height:4px;background:var(--card);border-radius:3px;overflow:hidden;margin-top:8px}
+.cons-bar div{height:100%;background:var(--teal);border-radius:3px}
 .freq-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .freq{display:flex;align-items:center;gap:6px;padding:9px 6px 9px 11px;border:1px solid var(--border);border-radius:11px;background:var(--bg);color:var(--text)}
 .freq.on{border-color:var(--green)}
@@ -367,6 +388,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .rec-t{font-size:12.5px;font-weight:600}
 .rec-x{font-size:10.5px;color:var(--sub);margin-top:2px}
 .rec-b{background:none;border:none;color:var(--sub);font-size:13px;cursor:pointer;padding:2px 5px;flex-shrink:0}
+.restore-note{font-size:11.5px;color:#B3261E;background:rgba(198,40,40,0.06);border:1px solid rgba(198,40,40,0.25);border-radius:10px;padding:9px 10px;margin-top:9px;line-height:1.5}
+.sync-btns button[disabled]{opacity:0.45;cursor:not-allowed}
 .dupe-box{margin-top:9px}
 .dupe-t{font-size:11px;color:var(--sub);line-height:1.5;margin:6px 0}
 .dupe-row{font-size:11.5px;padding:6px 8px;border:1px solid var(--border);border-radius:8px;margin-bottom:5px;background:var(--bg)}
@@ -964,6 +987,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <input id="share-email" type="email" inputmode="email" autocomplete="off" placeholder="family@gmail.com">
       <button class="btn-sm btn-green" onclick="shareWithFamily()">Share</button>
     </div>
+    <div id="sync-tools"></div>
     <div class="dupe-box" id="dupe-list"></div>
     <div class="share-err" id="share-err"></div>
     <div class="share-list" id="share-list"></div>
@@ -1395,7 +1419,9 @@ function makeSearchable(sel){
     list.classList.add("open");
   }
 
-  inp.addEventListener("focus", function(){ inp.select(); open(""); });
+  // Clear on focus so you can type straight away; blur() restores the current
+  // label if nothing was picked, so nothing is lost by looking.
+  inp.addEventListener("focus", function(){ inp.value = ""; open(""); });
   inp.addEventListener("input", function(){ open(inp.value); });
   inp.addEventListener("blur",  function(){ setTimeout(close, 160); });
   inp.addEventListener("keydown", function(e){
@@ -1466,7 +1492,7 @@ function showSec(id,el){
   if(id==="shitems")  { seedItems(); fillUnitSelect(); renderItemManage(); }
   if(id==="shcons")   { renderShopPeriodSel(); renderShopDash(); }
   if(id==="shhist")   renderShopHistory();
-  if(id==="transfer") renderTransfer();
+  if(id==="transfer") { renderTransfer(); renderSyncTools(); }
   if(id==="funds")    renderFunds();
 }
 
@@ -1895,6 +1921,7 @@ function resetEdit(){
 function refreshAll(){
   const home = document.getElementById("sec-home");
   if(home && home.classList.contains("active")) renderHome();
+  if(document.getElementById("access-admin")) renderAccessAdmin();
   const open = Array.from(document.querySelectorAll(".month-body.open")).map(e=>e.id);
   renderSummary();
   renderDash();
@@ -2419,6 +2446,104 @@ async function createSharedFile(){
   }
 }
 
+const LOCAL_COPY = "sip_localcopy";
+
+// Written after every successful upload, so the device always holds a copy of
+// the last state Drive accepted.
+function saveLocalCopy(){
+  try{
+    localStorage.setItem(LOCAL_COPY, JSON.stringify({at: Date.now(), data: syncPayload()}));
+  }catch(e){}
+}
+
+function localCopy(){
+  try{ return JSON.parse(localStorage.getItem(LOCAL_COPY) || "null"); }catch(e){ return null; }
+}
+
+function localCopyAge(){
+  const c = localCopy();
+  return c && c.at ? stampLabel(c.at) : "";
+}
+
+// Export what is in the app right now, so there is a copy off the device too.
+function downloadBackup(){
+  if(!isAdmin()){ toast("Only an admin can download a copy", 4000); return; }
+  try{
+    const blob = new Blob([syncPayload()], {type:"application/json"});
+    const url  = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "shreelaxmi-" + new Date().toISOString().slice(0,10) + ".json";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 1000);
+    toast("✓ Backup downloaded");
+  }catch(e){
+    toast("Could not create the download");
+  }
+}
+
+// Only offered when Drive has no file: re-creating one while a shared file
+// still exists would fork the family's data into two copies.
+async function uploadBackup(){
+  if(!isAdmin()){ toast("Only an admin can upload to Drive", 4000); return; }
+  if(!gToken){ toast("Sign in with Google first"); return; }
+  if(gFileId){ toast("A shared file already exists — use Re-scan Drive", 4000); return; }
+  const found = await (async function(){
+    try{ return await resolveFile(); }catch(e){ return null; }
+  })();
+  if(found){
+    renderSyncTools();
+    toast("A shared file was found — nothing was uploaded", 4000);
+    return;
+  }
+  if(!confirm("No file was found in Drive.\n\nUpload this device's data as the new shared file?")) return;
+  try{
+    setSync("saving…");
+    const meta = await fetch("https://www.googleapis.com/drive/v3/files",{
+      method:"POST",
+      headers:{Authorization:"Bearer "+gToken,"Content-Type":"application/json"},
+      body: JSON.stringify({name:SYNC_FILE, mimeType:"application/json"})
+    });
+    if(!meta.ok) throw new Error("create failed");
+    rememberFile((await meta.json()).id);
+    await uploadState();
+    saveLocalCopy();
+    setSync("synced");
+    setSyncState(true,"Restored from this device");
+    renderSyncTools();
+    checkDupes();
+    toast("✓ Uploaded — Drive now has this device's data", 4000);
+  }catch(e){
+    setSync("sync off");
+    setSyncState(false,"Upload failed — try again");
+    toast("Upload failed");
+  }
+}
+
+function renderSyncTools(){
+  const el = document.getElementById("sync-tools");
+  if(!el) return;
+  if(!isAdmin()){
+    el.innerHTML = '<div class="sync-hint">Backup and restore are admin-only.</div>';
+    return;
+  }
+  const copy = localCopy();
+  const missing = !gFileId;
+  el.innerHTML =
+      '<div class="sync-btns">'
+    +   '<button class="btn-sm btn-outline" onclick="downloadBackup()">&#11015; Download copy</button>'
+    +   '<button class="btn-sm btn-outline"' + (missing ? '' : ' disabled')
+    +     ' onclick="uploadBackup()" title="' + (missing ? 'Upload this device as the shared file' : 'Only available when Drive has no file') + '">'
+    +     '&#11014; Upload to Drive</button>'
+    + '</div>'
+    + (copy ? '<div class="sync-hint">Local copy saved ' + esc(localCopyAge()) + '.</div>' : '')
+    + (missing && copy
+        ? '<div class="restore-note">No file in Drive. Your data is still on this device — '
+          + 'tap <b>Upload to Drive</b> to put it back.</div>'
+        : '');
+}
+
 function syncPayload(){
   return JSON.stringify({
     checks: ST.checks, transfers: ST.transfers,
@@ -2539,6 +2664,7 @@ async function syncNow(){
     const changed = applyMerge(rem);
     await uploadState();
     gPendingSave = false;
+    saveLocalCopy();          // a known-good copy, in case Drive loses the file
     setSync("synced");
     setSyncState(true, gDupes > 1
       ? "Synced — but "+gDupes+" copies of this file exist"
@@ -2562,9 +2688,11 @@ async function syncDown(){
     if(!id){
       setSync("");
       setSyncState(false,"No shared file found — connect or create one");
+      renderSyncTools();
       return;
     }
     await syncNow();
+    renderSyncTools();
     checkDupes();
   }catch(e){
     setSync("sync off");
@@ -2599,6 +2727,12 @@ if(!gToken && restoreSession()){
 // Entries are dated rows pointing at a head, stamped with whoever logged them.
 // Everything here rides the shared Drive file.
 const MON_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+// Two-digit current month, the default period for every dashboard.
+function curMonth(){
+  const m = new Date().getMonth() + 1;
+  return (m < 10 ? "0" : "") + m;
+}
 
 function uid(prefix){
   return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2,8);
@@ -2774,7 +2908,7 @@ function backfillSips(){
   toast("✓ Posted " + n + " SIP payment(s) to the ledger", 4000);
 }
 
-let lgYear = "", lgMonth = "";   // "" on month means the whole year
+let lgYear = "", lgMonth = curMonth();   // "" on month means the whole year
 
 // Fixed ids, so two devices seeding independently produce the same heads and
 // the merge collapses them instead of creating duplicates.
@@ -4083,7 +4217,14 @@ function fmtQty(v, base){
   return (+v.toFixed(2)) + " pcs";
 }
 
-let shYear = "", shMonth = "";
+let shYear = "", shMonth = curMonth();
+let shView = "cards";   // or "list"
+
+function setShopView(v){
+  shView = v;
+  try{ localStorage.setItem("sip_shview", v); }catch(e){}
+  renderShopDash();
+}
 let shDoneId = null, shQuickItem = null;
 
 function shopRows(){ return ST.shop || []; }
@@ -4158,6 +4299,8 @@ function openQuickBuy(itemId){
   shDoneId = null;
   shQuickItem = itemId;
   document.getElementById("sd-title").textContent = it.name;
+  const sub2 = document.querySelector("#shopdone-modal .modal-sub");
+  if(sub2) sub2.textContent = "How much did you actually buy?";
   document.getElementById("sd-qty").value = "";
   fillUnitOptions(lastUnitFor(itemId) || it.unit || "kg");
   document.getElementById("sd-note").value = "";
@@ -4172,6 +4315,10 @@ function openShopDone(id){
   shDoneId = id;
   shQuickItem = null;
   document.getElementById("sd-title").textContent = r.name;
+  const sub = document.querySelector("#shopdone-modal .modal-sub");
+  if(sub) sub.textContent = r.done
+    ? "Correct what was bought."
+    : "How much did you actually buy?";
   document.getElementById("sd-qty").value = r.qty || "";
   fillUnitOptions(r.unit || lastUnitFor(r.item, r.name)
                   || (ST.items[r.item] && ST.items[r.item].unit) || "kg");
@@ -4210,6 +4357,7 @@ function saveShopDone(){
     r = shopRows().filter(function(x){ return x.id === shDoneId; })[0];
     if(!r){ closeShopDone(); return; }
   }
+  const wasDone = !!r.done;
 
   r.qty    = qty;
   r.unit   = unit;
@@ -4220,33 +4368,11 @@ function saveShopDone(){
   touch("shop", r.id);
   save(ST);
   const nm = r.name;
+  const edited = !shQuickItem && wasDone;
   closeShopDone();
   renderShopList(); renderFrequent(); renderShopHistory();
   renderShopPeriodSel(); renderShopDash();
-  toast("✓ " + nm + " bought");
-}
-
-function repeatShop(id){
-  const r = shopRows().filter(function(x){ return x.id === id; })[0];
-  if(!r) return;
-  let itemId = r.item;
-  if(!itemId || !ST.items[itemId]) itemId = ensureItem(r.name, r.unit || "");
-  if(!itemId) return;
-  const added = pushShopRow(itemId);   // refuses if it is already waiting
-  if(!added) return;
-  renderShopList(); renderFrequent(); renderItemPicker(); renderItemManage();
-  toast("✓ " + ST.items[itemId].name + " back on the list");
-}
-
-// Undo, so a mis-tick does not need deleting and re-adding.
-function unmarkShop(id){
-  const r = shopRows().filter(function(x){ return x.id === id; })[0];
-  if(!r) return;
-  r.done = false; r.doneAt = 0;
-  touch("shop", id);
-  save(ST);
-  renderShopList(); renderShopHistory(); renderShopDash();
-  toast("Moved back to the list");
+  toast(edited ? ("✓ " + nm + " updated") : ("✓ " + nm + " bought"));
 }
 
 // The most recent purchase of this item, matched on catalogue id or name.
@@ -4395,14 +4521,15 @@ function renderShopHistory(){
       + rows.map(function(r){
           const u = unitOf(r.unit);
           return '<div class="lg-row">'
-            + '<div class="lg-main"><div class="lg-head">' + esc(r.name) + '</div>'
+            + '<div class="lg-main" onclick="openShopDone(' + r.id + ')" style="cursor:pointer">'
+            +   '<div class="lg-head">' + esc(r.name) + '</div>'
             +   '<div class="lg-sub"><span class="lg-by">' + esc(r.doneBy || "?") + '</span>'
+            +     '<span>' + esc(shortDate(r.doneAt)) + '</span>'
             +     (r.note ? '<span class="lg-note">' + esc(r.note) + '</span>' : '')
             +   '</div></div>'
             + '<div class="lg-amt">' + esc(fmtQty(Number(r.qty)*u.f, u.base)) + '</div>'
-            + '<button class="lg-del" onclick="repeatShop(' + r.id + ')" title="Buy again">&#8635;</button>'
-            + '<button class="lg-del" onclick="unmarkShop(' + r.id + ')" title="Undo — this purchase is removed">&#8630;</button>'
-            + '<button class="lg-del" onclick="delShopItem(' + r.id + ')">&times;</button>'
+            + '<button class="lg-del" onclick="openShopDone(' + r.id + ')" title="Edit">&#9998;</button>'
+            + '<button class="lg-del" onclick="delShopItem(' + r.id + ')" title="Delete">&times;</button>'
             + '</div>';
         }).join("")
       + '</div>';
@@ -4487,21 +4614,44 @@ function renderShopDash(){
     return;
   }
 
-  const max = Math.max.apply(null, keys.map(function(k){ return c[k].qty; }));
-  const rows = keys.map(function(k){
-    const it = c[k];
-    const w  = max ? Math.round(it.qty/max*100) : 0;
-    return '<div class="hb-row">'
-      + '<div class="hb-top"><span>' + esc(it.name) + '</span>'
-      +   '<span class="hb-val">' + esc(fmtQty(it.qty, it.base)) + ' &middot; ' + it.times + 'x</span></div>'
-      + '<div class="hb-track"><div class="hb-fill expense" style="width:' + w + '%"></div></div>'
-      + '</div>';
-  }).join("");
+  // Ranked by how often it is bought. Quantities are not comparable across
+  // units — 3 kg against 5 L means nothing — but purchase counts always are.
+  keys.sort(function(a,b){
+    return (c[b].times - c[a].times) || a.localeCompare(b);
+  });
+  const max = Math.max.apply(null, keys.map(function(k){ return c[k].times; }).concat([1]));
+
+  const toggle = '<div class="view-sw">'
+    + '<button class="' + (shView === "cards" ? "on" : "") + '" onclick="setShopView(\'cards\')">Cards</button>'
+    + '<button class="' + (shView === "list"  ? "on" : "") + '" onclick="setShopView(\'list\')">List</button>'
+    + '</div>';
+
+  const rows = (shView === "list")
+    ? '<div class="cons-list">' + keys.map(function(k, i){
+        const it = c[k];
+        return '<div class="cl-row">'
+          + '<div class="cl-rank">' + (i+1) + '</div>'
+          + '<div class="cl-main"><div class="cl-n">' + esc(it.name) + '</div>'
+          +   '<div class="cl-bar"><div style="width:' + Math.round(it.times/max*100) + '%"></div></div></div>'
+          + '<div class="cl-nums"><div class="cl-q">' + esc(fmtQty(it.qty, it.base)) + '</div>'
+          +   '<div class="cl-x">' + it.times + 'x</div></div>'
+          + '</div>';
+      }).join("") + '</div>'
+    : '<div class="cons-grid">' + keys.map(function(k){
+        const it = c[k];
+        const w  = Math.round(it.times/max*100);
+        return '<div class="cons-card">'
+          + '<div class="cons-n">' + esc(it.name) + '</div>'
+          + '<div class="cons-q">' + esc(fmtQty(it.qty, it.base)) + '</div>'
+          + '<div class="cons-x">' + it.times + (it.times === 1 ? ' purchase' : ' purchases') + '</div>'
+          + '<div class="cons-bar"><div style="width:' + w + '%"></div></div>'
+          + '</div>';
+      }).join("") + '</div>';
 
   // A per-month average is only meaningful across a whole year.
   let note = "";
   if(!shMonth && keys.length){
-    const top = keys.slice().sort(function(a,b){ return c[b].qty - c[a].qty; })[0];
+    const top = keys[0];
     const ms  = Object.keys(c[top].months).length;
     note = '<div class="ins info"><div class="ins-ico">📦</div><div>'
       + '<div class="ins-t">Most consumed: ' + esc(c[top].name) + '</div>'
@@ -4510,10 +4660,16 @@ function renderShopDash(){
   }
 
   el.innerHTML = stats + note
-    + '<div class="hb-block"><div class="hb-title">Consumption by item</div>' + rows + '</div>';
+    + '<div class="hb-block"><div class="hb-title">Consumption by item — most bought first</div>'
+       + toggle + rows + '</div>';
+
 }
 
 function renderShopAll(){
+  try{
+    const v = localStorage.getItem("sip_shview");
+    if(v === "list" || v === "cards") shView = v;
+  }catch(e){}
   seedItems();
   fillUnitSelect();
   renderItemPicker();
@@ -4583,6 +4739,10 @@ function claimIdentity(){
   touchSeen();
   save(ST);
   updateLoginUI(); updateDriveStatus();
+  // fetchProfile() resolves after Home has already drawn, so the panels it
+  // feeds have to be redrawn once the identity is actually known.
+  const home = document.getElementById("sec-home");
+  if(home && home.classList.contains("active")) renderHome();
   return id;
 }
 
@@ -4701,9 +4861,10 @@ function requestAccess(){
   })[0];
   if(open){ toast("Your request is already waiting for an admin"); return; }
   const id = uid("rq_");
-  ST.requests[id] = {email:key, name:(gUserName || key), at:Date.now(), status:"open"};
+  ST.requests[id] = {email:key, name:(displayName() || key), at:Date.now(), status:"open"};
   touch("requests", id);
   save(ST);
+  flushSync();
   renderGate(gateModule);
   toast("Request sent — an admin has to approve it", 4000);
 }
@@ -4719,6 +4880,7 @@ function approveRequest(id){
   r.status = "granted";
   touch("requests", id);
   save(ST);
+  flushSync();
   renderAccessAdmin(); renderHomeRequests();
   toast("✓ " + r.name + " has 30 minutes of access");
 }
@@ -4740,6 +4902,7 @@ function revokeGrant(key){
   ST.grants[key] = {until: 0, by: currentPerson(), at: Date.now()};
   touch("grants", key);
   save(ST);
+  flushSync();
   renderAccessAdmin(); renderHomeRequests();
   toast("Access revoked");
 }
@@ -4748,10 +4911,10 @@ function revokeGrant(key){
 function endMyAccess(){
   const key = emailKey(gUserEmail);
   if(!key || !grantFor(key)) return;
-  if(!confirm("End your access now?\n\nYou will have to ask again to reopen Investment or the Ledger.")) return;
   ST.grants[key] = {until: 0, by: currentPerson(), at: Date.now()};
   touch("grants", key);
   save(ST);
+  flushSync();
   const gated = curModule && MODULES[curModule] && MODULES[curModule].gated;
   if(gated) goHome(); else renderHome();
   toast("Access ended");
@@ -4768,6 +4931,7 @@ function grantNow(id){
   ST.grants[key] = {until: Date.now() + GRANT_MS, by: currentPerson(), at: Date.now()};
   touch("grants", key);
   save(ST);
+  flushSync();
   renderAccessAdmin(); renderHomeRequests();
   toast("✓ " + p.name + " has 30 minutes of access");
 }
@@ -4900,12 +5064,16 @@ function renderHomeRequests(){
 
 // A grant expiring should close the section, not leave it open indefinitely.
 setInterval(function(){
-  if(!curModule) return;
-  const mod = MODULES[curModule];
-  if(mod && mod.gated && !hasAccess()){
-    toast("Your 30 minutes are up", 4000);
-    goHome();
+  if(curModule){
+    const mod = MODULES[curModule];
+    if(mod && mod.gated && !hasAccess()){
+      toast("Your 30 minutes are up", 4000);
+      goHome();
+      return;
+    }
   }
+  const home = document.getElementById("sec-home");
+  if(home && home.classList.contains("active")) renderHome();
 }, 20000);
 
 // ── DASHBOARD ──────────────────────────────────────────────────────────────
