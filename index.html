@@ -648,8 +648,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="lg-f2">
       <div><label class="form-label">Paid by</label>
         <select class="form-select" id="ex-pay" onchange="syncExclChk('ex')"></select></div>
-    </div>
-    <div class="lg-f2">
       <div><label class="form-label">Expense by</label>
         <select class="form-select" id="ex-by"></select></div>
     </div>
@@ -2318,10 +2316,11 @@ const MON_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","
 // Paid-by is about WHERE the money came from; it never changes whether an
 // expense counts. A card purchase is real spending on the day you buy it.
 const PAY_MODES = [
+  {id:"bank", name:"UPI / Bank"},
   {id:"cash", name:"Cash"},
-  {id:"bank", name:"Bank / UPI"},
   {id:"card", name:"Credit Card"}
 ];
+const PAY_DEFAULT = "bank";
 // Seeded once with card excluded, since that is the common case. Every mode is
 // written explicitly so unticking card is remembered rather than re-seeded.
 function seedExclPay(){
@@ -2583,7 +2582,7 @@ function fillPayModes(){
   const keep = sel.value;
   sel.innerHTML = PAY_MODES.map(function(p){
     return '<option value="'+p.id+'">'+esc(p.name)+'</option>'; }).join("");
-  if(keep) sel.value = keep;
+  sel.value = keep || PAY_DEFAULT;
 }
 
 function syncExclChk(pre){
