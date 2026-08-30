@@ -307,6 +307,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
 .donut-val{font-size:17px;font-weight:700;color:var(--text)}
 .donut-lbl{font-size:10px;color:var(--sub)}
+.tc-wrap{width:100%;overflow:hidden}
+.tc-wrap svg{width:100%;height:132px;display:block}
+.tc-base{stroke:var(--border);stroke-width:1;vector-effect:non-scaling-stroke}
+.tc-line{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
+.tc-inc{stroke:var(--green)}
+.tc-exp{stroke:var(--red)}
+.tc-x{font-size:9px;fill:var(--muted);font-family:inherit}
+.tc-key{display:flex;gap:14px;margin-bottom:6px;font-size:11px;color:var(--sub)}
+.tc-key i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px}
+.tc-peak{margin-top:7px;font-size:10.5px;color:var(--muted)}
+.don-sw{margin:-2px 0 10px}
 .legend{display:flex;flex-direction:column;gap:7px}
 .legend-row{display:flex;align-items:center;gap:8px;font-size:12px}
 .legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
@@ -4243,6 +4254,44 @@ function renderPayBlock(rows){
 // device and in every period.
 const SLICE_COLORS = ["#1565C0","#4527A0","#00838F","#EF6C00","#2E7D32","#880E4F","#8D6E63"];
 
+// Expenses and income each remember their own choice: income rarely has
+// subheads worth splitting, expenses usually do.
+let lgSliceBy = {expense:"head", income:"head"};
+
+function setSliceBy(kind, mode){
+  lgSliceBy[kind] = (mode === "sub") ? "sub" : "head";
+  renderLedgerDash();
+}
+
+// Subhead totals for a kind, labelled "Head › Subhead". Entries filed straight
+// on the head keep the head's own name, so nothing is silently dropped and the
+// slices still add up to the same total as the head view.
+function subSlices(S, kind){
+  const out = [];
+  Object.keys(S.heads || {}).forEach(function(h){
+    if(!S.heads[h] || !(S.heads[h][kind] > 0)) return;
+    const hn   = headName(h) || "Removed head";
+    const subs = (S.subs && S.subs[h]) || {};
+    const keys = Object.keys(subs).filter(function(k){ return subs[k] > 0; });
+    if(!keys.length){ out.push({name:hn, amt:S.heads[h][kind]}); return; }
+    keys.forEach(function(k){
+      out.push({name: k ? (hn + " › " + (subName(k) || "Removed subhead")) : hn,
+                amt: subs[k]});
+    });
+  });
+  return out.sort(function(a,b){ return b.amt - a.amt; });
+}
+
+// Offering the switch when nothing is filed under a subhead would give a
+// control that visibly does nothing.
+function hasSubs(S, kind){
+  return Object.keys(S.heads || {}).some(function(h){
+    if(!S.heads[h] || !(S.heads[h][kind] > 0)) return false;
+    const subs = (S.subs && S.subs[h]) || {};
+    return Object.keys(subs).some(function(k){ return k && subs[k] > 0; });
+  });
+}
+
 function headSlices(heads, kind){
   return Object.keys(heads)
     .filter(function(h){ return heads[h] && heads[h][kind] > 0; })
@@ -4252,7 +4301,7 @@ function headSlices(heads, kind){
 
 // A ring reads a split faster than a stack of bars. Same shape as the
 // investment allocation chart, so the two dashboards feel like one app.
-function donutCard(title, centre, slices){
+function donutCard(title, centre, slices, control){
   const total = slices.reduce(function(a,x){ return a + x.amt; }, 0);
   if(!total) return "";
 
@@ -4282,10 +4331,107 @@ function donutCard(title, centre, slices){
   }).join("");
 
   return '<div class="card"><div class="card-title">' + esc(title) + '</div>'
+    + (control || "")
     + '<div class="donut-wrap"><svg viewBox="0 0 42 42">' + ring + '</svg>'
     +   '<div class="donut-center"><div class="donut-val">' + shortMoney(total) + '</div>'
     +   '<div class="donut-lbl">' + esc(centre) + '</div></div></div>'
     + '<div class="legend">' + legend + '</div></div>';
+}
+
+// Points for the selected window: a month is read day by day, a whole year
+// month by month. Trailing empty periods are dropped so the line ends where
+// the data does rather than trailing along the floor.
+function trendSeries(){
+  const pts = [];
+  if(lgMonth){
+    const last = new Date(Number(lgYear), Number(lgMonth), 0).getDate();
+    for(let d=1; d<=last; d++){
+      const dd = (d<10?"0":"") + d;
+      pts.push({key: lgYear + "-" + lgMonth + "-" + dd, label: String(d), inc:0, exp:0});
+    }
+  } else {
+    for(let m=1; m<=12; m++){
+      const mm = (m<10?"0":"") + m;
+      pts.push({key: lgYear + "-" + mm, label: MON_SHORT[m-1], inc:0, exp:0});
+    }
+  }
+  const at = {};
+  pts.forEach(function(p, i){ at[p.key] = i; });
+
+  entriesIn(lgYear, lgMonth).forEach(function(e){
+    const k = lgMonth ? String(e.date||"").slice(0,10) : String(e.date||"").slice(0,7);
+    const i = at[k];
+    if(i === undefined) return;
+    const amt = Number(e.amt) || 0;
+    if(e.type === "income") pts[i].inc += amt;
+    else if(countsAsExpense(e)) pts[i].exp += amt;
+  });
+
+  let end = -1;
+  pts.forEach(function(p, i){ if(p.inc || p.exp) end = i; });
+  return end < 0 ? [] : pts.slice(0, end + 1);
+}
+
+// A plain SVG polyline pair. No library: two series, a floor, and the highest
+// point called out is everything this chart has to say.
+function trendChart(){
+  const pts = trendSeries();
+  if(pts.length < 2) return "";
+
+  const W = 320, H = 132, PL = 6, PR = 6, PT = 10, PB = 20;
+  const max = Math.max.apply(null, pts.map(function(p){ return Math.max(p.inc, p.exp); }).concat([1]));
+  const step = (W - PL - PR) / (pts.length - 1);
+  const x = i => PL + i * step;
+  const y = v => PT + (H - PT - PB) * (1 - v / max);
+
+  const path = key => pts.map(function(p, i){ return x(i).toFixed(1) + "," + y(p[key]).toFixed(1); }).join(" ");
+  const dots = (key, col) => pts.map(function(p, i){
+    return '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(p[key]).toFixed(1)
+         + '" r="1.7" fill="' + col + '"></circle>'; }).join("");
+
+  // Only the ends and the peak are labelled; every label would be unreadable.
+  let peak = 0;
+  pts.forEach(function(p, i){ if(Math.max(p.inc,p.exp) > Math.max(pts[peak].inc,pts[peak].exp)) peak = i; });
+  const marks = [0, peak, pts.length-1].filter(function(v, i, a){ return a.indexOf(v) === i; })
+    .map(function(i){
+      const anchor = i === 0 ? "start" : (i === pts.length-1 ? "end" : "middle");
+      const px = i === 0 ? PL : (i === pts.length-1 ? W - PR : x(i));
+      return '<text x="' + px.toFixed(1) + '" y="' + (H - 6) + '" text-anchor="' + anchor
+           + '" class="tc-x">' + esc(pts[i].label) + '</text>';
+    }).join("");
+
+  const totInc = pts.reduce(function(a,p){ return a + p.inc; }, 0);
+  const totExp = pts.reduce(function(a,p){ return a + p.exp; }, 0);
+
+  return '<div class="card"><div class="card-title">'
+    +   (lgMonth ? "Day by day" : "Month by month") + '</div>'
+    + '<div class="tc-key">'
+    +   '<span><i style="background:var(--green)"></i>Income ' + fmt(totInc) + '</span>'
+    +   '<span><i style="background:var(--red)"></i>Spent ' + fmt(totExp) + '</span>'
+    + '</div>'
+    + '<div class="tc-wrap"><svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">'
+    +   '<line x1="' + PL + '" y1="' + y(0) + '" x2="' + (W-PR) + '" y2="' + y(0)
+    +     '" class="tc-base"></line>'
+    +   '<polyline points="' + path("inc") + '" class="tc-line tc-inc"></polyline>'
+    +   '<polyline points="' + path("exp") + '" class="tc-line tc-exp"></polyline>'
+    +   dots("inc", "var(--green)") + dots("exp", "var(--red)")
+    +   marks
+    + '</svg></div>'
+    + '<div class="tc-peak">Highest ' + esc(pts[peak].label) + ' &middot; '
+    +   fmt(Math.max(pts[peak].inc, pts[peak].exp)) + '</div>'
+    + '</div>';
+}
+
+function donutBlock(S, kind, title, centre){
+  const by = (lgSliceBy[kind] === "sub") ? "sub" : "head";
+  const slices = (by === "sub") ? subSlices(S, kind) : headSlices(S.heads, kind);
+  const control = hasSubs(S, kind)
+    ? '<div class="view-sw don-sw">'
+      + '<button class="' + (by === "head" ? "on" : "") + '" onclick="setSliceBy(\'' + kind + '\',\'head\')">Heads</button>'
+      + '<button class="' + (by === "sub"  ? "on" : "") + '" onclick="setSliceBy(\'' + kind + '\',\'sub\')">Subheads</button>'
+      + '</div>'
+    : "";
+  return donutCard(title, centre, slices, control);
 }
 
 function renderLedgerDash(){
@@ -4401,10 +4547,9 @@ function renderLedgerDash(){
           + '<div class="ins-t">'+esc(n.h)+'</div><div class="ins-x">'+esc(n.x)+'</div></div></div>';
       }).join("") + '</div>';
 
-  const donuts = donutCard("Where the money went", "spent",
-                           headSlices(cur.heads, "expense"))
-               + donutCard("Where the money came from", "received",
-                           headSlices(cur.heads, "income"));
+  const donuts = trendChart()
+               + donutBlock(cur, "expense", "Where the money went", "spent")
+               + donutBlock(cur, "income",  "Where the money came from", "received");
 
   el.innerHTML = stats + cardBox + cardNote + notesHTML
     + renderPotBlock(cur)

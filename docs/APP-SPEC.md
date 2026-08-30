@@ -1,6 +1,6 @@
 # Shree Laxmi Home — Application Specification
 
-**Version:** 1.2 · drawn from `index.html` at service-worker cache `sip-tracker-v92`
+**Version:** 1.3 · drawn from `index.html` at service-worker cache `sip-tracker-v93`
 **Purpose:** a complete, self-contained description of the app, written so a mobile application can be built from this document alone.
 
 Every rule below is taken from the running code, with line references into `index.html` so any claim can be checked. Where a code comment disagrees with what the code actually does, this document states the behaviour and flags the discrepancy in [§23](#23-known-issues-to-fix-in-the-rebuild).
@@ -485,7 +485,7 @@ The Ledger Insights screen shows, for the selected month or whole year:
 
 - **Income**, **Spent**, **Net**, and entry count, each with a percentage delta against the previous comparable period (`previousPeriod()`, `index.html:4027`).
 - A note naming exactly which payment types are behind Net, so the number can be reconciled against the pot table without guesswork.
-- **Two donut charts** — *Where the money went* and *Where the money came from* — at the foot of the screen, after the breakdowns they summarise.
+- **Three charts** at the foot of the screen, after the breakdowns they summarise: a trend line, then a donut for expenses and one for income.
 - Breakdowns by **head** (with subheads nested), by **person**, and by **payment type**.
 - The pot table (`renderPotBlock()`, `index.html:4069`).
 - Settlement rows kept visible but separated, so a card bill is auditable without polluting Spent.
@@ -510,6 +510,7 @@ Three rules keep it honest:
 
 - **Colour is assigned by rank**, not by head, from a fixed seven-colour list (`SLICE_COLORS`). Heads are user-defined and carry no colour of their own, so the biggest head gets the first colour on every device and in every period. A head's colour therefore means "this is the largest", not "this is Groceries".
 - **Seven arcs maximum.** Beyond that the ring stops being readable, so the top six are kept and the rest collapse into a single *Everything else* slice carrying their sum.
+- **Each ring can be split by head or by subhead**, chosen with a Heads / Subheads switch under the title (`setSliceBy(kind, mode)`). In subhead mode a slice is labelled *Head › Subhead*; entries filed straight on a head keep the plain head name, so the slices still total exactly what the head view totalled. The switch is **hidden when nothing in that kind carries a subhead** — a control that visibly does nothing is worse than no control. Expenses and income remember the choice separately, since income rarely has subheads worth splitting.
 - **An empty chart renders nothing at all** — no zero ring, no empty card. A period with no income simply has no income chart.
 
 The centre figure uses `shortMoney()` (`index.html:4787`): ₹1.00 L, ₹12K, ₹2.50 Cr.
@@ -517,6 +518,26 @@ The centre figure uses `shortMoney()` (`index.html:4787`): ₹1.00 L, ₹12K, �
 > **Invariant:** the entry count printed on a card must equal the number of rows in its drill-down. Grouping the drill-down by head broke this — two entries under one head showed as a single line while the card said "2 entries". The same class of bug appeared in the Grocery breakdown. Any aggregate count must be derived from exactly the rows the detail view will list.
 
 ---
+
+### 8.9 The trend line
+
+`trendChart()` (`index.html`, `trendChart`) plots **income against spending** over the selected window, as two SVG polylines. No charting library: two paths, a floor, dots, and three labels are all it needs.
+
+`trendSeries()` builds the points and decides the grain from the period selector, exactly as every other view does:
+
+| Selection | One point per | Labels |
+|---|---|---|
+| A single month | day of that month | day number |
+| A whole year | month of that year | Jan, Feb, … |
+
+Four rules:
+
+- **Empty periods at the end are dropped**, so the line stops where the data does instead of trailing along the floor. Gaps *inside* the range stay as genuine zeros — a month with no spending is information.
+- **Spending obeys `countsAsExpense()`**, so settlements never appear as a spike. Income is any `type === "income"` row.
+- **Only three points are labelled** — first, last, and the peak. Labelling all 31 days would be unreadable at phone width.
+- **Fewer than two points draws nothing.** One point is not a line.
+
+Both series share one y-scale so the two are directly comparable, and the caption names the peak period and its value.
 
 ## 9. Investment rules
 
@@ -886,6 +907,8 @@ Roughly: 10px tertiary metadata · 11–11.5px labels and hints · 12.5px list r
 | `view-sw` | Cards ↔ List segmented switch |
 | `donut-wrap` / `donut-center` | SVG ring with a figure and label in the middle; the SVG is rotated −90° so the first slice starts at twelve o'clock |
 | `legend-row` | dot, name, and right-aligned amount · share — the ring's key |
+| `tc-wrap` / `tc-line` / `tc-base` / `tc-x` | the trend chart: a scaled SVG, two 2px polylines with `vector-effect: non-scaling-stroke`, a hairline floor, and axis labels |
+| `don-sw` | the Heads / Subheads switch, a `view-sw` sitting under a card title |
 | `freq` / `freq-ed` / `freq-add` | a Buy Again row: tappable body, edit, and add-to-list |
 | `toast` | transient bottom message, 2.5 s default |
 | `lock-screen` | full-screen PIN overlay, z-index 500 |
@@ -1016,7 +1039,7 @@ The Drive document keeps its current JSON shape, so old and new clients can coex
 
 ## 22. Behaviour catalogue for tests
 
-The current build is pinned by 430 tests across 17 suites. Those harnesses will not survive the rebuild, but the invariants must. Each line below is an acceptance criterion.
+The current build is pinned by 471 tests across 18 suites. Those harnesses will not survive the rebuild, but the invariants must. Each line below is an acceptance criterion.
 
 **Accounting**
 
@@ -1059,33 +1082,40 @@ The current build is pinned by 430 tests across 17 suites. Those harnesses will 
 25. A period with no income renders no income chart at all, rather than an empty ring.
 26. Slice colour follows rank, so the same period renders identically on every device.
 27. A head name containing markup is escaped, in both the ring and its legend.
+28. Subhead slices total exactly what the head slices totalled; entries with no subhead are kept under the head's own name.
+29. The Heads / Subheads switch is hidden when no entry in that kind carries a subhead.
+30. Expenses and income remember their head/subhead choice independently.
+31. The trend line reads day by day for a month and month by month for a year.
+32. Trailing empty periods are dropped; interior empty periods stay as zeros.
+33. A settlement never appears as a spike in the spending line.
+34. Fewer than two points renders no chart at all.
 
 **Recurring**
 
-28. Running twice never produces a duplicate for the same rule and month.
-29. Day 31 in February files on the last day of February.
-30. Pausing stops future months; already-posted entries stay.
+35. Running twice never produces a duplicate for the same rule and month.
+36. Day 31 in February files on the last day of February.
+37. Pausing stops future months; already-posted entries stay.
 
 **Sync**
 
-31. Two devices editing different fields of the same record both keep their edits.
-32. A delete beats a concurrent edit stamped earlier, and loses to one stamped later.
-33. Rows generated independently on two devices from the same `srcKey` collapse into one.
-34. A merge that changes nothing produces no "updated" notice.
-35. When several copies of the file exist, the oldest is chosen.
+38. Two devices editing different fields of the same record both keep their edits.
+39. A delete beats a concurrent edit stamped earlier, and loses to one stamped later.
+40. Rows generated independently on two devices from the same `srcKey` collapse into one.
+41. A merge that changes nothing produces no "updated" notice.
+42. When several copies of the file exist, the oldest is chosen.
 
 **Access**
 
-36. A member with no grant cannot open a gated module, by tile or by tab.
-37. A grant expires exactly 30 minutes after it is issued, and the member is ejected within 20 seconds.
-38. Revoke and End Now take effect immediately and propagate.
-39. With no admin flagged anywhere, every signed-in user is treated as an admin.
-40. Two person rows with the same email are merged, and the admin flag survives.
+43. A member with no grant cannot open a gated module, by tile or by tab.
+44. A grant expires exactly 30 minutes after it is issued, and the member is ejected within 20 seconds.
+45. Revoke and End Now take effect immediately and propagate.
+46. With no admin flagged anywhere, every signed-in user is treated as an admin.
+47. Two person rows with the same email are merged, and the admin flag survives.
 
 **Session**
 
-41. A lapsed token never blanks the app or discards the identity.
-42. Backup download and upload are refused to non-admins.
+48. A lapsed token never blanks the app or discards the identity.
+49. Backup download and upload are refused to non-admins.
 
 ---
 
