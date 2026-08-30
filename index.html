@@ -260,6 +260,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .freq-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;cursor:pointer}
 .freq-n{font-size:12.5px;font-weight:600;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .freq-u{font-size:10px;color:var(--muted)}
+.freq-ed{width:26px;height:26px;flex-shrink:0;border:1px solid transparent;border-radius:8px;background:none;color:var(--muted);font-size:12px;line-height:1;cursor:pointer;padding:0}
+.freq-ed:active{background:var(--card);border-color:var(--border)}
 .freq-add{width:26px;height:26px;flex-shrink:0;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--sub);font-size:14px;line-height:1;cursor:pointer;padding:0}
 .freq-add:active{background:var(--bg)}
 .freq.on .freq-add{color:var(--green);border-color:var(--green)}
@@ -538,6 +540,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   </div>
 </div>
 
+<div class="modal-bg" id="item-modal" onclick="if(event.target===this)closeItemEdit()">
+  <div class="modal-box">
+    <div class="modal-title">Edit item</div>
+    <div class="modal-sub" id="ie-sub"></div>
+    <label for="ie-name">Name</label>
+    <input id="ie-name" placeholder="e.g. Potato">
+    <label for="ie-unit">Usual unit</label>
+    <select id="ie-unit"></select>
+    <div class="share-err" id="ie-err"></div>
+    <div class="modal-row">
+      <button class="btn-sm btn-outline" onclick="closeItemEdit()">Cancel</button>
+      <button class="btn-sm btn-green" onclick="saveItemEdit()">&#10003; Save</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="entry-modal" onclick="if(event.target===this)closeEntryEdit()">
   <div class="modal-box">
     <div class="modal-title" id="em2-title">Edit entry</div>
@@ -801,7 +819,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="card-title">Buy Again</div>
     <div style="font-size:12px;color:var(--sub);line-height:1.5;margin-bottom:10px">
       Your most-bought items. Tap one to record a purchase straight away — the
-      unit is prefilled from the last time you bought it.
+      unit is prefilled from the last time you bought it. Use &#9998; to fix a
+      name or unit.
     </div>
     <div class="freq-grid" id="freq-list"></div>
   </div>
@@ -4219,6 +4238,56 @@ function renderPayBlock(rows){
     + tabs + view + back + body + '</div>';
 }
 
+// Heads are user-defined and carry no colour of their own, so slices are
+// coloured by rank: the biggest head always gets the first colour, on every
+// device and in every period.
+const SLICE_COLORS = ["#1565C0","#4527A0","#00838F","#EF6C00","#2E7D32","#880E4F","#8D6E63"];
+
+function headSlices(heads, kind){
+  return Object.keys(heads)
+    .filter(function(h){ return heads[h] && heads[h][kind] > 0; })
+    .map(function(h){ return {name: headName(h) || "Removed head", amt: heads[h][kind]}; })
+    .sort(function(a,b){ return b.amt - a.amt; });
+}
+
+// A ring reads a split faster than a stack of bars. Same shape as the
+// investment allocation chart, so the two dashboards feel like one app.
+function donutCard(title, centre, slices){
+  const total = slices.reduce(function(a,x){ return a + x.amt; }, 0);
+  if(!total) return "";
+
+  // Seven arcs is the most the ring stays readable at; the rest become one.
+  let list = slices;
+  if(list.length > 7){
+    const rest = list.slice(6).reduce(function(a,x){ return a + x.amt; }, 0);
+    list = list.slice(0,6).concat([{name:"Everything else", amt:rest}]);
+  }
+
+  let off = 0, ring = "";
+  list.forEach(function(x, i){
+    const pct = x.amt / total * 100;
+    ring += '<circle cx="21" cy="21" r="15.915" fill="none" stroke="'
+         +  SLICE_COLORS[i % SLICE_COLORS.length] + '" stroke-width="6"'
+         +  ' stroke-dasharray="' + pct.toFixed(2) + ' ' + (100-pct).toFixed(2) + '"'
+         +  ' stroke-dashoffset="' + (100-off).toFixed(2) + '"></circle>';
+    off += pct;
+  });
+
+  const legend = list.map(function(x, i){
+    const pct = Math.round(x.amt / total * 100);
+    return '<div class="legend-row">'
+      + '<span class="legend-dot" style="background:' + SLICE_COLORS[i % SLICE_COLORS.length] + '"></span>'
+      + '<span class="legend-name">' + esc(x.name) + '</span>'
+      + '<span class="legend-val">' + fmt(x.amt) + ' &middot; ' + pct + '%</span></div>';
+  }).join("");
+
+  return '<div class="card"><div class="card-title">' + esc(title) + '</div>'
+    + '<div class="donut-wrap"><svg viewBox="0 0 42 42">' + ring + '</svg>'
+    +   '<div class="donut-center"><div class="donut-val">' + shortMoney(total) + '</div>'
+    +   '<div class="donut-lbl">' + esc(centre) + '</div></div></div>'
+    + '<div class="legend">' + legend + '</div></div>';
+}
+
 function renderLedgerDash(){
   const el = document.getElementById("lgd-body");
   if(!el) return;
@@ -4332,7 +4401,12 @@ function renderLedgerDash(){
           + '<div class="ins-t">'+esc(n.h)+'</div><div class="ins-x">'+esc(n.x)+'</div></div></div>';
       }).join("") + '</div>';
 
-  el.innerHTML = stats + cardBox + cardNote + notesHTML
+  const donuts = donutCard("Where the money went", "spent",
+                           headSlices(cur.heads, "expense"))
+               + donutCard("Where the money came from", "received",
+                           headSlices(cur.heads, "income"));
+
+  el.innerHTML = stats + cardBox + cardNote + donuts + notesHTML
     + renderPotBlock(cur)
     + renderPayBlock(entriesIn(lgYear, lgMonth)) + bars;
 }
@@ -4729,6 +4803,74 @@ function doMerge(){
   toast("✓ " + n + " item(s) combined into " + keepName);
 }
 
+let editItemId = null;
+
+// A typed name sticks around in every row it was bought under, because the
+// consumption view groups on the name. So a rename has to travel to those
+// rows too, or one item's history splits in two.
+function openItemEdit(id){
+  const it = ST.items[resolveItemId(id)];
+  if(!it){ toast("Item not found"); return; }
+  editItemId = resolveItemId(id);
+
+  document.getElementById("ie-name").value = it.name || "";
+  const sel = document.getElementById("ie-unit");
+  sel.innerHTML = UNITS.map(function(u){
+    return '<option value="' + u.id + '">' + esc(u.name) + '</option>'; }).join("");
+  sel.value = it.unit || "pcs";
+
+  const used = (ST.shop||[]).filter(function(r){ return r.item === editItemId; }).length;
+  document.getElementById("ie-sub").textContent = used
+    ? used + (used === 1 ? " row uses this item" : " rows use this item")
+      + " — renaming updates all of them"
+    : "Not used yet";
+  document.getElementById("ie-err").textContent = "";
+  document.getElementById("item-modal").classList.add("show");
+}
+
+function closeItemEdit(){
+  document.getElementById("item-modal").classList.remove("show");
+  editItemId = null;
+}
+
+function saveItemEdit(){
+  if(!editItemId) return;
+  const err  = document.getElementById("ie-err");
+  const it   = ST.items[editItemId];
+  if(!it){ closeItemEdit(); return; }
+
+  const name = (document.getElementById("ie-name").value || "").trim();
+  const unit = document.getElementById("ie-unit").value || "pcs";
+  if(!name){ err.textContent = "Enter a name."; return; }
+
+  // Another item already owns this name: merging is what the user wants, and
+  // it is a different, deliberate action.
+  const clash = itemList().filter(function(i){
+    return i.id !== editItemId && i.name.toLowerCase() === name.toLowerCase(); })[0];
+  if(clash){
+    err.textContent = name + " already exists. Use Merge items to join them.";
+    return;
+  }
+
+  const before = it.name;
+  it.name = name;
+  it.unit = unit;
+  touch("items", editItemId);
+
+  // Carry the new name into every row filed under this item.
+  let moved = 0;
+  (ST.shop||[]).forEach(function(r){
+    if(r.item === editItemId && r.name !== name){ r.name = name; touch("shop", r.id); moved++; }
+  });
+  save(ST);
+
+  closeItemEdit();
+  renderItemManage(); renderItemPicker(); renderMergeUI();
+  renderFrequent(); renderShopList(); renderShopHistory(); renderShopDash();
+  toast(before === name ? ("\u2713 " + name + " updated")
+                        : ("\u2713 Renamed to " + name + (moved ? " \u00b7 " + moved + " row" + (moved===1?"":"s") + " updated" : "")));
+}
+
 function renderItemManage(){
   const el = document.getElementById("item-manage");
   if(!el) return;
@@ -4737,6 +4879,7 @@ function renderItemManage(){
     ? list.map(function(i){
         return '<span class="head-chip">' + esc(i.name)
           + (i.unit ? '<span class="chip-x">' + esc(i.unit) + '</span>' : '')
+          + '<button onclick="openItemEdit(\'' + i.id + '\')" title="Edit">&#9998;</button>'
           + '<button onclick="delItem(\'' + i.id + '\')" title="Remove">&times;</button></span>';
       }).join("")
     : '<span class="head-none">No saved items</span>';
@@ -5006,6 +5149,7 @@ function renderFrequent(){
           +   '<span class="freq-u">' + esc(u ? unitOf(u).name : "")
           +     (i.n ? ' &middot; ' + i.n + 'x' : '') + '</span>'
           + '</div>'
+          + '<button class="freq-ed" onclick="openItemEdit(\'' + i.id + '\')" title="Edit item">&#9998;</button>'
           + '<button class="freq-add" onclick="quickAddToList(\'' + i.id + '\')" title="'
           +   (on ? 'Already on the list' : 'Add to the list') + '">'
           +   (on ? '&#10003;' : '+') + '</button>'
