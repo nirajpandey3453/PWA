@@ -202,6 +202,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .pot-row:last-of-type{border-bottom:none}
 .pot-n{font-weight:600}
 .pot-b{font-weight:700}
+.pay-tot{display:flex;justify-content:space-between;align-items:baseline;padding:0 0 9px;font-size:12px;font-weight:700;color:var(--sub)}
+.pay-tot span:last-child{font-size:15px;color:var(--text);font-variant-numeric:tabular-nums}
+.pay-sum{padding-bottom:7px;margin-bottom:7px;border-bottom:1px solid var(--border)}
+.pay-rows .gro-row+.gro-row{border-top:1px solid var(--border)}
 .cl-row.tap{cursor:pointer}
 .cl-go{font-size:16px;color:var(--muted);flex-shrink:0;padding-left:2px}
 .pay-back{background:none;border:none;color:var(--teal);font-size:11.5px;font-weight:700;padding:0 0 9px;cursor:pointer}
@@ -4045,9 +4049,11 @@ function payGroups(rows){
   const out = {};
   rows.forEach(function(e){
     if(e.type === "income") return;
+    if(!countsAsExpense(e)) return;
     const p = e.pay || "";
-    if(!out[p]) out[p] = {amt:0, n:0, heads:{}, subs:{}};
+    if(!out[p]) out[p] = {amt:0, n:0, heads:{}, subs:{}, rows:[]};
     const a = Number(e.amt) || 0;
+    out[p].rows.push(e);
     out[p].amt += a;
     out[p].n++;
     if(!out[p].heads[e.head]) out[p].heads[e.head] = {income:0, expense:0};
@@ -4112,7 +4118,7 @@ function renderPayBlock(rows){
         : '')
     + '</div>';
 
-  const view = '<div class="view-sw">'
+  const view = (lgPay !== "") ? "" : '<div class="view-sw">'
     + '<button class="' + (lgPayView === "cards" ? "on" : "") + '" onclick="setPayView(\'cards\')">Cards</button>'
     + '<button class="' + (lgPayView === "list"  ? "on" : "") + '" onclick="setPayView(\'list\')">List</button>'
     + '</div>';
@@ -4159,31 +4165,47 @@ function renderPayBlock(rows){
             if(!acc.heads[h]) acc.heads[h] = {income:0, expense:0};
             acc.heads[h].expense += gr[k].heads[h].expense;
           });
+          acc.rows = acc.rows.concat(gr[k].rows || []);
           return acc;
-        }, {heads:{}, subs:{}})
+        }, {heads:{}, subs:{}, rows:[]})
       : gr[lgPay];
 
     const ids = Object.keys(src.heads).filter(function(h){ return src.heads[h].expense > 0; })
                   .sort(function(a,b){ return src.heads[b].expense - src.heads[a].expense; });
     const sub = ids.reduce(function(a,h){ return a + src.heads[h].expense; }, 0);
 
-    body = ids.length
-      ? ((lgPayView === "list")
-          ? '<div class="cons-list">' + ids.map(function(h, i){
-              const v = src.heads[h].expense, pct = sub ? Math.round(v/sub*100) : 0;
-              return '<div class="cl-row"><div class="cl-rank">' + (i+1) + '</div>'
-                + '<div class="cl-main"><div class="cl-n">' + esc(headName(h)) + '</div>'
-                +   '<div class="cl-bar"><div style="width:' + pct + '%"></div></div></div>'
-                + '<div class="cl-nums"><div class="cl-q">' + fmt(v) + '</div>'
-                +   '<div class="cl-x">' + pct + '%</div></div></div>';
-            }).join("") + '</div>'
-          : '<div class="cons-grid">' + ids.map(function(h){
-              const v = src.heads[h].expense, pct = sub ? Math.round(v/sub*100) : 0;
-              return '<div class="cons-card"><div class="cons-n">' + esc(headName(h)) + '</div>'
-                + '<div class="cons-q">' + fmt(v) + '</div>'
-                + '<div class="cons-x">' + pct + '% of this type</div>'
-                + '<div class="cons-bar"><div style="width:' + pct + '%"></div></div></div>';
-            }).join("") + '</div>')
+    const list = (src.rows || []).slice().sort(function(a,b){
+      return String(a.date) === String(b.date) ? 0 : (String(a.date) < String(b.date) ? 1 : -1);
+    });
+    const max = Math.max.apply(null, list.map(function(e){ return Number(e.amt)||0; }).concat([1]));
+
+    // A head summary only earns its space when there is more than one head.
+    const summary = (ids.length > 1)
+      ? '<div class="pay-sum">' + ids.map(function(h){
+          const v = src.heads[h].expense, pct = sub ? Math.round(v/sub*100) : 0;
+          return '<div class="hb-row"><div class="hb-top"><span>' + esc(headName(h)) + '</span>'
+            + '<span class="hb-val">' + fmt(v) + ' &middot; ' + pct + '%</span></div>'
+            + '<div class="hb-track"><div class="hb-fill expense" style="width:' + pct + '%"></div></div>'
+            + '</div>';
+        }).join("") + '</div>'
+      : '';
+
+    body = list.length
+      ? '<div class="pay-tot"><span>' + list.length + (list.length === 1 ? ' entry' : ' entries')
+        +   '</span><span>' + fmt(sub) + '</span></div>'
+        + summary
+        + '<div class="pay-rows">' + list.map(function(e){
+            const v = Number(e.amt) || 0;
+            const tag = [headName(e.head), e.sub ? subName(e.sub) : "", e.note]
+                          .filter(function(x){ return x; }).join(" · ");
+            return '<div class="gro-row">'
+              + '<div class="gro-l">' + esc(dayLabel(e.date)) + '</div>'
+              + '<div class="gro-bar"><div style="width:' + Math.round(v/max*100) + '%"></div></div>'
+              + '<div class="gro-v">' + fmt(v) + '</div>'
+              + '<div class="gro-n"></div>'
+              + (tag ? '<div class="gro-tag">' + esc(tag) + '</div>' : '')
+              + '</div>';
+          }).join("") + '</div>'
       : '<div class="gate-x">Nothing paid this way in this period.</div>';
   }
 
