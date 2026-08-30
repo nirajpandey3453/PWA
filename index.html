@@ -202,6 +202,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .pot-row:last-of-type{border-bottom:none}
 .pot-n{font-weight:600}
 .pot-b{font-weight:700}
+.cl-row.tap{cursor:pointer}
+.cl-go{font-size:16px;color:var(--muted);flex-shrink:0;padding-left:2px}
+.pay-back{background:none;border:none;color:var(--teal);font-size:11.5px;font-weight:700;padding:0 0 9px;cursor:pointer}
 .pay-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:3px;margin-bottom:10px;-webkit-overflow-scrolling:touch}
 .pay-tabs button{flex:0 0 auto;border:1px solid var(--border);background:var(--bg);color:var(--sub);font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:9px;cursor:pointer;white-space:nowrap}
 .pay-tabs button.on{background:var(--teal);border-color:var(--teal);color:#fff}
@@ -227,9 +230,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .cons-bar{height:4px;background:var(--card);border-radius:3px;overflow:hidden;margin-top:8px}
 .cons-bar div{height:100%;background:var(--teal);border-radius:3px}
 .cons-sub{font-size:10px;color:var(--muted);margin-top:3px}
-.cons-card.tap{cursor:pointer}
+.cons-card.tap{cursor:pointer;position:relative}
 .cons-card.tap:active{background:var(--card)}
-.gro-caret{display:inline-block;font-size:10px;color:var(--muted);margin-left:5px;transition:transform .18s}
+.gro-open{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:9px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;font-weight:700;color:var(--teal)}
+.gro-caret{display:inline-block;font-size:11px;color:var(--teal);transition:transform .18s}
 .gro-caret.open{transform:rotate(180deg)}
 .gro-box{display:none;margin-top:11px;border:1px solid var(--border);border-radius:11px;padding:10px 11px;background:var(--bg)}
 .gro-box.open{display:block}
@@ -240,6 +244,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .gro-bar div{height:100%;background:var(--teal);border-radius:3px}
 .gro-v{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
 .gro-n{font-size:10px;color:var(--muted);width:24px;text-align:right}
+.gro-row{position:relative}
+.gro-tag{grid-column:1 / -1;font-size:10px;color:var(--muted);margin-top:-2px;padding-left:82px}
 .gro-empty{font-size:11.5px;color:var(--muted)}
 .gs-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:11px;padding-top:10px;border-top:1px solid var(--border);font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
 .mg-list{display:flex;flex-direction:column;gap:2px;max-height:190px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:var(--bg)}
@@ -918,8 +924,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="lg-f2">
       <div><label class="form-label">Received in</label>
         <select class="form-select" id="in-pay"></select></div>
-    </div>
-    <div class="lg-f2">
       <div><label class="form-label">Income by</label>
         <select class="form-select" id="in-by"></select></div>
     </div>
@@ -1075,12 +1079,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="ds-dot"></div>
       <span id="drive-status-text">Google Drive not connected — sign in</span>
     </div>
-    <div class="form-group">
-      <label class="form-label">Direction</label>
-      <select class="form-select" id="t-dir">
-        <option value="wife">Husband &rarr; Wife</option>
-        <option value="husband">Wife &rarr; Husband</option>
-      </select>
+    <div class="lg-f2">
+      <div><label class="form-label">From</label>
+        <select class="form-select" id="t-from"></select></div>
+      <div><label class="form-label">To</label>
+        <select class="form-select" id="t-to"></select></div>
     </div>
     <div class="form-group">
       <label class="form-label">Date</label>
@@ -1549,7 +1552,7 @@ function showSec(id,el){
   if(id==="shitems")  { seedItems(); fillUnitSelect(); renderItemManage(); renderMergeUI(); }
   if(id==="shcons")   { renderShopPeriodSel(); renderShopDash(); }
   if(id==="shhist")   renderShopHistory();
-  if(id==="transfer") { renderTransfer(); renderSyncTools(); }
+  if(id==="transfer") { seedPeople(); fillTransferPeople(); renderTransfer(); renderSyncTools(); }
   if(id==="funds")    renderFunds();
 }
 
@@ -1736,6 +1739,34 @@ function toggleCheck(mi,pid,btn){
 }
 
 // ── TRANSFER ───────────────────────────────────────────────────────────────
+// Older rows stored a fixed direction; read them as the two names they meant.
+function tFrom(t){
+  if(t.from) return t.from;
+  return t.dir === "husband" ? "Wife" : "Husband";
+}
+function tTo(t){
+  if(t.to) return t.to;
+  return t.dir === "husband" ? "Husband" : "Wife";
+}
+
+function fillTransferPeople(){
+  const names = knownPeople();
+  const me = currentPerson();
+  const from = document.getElementById("t-from");
+  const to   = document.getElementById("t-to");
+  if(!from || !to) return;
+  const opts = names.map(function(n){
+    return '<option value="'+esc(n)+'">'+esc(n)+'</option>'; }).join("");
+  const keepF = from.value, keepT = to.value;
+  from.innerHTML = opts;
+  to.innerHTML   = opts;
+  from.value = (keepF && names.indexOf(keepF) > -1) ? keepF
+             : (names.indexOf(me) > -1 ? me : (names[0] || ""));
+  // Default the other side to someone who is not the sender.
+  const other = names.filter(function(n){ return n !== from.value; })[0] || "";
+  to.value = (keepT && names.indexOf(keepT) > -1 && keepT !== from.value) ? keepT : other;
+}
+
 function renderTransfer(){
   updateDriveStatus();
   const today = new Date().toISOString().split("T")[0];
@@ -1754,10 +1785,12 @@ function addTransfer(){
   document.getElementById("err-amt").style.display = (amt&&Number(amt)>0)?"none":"block"; if(!amt||Number(amt)<=0) ok=false;
   if(!ok) return;
 
-  const dirEl = document.getElementById("t-dir");
-  const dir   = dirEl ? dirEl.value : "wife";
-  const to    = (dir === "husband") ? "Husband" : "Wife";
-  const from  = (dir === "husband") ? "Wife" : "Husband";
+  const fromEl = document.getElementById("t-from");
+  const toEl   = document.getElementById("t-to");
+  const from   = ((fromEl && fromEl.value) || "").trim();
+  const to     = ((toEl && toEl.value) || "").trim();
+  if(!from || !to){ toast("Pick who is sending and who is receiving"); return; }
+  if(from === to){ toast("Sender and receiver cannot be the same person"); return; }
 
   // Mirror the transfer into the receiver's ledger as income, and keep the
   // ledger row id so deleting the transfer removes that entry too.
@@ -1767,12 +1800,14 @@ function addTransfer(){
   });
 
   const tid = Date.now();
-  ST.transfers.unshift({id:tid, date:date, amt:Number(amt), mode:mode, dir:dir, lgId:lgId,
+  ST.transfers.unshift({id:tid, date:date, amt:Number(amt), mode:mode,
+                        from:from, to:to, lgId:lgId,
                         note: note || ("Transfer to " + to)});
   touch("transfers",tid);
   save(ST);
   document.getElementById("t-amt").value="";
   document.getElementById("t-note").value="";
+  fillTransferPeople();
   renderTransferLog();
   if(document.getElementById("ledger-list")){ renderLedger(); renderPeriodSel(); renderLedgerDash(); }
   toast("✓ Transfer saved and added to " + to + "'s income");
@@ -1808,11 +1843,12 @@ function transfersByYear(){
     const d = String(t.date||"");
     if(d.length < 7) return;
     const y = d.slice(0,4), ym = d.slice(0,7);
-    if(!out[y]) out[y] = {total:0, wife:0, husband:0, months:{}};
+    if(!out[y]) out[y] = {total:0, to:{}, months:{}};
     if(!out[y].months[ym]) out[y].months[ym] = {total:0, rows:[]};
     const amt = Number(t.amt)||0;
     out[y].total += amt;
-    out[y][t.dir === "husband" ? "husband" : "wife"] += amt;
+    const who = tTo(t);
+    out[y].to[who] = (out[y].to[who] || 0) + amt;
     out[y].months[ym].total += amt;
     out[y].months[ym].rows.push(t);
   });
@@ -1843,11 +1879,22 @@ function renderTransferLog(){
     let big = months[0];
     months.forEach(function(m){ if(Y.months[m].total > Y.months[big].total) big = m; });
 
+    const people = Object.keys(Y.to).sort(function(a,b){ return Y.to[b] - Y.to[a]; });
     const stats = '<div class="lgd-stats" style="margin-bottom:12px">'
       + '<div class="lgd-s"><div class="lgd-l">Sent</div><div class="lgd-v">'+fmt(Y.total)+'</div></div>'
-      + '<div class="lgd-s"><div class="lgd-l">To Wife</div><div class="lgd-v">'+fmt(Y.wife)+'</div></div>'
-      + '<div class="lgd-s"><div class="lgd-l">To Husband</div><div class="lgd-v">'+fmt(Y.husband)+'</div></div>'
+      + '<div class="lgd-s"><div class="lgd-l">People</div><div class="lgd-v">'+people.length+'</div></div>'
+      + '<div class="lgd-s"><div class="lgd-l">Transfers</div><div class="lgd-v">'
+      +   months.reduce(function(a,m){ return a + Y.months[m].rows.length; },0)+'</div></div>'
       + '<div class="lgd-s"><div class="lgd-l">Avg / month</div><div class="lgd-v">'+fmt(avg)+'</div></div>'
+      + '</div>'
+      + '<div class="hb-block"><div class="hb-title">Received by</div>'
+      +   people.map(function(n){
+            const pct = Y.total ? Math.round(Y.to[n]/Y.total*100) : 0;
+            return '<div class="hb-row"><div class="hb-top"><span>' + esc(n) + '</span>'
+              + '<span class="hb-val">' + fmt(Y.to[n]) + ' &middot; ' + pct + '%</span></div>'
+              + '<div class="hb-track"><div class="hb-fill expense" style="width:' + pct + '%"></div></div>'
+              + '</div>';
+          }).join("")
       + '</div>'
       + '<div class="ins info"><div class="ins-ico">📅</div><div>'
       +   '<div class="ins-t">Heaviest month: '+monthLabel(big)+'</div>'
@@ -1863,7 +1910,7 @@ function renderTransferLog(){
         return '<div class="lg-row">'
           + '<div class="lg-day">' + esc(dayLabel(t.date)) + '</div>'
           + '<div class="lg-main">'
-          +   '<div class="lg-head">to ' + (t.dir === "husband" ? "Husband" : "Wife") + '</div>'
+          +   '<div class="lg-head">' + esc(tFrom(t)) + ' &rarr; ' + esc(tTo(t)) + '</div>'
           +   '<div class="lg-sub"><span class="lg-by">' + esc(t.mode || "") + '</span>'
           +     (t.note ? '<span class="lg-note">' + esc(t.note) + '</span>' : '')
           +   '</div>'
@@ -4049,8 +4096,10 @@ function renderPayBlock(rows){
   const orphan = keys.filter(function(k){ return !payName(k); });   // blank or removed
   const total  = keys.reduce(function(a,k){ return a + gr[k].amt; }, 0);
 
-  // A tab that no longer matches anything falls back to All.
-  if(lgPay && !gr[lgPay]) lgPay = "";
+  // A tab that no longer matches anything falls back to All. "__none" is the
+  // stand-in for rows with no payment type, which group under a blank key.
+  if(lgPay === "__none"){ if(!orphan.length) lgPay = ""; }
+  else if(lgPay && !gr[lgPay]) lgPay = "";
 
   const tabs = '<div class="pay-tabs">'
     + '<button class="' + (lgPay === "" ? "on" : "") + '" onclick="setPayTab(\'\')">All</button>'
@@ -4072,29 +4121,35 @@ function renderPayBlock(rows){
   if(lgPay === ""){
     // Totals per payment type.
     const items = modes.map(function(p){
-      return {name:p.name, amt:gr[p.id].amt, n:gr[p.id].n, off:isPayExcluded(p.id)};
+      return {id:p.id, name:p.name, amt:gr[p.id].amt, n:gr[p.id].n, off:isPayExcluded(p.id)};
     }).concat(orphan.length
-      ? [{name:"Unset", amt:orphan.reduce(function(a,k){ return a+gr[k].amt; },0),
+      ? [{id:"__none", name:"Unset",
+          amt:orphan.reduce(function(a,k){ return a+gr[k].amt; },0),
           n:orphan.reduce(function(a,k){ return a+gr[k].n; },0), off:false}]
       : []).sort(function(a,b){ return b.amt - a.amt; });
 
     body = (lgPayView === "list")
       ? '<div class="cons-list">' + items.map(function(it, i){
           const pct = total ? Math.round(it.amt/total*100) : 0;
-          return '<div class="cl-row"><div class="cl-rank">' + (i+1) + '</div>'
+          return '<div class="cl-row tap" onclick="setPayTab(\'' + it.id + '\')">'
+            + '<div class="cl-rank">' + (i+1) + '</div>'
             + '<div class="cl-main"><div class="cl-n">' + esc(it.name)
             +   (it.off ? '<span class="pm-tag">not counted</span>' : '') + '</div>'
             +   '<div class="cl-bar"><div style="width:' + pct + '%"></div></div></div>'
             + '<div class="cl-nums"><div class="cl-q">' + fmt(it.amt) + '</div>'
-            +   '<div class="cl-x">' + it.n + 'x &middot; ' + pct + '%</div></div></div>';
+            +   '<div class="cl-x">' + it.n + 'x &middot; ' + pct + '%</div></div>'
+            + '<div class="cl-go">&rsaquo;</div></div>';
         }).join("") + '</div>'
       : '<div class="cons-grid">' + items.map(function(it){
           const pct = total ? Math.round(it.amt/total*100) : 0;
-          return '<div class="cons-card"><div class="cons-n">' + esc(it.name) + '</div>'
+          return '<div class="cons-card tap" onclick="setPayTab(\'' + it.id + '\')">'
+            + '<div class="cons-n">' + esc(it.name) + '</div>'
             + '<div class="cons-q">' + fmt(it.amt) + '</div>'
             + '<div class="cons-x">' + it.n + (it.n===1?' entry':' entries') + ' &middot; ' + pct + '%'
             +   (it.off ? ' &middot; not counted' : '') + '</div>'
-            + '<div class="cons-bar"><div style="width:' + pct + '%"></div></div></div>';
+            + '<div class="cons-bar"><div style="width:' + pct + '%"></div></div>'
+            + '<div class="gro-open"><span>Where it went</span><span class="gro-caret">&rsaquo;</span></div>'
+            + '</div>';
         }).join("") + '</div>';
   } else {
     // Head-wise inside one payment type.
@@ -4132,8 +4187,14 @@ function renderPayBlock(rows){
       : '<div class="gate-x">Nothing paid this way in this period.</div>';
   }
 
-  return '<div class="hb-block"><div class="hb-title">Expenses by payment type</div>'
-    + tabs + view + body + '</div>';
+  const title = (lgPay === "")
+    ? "Expenses by payment type"
+    : "Expenses by payment type &rsaquo; " + esc(payName(lgPay) || "Unset");
+  const back = (lgPay === "")
+    ? ""
+    : '<button class="pay-back" onclick="setPayTab(\'\')">&lsaquo; All payment types</button>';
+  return '<div class="hb-block"><div class="hb-title">' + title + '</div>'
+    + tabs + view + back + body + '</div>';
 }
 
 function renderLedgerDash(){
@@ -5061,18 +5122,18 @@ function consumption(year, month){
 // one activity are not in separate places.
 function grocerySpend(year, month){
   const pre = month ? (year + "-" + month) : year;
-  let counted = 0, excluded = 0, n = 0;
+  let counted = 0, excluded = 0, n = 0, skipped = 0;
   (ST.ledger||[]).forEach(function(e){
     if(e.type === "income") return;
     if(e.head !== "e_groceries") return;
     if(String(e.date||"").indexOf(pre) !== 0) return;
     const a = Number(e.amt) || 0;
-    n++;
-    // Spending is spending whatever it was paid with; only settlement rows sit
-    // outside the total.
-    if(countsAsExpense(e)) counted += a; else excluded += a;
+    // Count only what the total is made of, so the card and the breakdown
+    // below it can never disagree.
+    if(countsAsExpense(e)){ counted += a; n++; }
+    else { excluded += a; skipped++; }
   });
-  return {counted:counted, excluded:excluded, total:counted, n:n};
+  return {counted:counted, excluded:excluded, total:counted, n:n, skipped:skipped};
 }
 
 function toggleGro(which){
@@ -5097,20 +5158,41 @@ function groBreakdown(mode){
   const rows = (mode === "mo")
     ? groceryRows(shYear, shMonth || curMonth())
     : groceryRows(shYear, "");
+  if(!rows.length) return '<div class="gro-empty">Nothing in this period.</div>';
+
+  // Month view: every entry on its own line, so the count on the card and the
+  // number of lines here always match. Year view: one line per month.
+  if(mode === "mo"){
+    const list = rows.slice().sort(function(a,b){
+      return a.date === b.date ? 0 : (a.date < b.date ? 1 : -1);
+    });
+    const max = Math.max.apply(null, list.map(function(e){ return Number(e.amt)||0; }).concat([1]));
+    return list.map(function(e){
+      const amt = Number(e.amt) || 0;
+      const tag = [payName(e.pay), e.sub ? subName(e.sub) : "", e.note]
+                    .filter(function(x){ return x; }).join(" · ");
+      return '<div class="gro-row">'
+        + '<div class="gro-l">' + esc(dayLabel(e.date)) + '</div>'
+        + '<div class="gro-bar"><div style="width:' + Math.round(amt/max*100) + '%"></div></div>'
+        + '<div class="gro-v">' + fmt(amt) + '</div>'
+        + '<div class="gro-n"></div>'
+        + (tag ? '<div class="gro-tag">' + esc(tag) + '</div>' : '')
+        + '</div>';
+    }).join("");
+  }
+
   const acc = {};
   rows.forEach(function(e){
-    const k = (mode === "mo") ? String(e.date) : String(e.date).slice(0,7);
+    const k = String(e.date).slice(0,7);
     if(!acc[k]) acc[k] = {amt:0, n:0};
     acc[k].amt += Number(e.amt) || 0;
     acc[k].n++;
   });
   const keys = Object.keys(acc).sort().reverse();
-  if(!keys.length) return '<div class="gro-empty">Nothing in this period.</div>';
   const max = Math.max.apply(null, keys.map(function(k){ return acc[k].amt; }).concat([1]));
   return keys.map(function(k){
-    const label = (mode === "mo") ? dayLabel(k) : monthLabel(k);
     return '<div class="gro-row">'
-      + '<div class="gro-l">' + esc(label) + '</div>'
+      + '<div class="gro-l">' + esc(monthLabel(k)) + '</div>'
       + '<div class="gro-bar"><div style="width:' + Math.round(acc[k].amt/max*100) + '%"></div></div>'
       + '<div class="gro-v">' + fmt(acc[k].amt) + '</div>'
       + '<div class="gro-n">' + acc[k].n + 'x</div>'
@@ -5125,13 +5207,13 @@ function groceryBlock(){
 
   const card = function(label, g, sub, which, hint){
     return '<div class="cons-card tap" onclick="toggleGro(\'' + which + '\')">'
-      + '<div class="cons-n">' + esc(label)
-      +   '<span class="gro-caret" id="gro-' + which + '-c">&#8964;</span></div>'
+      + '<div class="cons-n">' + esc(label) + '</div>'
       + '<div class="cons-q">' + fmt(g.total) + '</div>'
       + '<div class="cons-x">' + g.n + (g.n === 1 ? " entry" : " entries")
-      +   (g.excluded ? ' &middot; ' + fmt(g.excluded) + ' settled' : '') + '</div>'
+      +   (g.skipped ? ' &middot; ' + g.skipped + ' settled' : '') + '</div>'
       + (sub ? '<div class="cons-sub">' + esc(sub) + '</div>' : '')
-      + '<div class="cons-sub">' + esc(hint) + '</div>'
+      + '<div class="gro-open"><span>' + esc(hint) + '</span>'
+      +   '<span class="gro-caret" id="gro-' + which + '-c">&#8964;</span></div>'
       + '</div>';
   };
 
@@ -5150,9 +5232,9 @@ function groceryBlock(){
 
   return '<div class="hb-block"><div class="hb-title">Grocery spend (from the ledger)</div>'
     + '<div class="cons-grid">'
-    +   card(monthLbl, mo, "", "mo", "tap for day by day")
+    +   card(monthLbl, mo, "", "mo", "Day by day")
     +   card(shYear, yr, months ? (months + (months===1?" active month":" active months")) : "",
-             "yr", "tap for month by month")
+             "yr", "Month by month")
     + '</div>'
     + '<div class="gro-box" id="gro-mo"><div class="gro-t">' + esc(monthLbl) + ' — day by day</div>'
     +   groBreakdown("mo") + '</div>'
