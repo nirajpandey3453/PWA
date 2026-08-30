@@ -195,6 +195,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .chip-x.adm{color:#fff;background:var(--teal);border-radius:7px;padding:1px 6px;margin-left:6px}
 .or-line{display:flex;align-items:center;gap:9px;margin:13px 0 4px;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:0.08em}
 .or-line:before,.or-line:after{content:"";flex:1;height:1px;background:var(--border)}
+.pot-head,.pot-row{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:6px;align-items:baseline}
+.pot-head{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.pot-head span:not(:first-child),.pot-row span:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
+.pot-row{font-size:12px;padding:8px 0;border-bottom:1px solid var(--border)}
+.pot-row:last-of-type{border-bottom:none}
+.pot-n{font-weight:600}
+.pot-b{font-weight:700}
 .pay-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:3px;margin-bottom:10px;-webkit-overflow-scrolling:touch}
 .pay-tabs button{flex:0 0 auto;border:1px solid var(--border);background:var(--bg);color:var(--sub);font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:9px;cursor:pointer;white-space:nowrap}
 .pay-tabs button.on{background:var(--teal);border-color:var(--teal);color:#fff}
@@ -219,11 +226,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .cons-x{font-size:10px;color:var(--muted);margin-top:2px}
 .cons-bar{height:4px;background:var(--card);border-radius:3px;overflow:hidden;margin-top:8px}
 .cons-bar div{height:100%;background:var(--teal);border-radius:3px}
-.gs-row{display:flex;align-items:baseline;gap:9px;padding:7px 0;border-bottom:1px solid var(--border)}
-.gs-row:last-of-type{border-bottom:none}
-.gs-l{flex:1;font-size:12.5px;font-weight:600}
-.gs-v{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
-.gs-x{font-size:10px;color:var(--muted);width:100%;margin-top:-4px}
+.cons-sub{font-size:10px;color:var(--muted);margin-top:3px}
+.gs-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:11px;padding-top:10px;border-top:1px solid var(--border);font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
 .mg-list{display:flex;flex-direction:column;gap:2px;max-height:190px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:var(--bg)}
 .mg-row{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0;cursor:pointer}
 .freq-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
@@ -898,6 +902,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <select class="form-select" id="in-sub"></select></div>
     </div>
     <div class="lg-f2">
+      <div><label class="form-label">Received in</label>
+        <select class="form-select" id="in-pay"></select></div>
+    </div>
+    <div class="lg-f2">
       <div><label class="form-label">Income by</label>
         <select class="form-select" id="in-by"></select></div>
     </div>
@@ -936,10 +944,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="card">
     <div class="card-title">Payment Types</div>
     <div style="font-size:12px;color:var(--sub);line-height:1.5;margin-bottom:6px">
-      Only money leaving the bank should reduce your net income, so Cash and
-      Credit Card start ticked — the cash was withdrawn earlier and the card
-      bill is paid later, both as bank movements. Ticked types are still
-      recorded and grouped by head; they just do not count twice.
+      A ticked type still counts as spending in the monthly and yearly figures.
+      It simply does not come off <b>net income</b>, because the money has not
+      left the bank yet — cash was withdrawn earlier, a card bill is paid later.
     </div>
     <div id="paymode-list"></div>
     <div class="lg-f2" style="margin-top:11px">
@@ -2997,14 +3004,35 @@ function ensureCardBillHead(){
   return "e_cardbill";
 }
 
-// Cash basis. A card purchase is recorded so you can see WHERE the money went,
-// but it does not hit a total — the money has not left your bank yet. It counts
-// later, once, when the card bill is paid.
-function isExcluded(e){
-  if(e.card) return true;                                   // manual one-off
+// "What did we spend?" and "what left the bank?" are different questions, so
+// they get different rules.
+//
+// countsAsExpense — money spent, by any method. Settlement rows (paying a card
+// bill) are left out, otherwise the purchase would be counted a second time
+// when the bill is settled.
+function countsAsExpense(e){
+  if(e.type === "income") return false;
+  if(e.card) return false;                    // manual one-off exclusion
   const h = ST.heads[e.head];
-  if(h && h.excl) return true;                              // settlement head
-  return e.type !== "income" && isPayExcluded(e.pay);       // per the Setup setting
+  // A card bill is a settlement too: the purchases it pays for were already
+  // counted as spending when they happened.
+  if(h && (h.excl || h.bill)) return false;
+  return true;
+}
+
+// reducesNet — money that actually left the bank. Cash was withdrawn earlier
+// and a card is settled later, so only payment types left un-ticked in
+// Setup > Payment Types come off net income. A card bill paid from the bank
+// does count here, even though it is not spending.
+function reducesNet(e){
+  if(e.type === "income") return false;
+  if(e.card) return false;
+  return !isPayExcluded(e.pay);
+}
+
+// Kept for the log, which only needs to know whether a row is a settlement.
+function isExcluded(e){
+  return !countsAsExpense(e) && e.type !== "income";
 }
 
 // Ticking a SIP posts an expense here, so the money shows up in the ledger.
@@ -3168,15 +3196,17 @@ function renderSubheads(){
 // Repopulate the optional subhead picker whenever its head changes.
 // Choosing a settlement head forces the exclusion, so it cannot be forgotten.
 function fillPayModes(){
-  const sel = document.getElementById("ex-pay");
-  if(!sel) return;
   const list = payModes();
-  const keep = sel.value;
-  sel.innerHTML = list.map(function(p){
-    return '<option value="'+p.id+'">'+esc(p.name)+'</option>'; }).join("");
   const fallback = list.some(function(p){ return p.id === PAY_DEFAULT; })
                  ? PAY_DEFAULT : (list[0] ? list[0].id : "");
-  sel.value = (keep && list.some(function(p){ return p.id === keep; })) ? keep : fallback;
+  ["ex-pay","in-pay"].forEach(function(id){
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    const keep = sel.value;
+    sel.innerHTML = list.map(function(p){
+      return '<option value="'+p.id+'">'+esc(p.name)+'</option>'; }).join("");
+    sel.value = (keep && list.some(function(p){ return p.id === keep; })) ? keep : fallback;
+  });
 }
 
 function syncExclChk(pre){
@@ -3191,8 +3221,8 @@ function syncExclChk(pre){
   if(forced) chk.checked = true;
   chk.disabled = forced;
   if(hint) hint.textContent = byCard
-    ? payName(paySel.value) + " is set to stay out of totals — this is recorded under its head only."
-    : (h && h.excl ? "This head is a settlement, so it never counts." : "");
+    ? payName(paySel.value) + " counts as spending, but does not come off net income until it reaches the bank."
+    : (h && h.excl ? "This head is a settlement, so it is not counted as spending." : "");
 }
 
 function fillSubs(pre){
@@ -3650,9 +3680,9 @@ function ledgerByYear(){
     const d = String(e.date||"");
     if(d.length < 7) return;
     const y = d.slice(0,4), ym = d.slice(0,7);
-    if(!out[y]) out[y] = {income:0, expense:0, card:0, months:{}, heads:{}, subs:{}, exHeads:{}, exSubs:{}, people:{}};
+    if(!out[y]) out[y] = {income:0, expense:0, outflow:0, card:0, months:{}, heads:{}, subs:{}, exHeads:{}, exSubs:{}, people:{}};
     const Y = out[y];
-    if(!Y.months[ym]) Y.months[ym] = {income:0, expense:0, card:0, rows:[]};
+    if(!Y.months[ym]) Y.months[ym] = {income:0, expense:0, outflow:0, card:0, rows:[]};
 
     const amt  = Number(e.amt) || 0;
     const kind = e.type === "income" ? "income" : "expense";
@@ -3660,9 +3690,10 @@ function ledgerByYear(){
 
     Y.months[ym].rows.push(e);
 
-    // Card settlements are a movement of money already recorded as spending,
-    // so they stay visible in the log but never reach a total.
-    if(isExcluded(e)){
+    if(reducesNet(e)){ Y.outflow += amt; Y.months[ym].outflow += amt; }
+
+    // Settlements stay visible in the log but are not spending.
+    if(kind === "expense" && !countsAsExpense(e)){
       Y.card = (Y.card || 0) + amt;
       Y.months[ym].card = (Y.months[ym].card || 0) + amt;
       if(!Y.exHeads[e.head]) Y.exHeads[e.head] = {income:0, expense:0};
@@ -3838,7 +3869,7 @@ function renderLedger(){
       + '<div class="yr-body' + (open ? " open" : "") + '" id="yr-body-' + y + '">'
       +   headBreakdown(Y,"expense","y"+y)
       +   headBreakdown({heads:Y.exHeads, subs:Y.exSubs}, "expense", "yx"+y,
-            "Card spending — where it went (counts when the bill is paid)")
+            "Settlements — not counted as spending")
       +   headBreakdown(Y,"income","y"+y) + peopleBreakdown(Y)
       +   monthsHTML
       + '</div></div>';
@@ -3889,12 +3920,21 @@ function entriesIn(year, month){
 }
 
 function sumUp(rows){
-  const out = {income:0, expense:0, card:0, heads:{}, subs:{}, exHeads:{}, exSubs:{}, people:{}, count:rows.length, top:null};
+  const out = {income:0, expense:0, outflow:0, card:0, pays:{}, heads:{}, subs:{}, exHeads:{}, exSubs:{}, people:{}, count:rows.length, top:null};
+  const pot = function(id){
+    if(!out.pays[id]) out.pays[id] = {in:0, out:0};
+    return out.pays[id];
+  };
   rows.forEach(function(e){
     const amt = Number(e.amt)||0;
     const kind = e.type === "income" ? "income" : "expense";
-    // Card settlements never reach a total, but still carry a head for the log.
-    if(isExcluded(e)){
+    // Each payment type keeps its own pot: money received in it, less money
+    // spent from it. Cash spending draws down cash income, not the bank.
+    if(kind === "income") pot(e.pay || "").in += amt;
+    else if(countsAsExpense(e) || (ST.heads[e.head] && ST.heads[e.head].bill)) pot(e.pay || "").out += amt;
+    if(reducesNet(e)) out.outflow += amt;
+    // Settlements stay out of spending, but keep their head for the log.
+    if(kind === "expense" && !countsAsExpense(e)){
       // Still grouped by head and subhead, just kept out of every total.
       out.card += amt;
       if(!out.exHeads[e.head]) out.exHeads[e.head] = {income:0, expense:0};
@@ -3956,6 +3996,34 @@ function payGroups(rows){
     out[p].subs[e.head][sk] = (out[p].subs[e.head][sk] || 0) + a;
   });
   return out;
+}
+
+// Received, spent and what is left, for each payment type.
+function renderPotBlock(cur){
+  const ids = Object.keys(cur.pays || {}).filter(function(k){
+    const p = cur.pays[k];
+    return p && (p.in || p.out);
+  });
+  if(!ids.length) return "";
+  ids.sort(function(a,b){
+    return (cur.pays[b].in + cur.pays[b].out) - (cur.pays[a].in + cur.pays[a].out);
+  });
+  return '<div class="hb-block"><div class="hb-title">Balance by payment type</div>'
+    + '<div class="pot-head"><span>Type</span><span>In</span><span>Out</span><span>Left</span></div>'
+    + ids.map(function(k){
+        const p = cur.pays[k];
+        const bal = p.in - p.out;
+        return '<div class="pot-row">'
+          + '<span class="pot-n">' + esc(payName(k) || "Unset") + '</span>'
+          + '<span class="inc">' + fmt(p.in) + '</span>'
+          + '<span class="exp">' + fmt(p.out) + '</span>'
+          + '<span class="pot-b ' + (bal >= 0 ? "inc" : "exp") + '">'
+          +   (bal < 0 ? "−" : "") + fmt(Math.abs(bal)) + '</span>'
+          + '</div>';
+      }).join("")
+    + '<div class="sync-hint">Money received in a type, less what was spent from '
+    + 'it. Cash spending draws down cash income; it does not touch the bank.</div>'
+    + '</div>';
 }
 
 function renderPayBlock(rows){
@@ -4061,13 +4129,14 @@ function renderLedgerDash(){
   const cur  = sumUp(entriesIn(lgYear, lgMonth));
   const prevP = previousPeriod();
   const prev = sumUp(entriesIn(prevP.year, prevP.month));
-  const net  = cur.income - cur.expense;
+  // Net is what the bank actually gained or lost, not income minus spending.
+  const net  = cur.income - cur.outflow;
   const rate = cur.income ? Math.round(net/cur.income*100) : 0;
 
   const stats = '<div class="lgd-stats">'
     + '<div class="lgd-s"><div class="lgd-l">Income</div><div class="lgd-v inc">'+fmt(cur.income)+'</div></div>'
-    + '<div class="lgd-s"><div class="lgd-l">Expense</div><div class="lgd-v exp">'+fmt(cur.expense)+'</div></div>'
-    + '<div class="lgd-s"><div class="lgd-l">Net</div><div class="lgd-v '+(net>=0?"inc":"exp")+'">'
+    + '<div class="lgd-s"><div class="lgd-l">Spent</div><div class="lgd-v exp">'+fmt(cur.expense)+'</div></div>'
+    + '<div class="lgd-s"><div class="lgd-l">Net (bank)</div><div class="lgd-v '+(net>=0?"inc":"exp")+'">'
     +   (net<0?"−":"")+fmt(Math.abs(net))+'</div></div>'
     + '<div class="lgd-s"><div class="lgd-l">Saved</div><div class="lgd-v">'+(cur.income?rate+"%":"—")+'</div></div>'
     + '</div>';
@@ -4082,11 +4151,18 @@ function renderLedgerDash(){
       + 'They count once, in the month you pay the bill, so nothing is counted twice.</span></div>'
     : '';
 
-  const cardNote = cur.card
-    ? '<div class="card-note">Not counted this period: ' + fmt(cur.card)
-      + ' — card purchases and other excluded rows. They are grouped by head below so '
-      + 'you can see where the money went; they count when the card bill is paid.</div>'
+  const note2 = (cur.expense !== cur.outflow)
+    ? '<div class="card-note"><b>Spent</b> is everything bought this period, by any '
+      + 'method. <b>Net (bank)</b> is income minus only what left the bank — cash was '
+      + 'withdrawn earlier and a card bill is settled later, so those do not come off '
+      + 'twice. Bank outflow this period: ' + fmt(cur.outflow) + '.</div>'
     : '';
+
+  const cardNote = note2 + (cur.card
+    ? '<div class="card-note">Settlements this period: ' + fmt(cur.card)
+      + ' — card bill payments and other settlement rows. They are not spending (the '
+      + 'purchases were already counted), but they do reduce the bank figure.</div>'
+    : '');
 
   if(!cur.count){
     el.innerHTML = stats + cardBox + cardNote + '<div class="empty">No entries in this period.</div>';
@@ -4095,7 +4171,7 @@ function renderLedgerDash(){
 
   const bars = headBreakdown({heads:cur.heads, subs:cur.subs}, "expense", "d")
              + headBreakdown({heads:cur.exHeads, subs:cur.exSubs}, "expense", "x",
-                 "Card spending — where it went (counts when the bill is paid)")
+                 "Settlements — not counted as spending")
              + headBreakdown({heads:cur.heads, subs:cur.subs}, "income", "d")
              + peopleBreakdown({people:cur.people});
 
@@ -4153,6 +4229,7 @@ function renderLedgerDash(){
       }).join("") + '</div>';
 
   el.innerHTML = stats + cardBox + cardNote + notesHTML
+    + renderPotBlock(cur)
     + renderPayBlock(entriesIn(lgYear, lgMonth)) + bars;
 }
 
@@ -4178,6 +4255,7 @@ function renderLedgerAll(){
   renderSubheads();
   fillSubs("ex"); fillSubs("in");
   fillPayModes();
+  
   renderPayExcl();
   syncExclChk("ex");
   renderPeriodSel();
@@ -4969,25 +5047,49 @@ function grocerySpend(year, month){
     if(String(e.date||"").indexOf(pre) !== 0) return;
     const a = Number(e.amt) || 0;
     n++;
-    if(isExcluded(e)) excluded += a; else counted += a;
+    // Spending is spending whatever it was paid with; only settlement rows sit
+    // outside the total.
+    if(countsAsExpense(e)) counted += a; else excluded += a;
   });
-  return {counted:counted, excluded:excluded, total:counted+excluded, n:n};
+  return {counted:counted, excluded:excluded, total:counted, n:n};
 }
 
 function groceryBlock(){
   const mo = grocerySpend(shYear, shMonth || curMonth());
   const yr = grocerySpend(shYear, "");
   if(!mo.n && !yr.n) return "";
-  const line = function(label, g){
-    return '<div class="gs-row"><span class="gs-l">' + label + '</span>'
-      + '<span class="gs-v">' + fmt(g.total) + '</span>'
-      + '<span class="gs-x">' + g.n + (g.n === 1 ? " entry" : " entries")
-      + (g.excluded ? " · " + fmt(g.excluded) + " not counted" : "") + '</span></div>';
+
+  const card = function(label, g, sub){
+    const avg = sub && g.n ? "" : "";
+    return '<div class="cons-card">'
+      + '<div class="cons-n">' + esc(label) + '</div>'
+      + '<div class="cons-q">' + fmt(g.total) + '</div>'
+      + '<div class="cons-x">' + g.n + (g.n === 1 ? " entry" : " entries")
+      +   (g.excluded ? ' &middot; ' + fmt(g.excluded) + ' settled' : '') + '</div>'
+      + (sub ? '<div class="cons-sub">' + esc(sub) + '</div>' : '')
+      + '</div>';
   };
+
+  const monthLbl = shMonth ? monthLabel(shYear + "-" + shMonth)
+                           : monthLabel(shYear + "-" + curMonth());
+  // Months with any grocery activity, so the average is not diluted by
+  // months the family had not started using the app.
+  const active = {};
+  (ST.ledger||[]).forEach(function(e){
+    if(e.type === "income" || e.head !== "e_groceries") return;
+    const d = String(e.date||"");
+    if(d.indexOf(shYear) === 0) active[d.slice(0,7)] = 1;
+  });
+  const months = Object.keys(active).length;
+  const avg = months ? Math.round(yr.total / months) : 0;
+
   return '<div class="hb-block"><div class="hb-title">Grocery spend (from the ledger)</div>'
-    + line(shMonth ? monthLabel(shYear + "-" + shMonth) : monthLabel(shYear + "-" + curMonth()), mo)
-    + line("Whole of " + shYear, yr)
-    + '<div class="sync-hint">Taken from ledger entries filed under the Grocery head.</div>'
+    + '<div class="cons-grid">'
+    +   card(monthLbl, mo)
+    +   card(shYear, yr, months ? (months + (months===1?" active month":" active months")) : "")
+    + '</div>'
+    + (months > 1 ? '<div class="gs-total"><span>Average a month</span><span>' + fmt(avg) + '</span></div>' : '')
+    + '<div class="sync-hint">From ledger entries filed under the Grocery head.</div>'
     + '</div>';
 }
 
