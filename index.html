@@ -227,6 +227,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .cons-bar{height:4px;background:var(--card);border-radius:3px;overflow:hidden;margin-top:8px}
 .cons-bar div{height:100%;background:var(--teal);border-radius:3px}
 .cons-sub{font-size:10px;color:var(--muted);margin-top:3px}
+.cons-card.tap{cursor:pointer}
+.cons-card.tap:active{background:var(--card)}
+.gro-caret{display:inline-block;font-size:10px;color:var(--muted);margin-left:5px;transition:transform .18s}
+.gro-caret.open{transform:rotate(180deg)}
+.gro-box{display:none;margin-top:11px;border:1px solid var(--border);border-radius:11px;padding:10px 11px;background:var(--bg)}
+.gro-box.open{display:block}
+.gro-t{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--sub);margin-bottom:8px}
+.gro-row{display:grid;grid-template-columns:74px 1fr auto auto;gap:8px;align-items:center;padding:5px 0}
+.gro-l{font-size:11.5px;color:var(--sub);white-space:nowrap}
+.gro-bar{height:5px;background:var(--card);border-radius:3px;overflow:hidden}
+.gro-bar div{height:100%;background:var(--teal);border-radius:3px}
+.gro-v{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+.gro-n{font-size:10px;color:var(--muted);width:24px;text-align:right}
+.gro-empty{font-size:11.5px;color:var(--muted)}
 .gs-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:11px;padding-top:10px;border-top:1px solid var(--border);font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
 .mg-list{display:flex;flex-direction:column;gap:2px;max-height:190px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:var(--bg)}
 .mg-row{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0;cursor:pointer}
@@ -2867,12 +2881,12 @@ function addPayMode(){
   }
   const id = uid("pay_");
   ST.pays[id] = {name:name};
-  if(ST.exclPay[id] == null) ST.exclPay[id] = false;
+  if(ST.exclPay[id] == null) ST.exclPay[id] = true;
   touch("pays", id); touch("exclPay", id);
   save(ST);
   if(el) el.value = "";
   renderPayExcl(); fillPayModes();
-  toast("✓ " + name + " added");
+  toast("✓ " + name + " added — not counted against net income", 4500);
 }
 
 function delPayMode(id){
@@ -4136,7 +4150,7 @@ function renderLedgerDash(){
   const stats = '<div class="lgd-stats">'
     + '<div class="lgd-s"><div class="lgd-l">Income</div><div class="lgd-v inc">'+fmt(cur.income)+'</div></div>'
     + '<div class="lgd-s"><div class="lgd-l">Spent</div><div class="lgd-v exp">'+fmt(cur.expense)+'</div></div>'
-    + '<div class="lgd-s"><div class="lgd-l">Net (bank)</div><div class="lgd-v '+(net>=0?"inc":"exp")+'">'
+    + '<div class="lgd-s"><div class="lgd-l">Net</div><div class="lgd-v '+(net>=0?"inc":"exp")+'">'
     +   (net<0?"−":"")+fmt(Math.abs(net))+'</div></div>'
     + '<div class="lgd-s"><div class="lgd-l">Saved</div><div class="lgd-v">'+(cur.income?rate+"%":"—")+'</div></div>'
     + '</div>';
@@ -4151,11 +4165,18 @@ function renderLedgerDash(){
       + 'They count once, in the month you pay the bill, so nothing is counted twice.</span></div>'
     : '';
 
-  const note2 = (cur.expense !== cur.outflow)
+  // Spell out exactly which payment types are behind Net, so it can be
+  // reconciled against the balance table below without guesswork.
+  const counting = payModes().filter(function(p){ return !isPayExcluded(p.id); });
+  const note2 = (cur.expense !== cur.outflow || counting.length !== 1)
     ? '<div class="card-note"><b>Spent</b> is everything bought this period, by any '
-      + 'method. <b>Net (bank)</b> is income minus only what left the bank — cash was '
-      + 'withdrawn earlier and a card bill is settled later, so those do not come off '
-      + 'twice. Bank outflow this period: ' + fmt(cur.outflow) + '.</div>'
+      + 'method. <b>Net</b> is income minus only the types that count against it — '
+      + (counting.length
+          ? '<b>' + counting.map(function(p){ return esc(p.name); }).join(", ") + '</b>'
+          : '<b>none</b>')
+      + ' — because cash was withdrawn earlier and a card bill is settled later, so '
+      + 'those must not come off twice. Counted outflow this period: '
+      + fmt(cur.outflow) + '. Change which types count in Setup &rsaquo; Payment Types.</div>'
     : '';
 
   const cardNote = note2 + (cur.card
@@ -5054,19 +5075,63 @@ function grocerySpend(year, month){
   return {counted:counted, excluded:excluded, total:counted, n:n};
 }
 
+function toggleGro(which){
+  const el = document.getElementById("gro-" + which);
+  const c  = document.getElementById("gro-" + which + "-c");
+  if(!el) return;
+  const open = el.classList.toggle("open");
+  if(c) c.classList.toggle("open", open);
+}
+
+// Grocery rows that actually count as spending, for a period.
+function groceryRows(year, month){
+  const pre = month ? (year + "-" + month) : year;
+  return (ST.ledger||[]).filter(function(e){
+    return e.type !== "income" && e.head === "e_groceries"
+      && String(e.date||"").indexOf(pre) === 0 && countsAsExpense(e);
+  });
+}
+
+// The month card opens day by day; the year card opens month by month.
+function groBreakdown(mode){
+  const rows = (mode === "mo")
+    ? groceryRows(shYear, shMonth || curMonth())
+    : groceryRows(shYear, "");
+  const acc = {};
+  rows.forEach(function(e){
+    const k = (mode === "mo") ? String(e.date) : String(e.date).slice(0,7);
+    if(!acc[k]) acc[k] = {amt:0, n:0};
+    acc[k].amt += Number(e.amt) || 0;
+    acc[k].n++;
+  });
+  const keys = Object.keys(acc).sort().reverse();
+  if(!keys.length) return '<div class="gro-empty">Nothing in this period.</div>';
+  const max = Math.max.apply(null, keys.map(function(k){ return acc[k].amt; }).concat([1]));
+  return keys.map(function(k){
+    const label = (mode === "mo") ? dayLabel(k) : monthLabel(k);
+    return '<div class="gro-row">'
+      + '<div class="gro-l">' + esc(label) + '</div>'
+      + '<div class="gro-bar"><div style="width:' + Math.round(acc[k].amt/max*100) + '%"></div></div>'
+      + '<div class="gro-v">' + fmt(acc[k].amt) + '</div>'
+      + '<div class="gro-n">' + acc[k].n + 'x</div>'
+      + '</div>';
+  }).join("");
+}
+
 function groceryBlock(){
   const mo = grocerySpend(shYear, shMonth || curMonth());
   const yr = grocerySpend(shYear, "");
   if(!mo.n && !yr.n) return "";
 
-  const card = function(label, g, sub){
-    const avg = sub && g.n ? "" : "";
-    return '<div class="cons-card">'
-      + '<div class="cons-n">' + esc(label) + '</div>'
+  const card = function(label, g, sub, which, hint){
+    return '<div class="cons-card tap" onclick="toggleGro(\'' + which + '\')">'
+      + '<div class="cons-n">' + esc(label)
+      +   '<span class="gro-caret" id="gro-' + which + '-c">&#8964;</span></div>'
       + '<div class="cons-q">' + fmt(g.total) + '</div>'
       + '<div class="cons-x">' + g.n + (g.n === 1 ? " entry" : " entries")
       +   (g.excluded ? ' &middot; ' + fmt(g.excluded) + ' settled' : '') + '</div>'
       + (sub ? '<div class="cons-sub">' + esc(sub) + '</div>' : '')
+      + '<div class="cons-sub">' + esc(hint) + '</div>'
       + '</div>';
   };
 
@@ -5085,9 +5150,14 @@ function groceryBlock(){
 
   return '<div class="hb-block"><div class="hb-title">Grocery spend (from the ledger)</div>'
     + '<div class="cons-grid">'
-    +   card(monthLbl, mo)
-    +   card(shYear, yr, months ? (months + (months===1?" active month":" active months")) : "")
+    +   card(monthLbl, mo, "", "mo", "tap for day by day")
+    +   card(shYear, yr, months ? (months + (months===1?" active month":" active months")) : "",
+             "yr", "tap for month by month")
     + '</div>'
+    + '<div class="gro-box" id="gro-mo"><div class="gro-t">' + esc(monthLbl) + ' — day by day</div>'
+    +   groBreakdown("mo") + '</div>'
+    + '<div class="gro-box" id="gro-yr"><div class="gro-t">' + esc(shYear) + ' — month by month</div>'
+    +   groBreakdown("yr") + '</div>'
     + (months > 1 ? '<div class="gs-total"><span>Average a month</span><span>' + fmt(avg) + '</span></div>' : '')
     + '<div class="sync-hint">From ledger entries filed under the Grocery head.</div>'
     + '</div>';
