@@ -1,6 +1,6 @@
 # Shree Laxmi Home — Application Specification
 
-**Version:** 1.3 · drawn from `index.html` at service-worker cache `sip-tracker-v93`
+**Version:** 1.4 · drawn from `index.html` at service-worker cache `sip-tracker-v94`
 **Purpose:** a complete, self-contained description of the app, written so a mobile application can be built from this document alone.
 
 Every rule below is taken from the running code, with line references into `index.html` so any claim can be checked. Where a code comment disagrees with what the code actually does, this document states the behaviour and flags the discrepancy in [§23](#23-known-issues-to-fix-in-the-rebuild).
@@ -485,7 +485,7 @@ The Ledger Insights screen shows, for the selected month or whole year:
 
 - **Income**, **Spent**, **Net**, and entry count, each with a percentage delta against the previous comparable period (`previousPeriod()`, `index.html:4027`).
 - A note naming exactly which payment types are behind Net, so the number can be reconciled against the pot table without guesswork.
-- **Three charts** at the foot of the screen, after the breakdowns they summarise: a trend line, then a donut for expenses and one for income.
+- **Three charts** at the foot of the screen, after the breakdowns they summarise: a bar/line trend, then a donut for expenses and one for income.
 - Breakdowns by **head** (with subheads nested), by **person**, and by **payment type**.
 - The pot table (`renderPotBlock()`, `index.html:4069`).
 - Settlement rows kept visible but separated, so a card bill is auditable without polluting Spent.
@@ -519,9 +519,13 @@ The centre figure uses `shortMoney()` (`index.html:4787`): ₹1.00 L, ₹12K, �
 
 ---
 
-### 8.9 The trend line
+### 8.9 The trend chart
 
-`trendChart()` (`index.html`, `trendChart`) plots **income against spending** over the selected window, as two SVG polylines. No charting library: two paths, a floor, dots, and three labels are all it needs.
+`trendChart()` plots **income against spending** over the selected window, in one of two views chosen by a Bars / Line switch (`setChartView(v)`). No charting library: rectangles or two polylines, a floor, and three labels are all it needs.
+
+**Bars are the default**, and the reason matters. Most days in a month have no entries at all, so a line drawn through a run of zeros reads as a flat rule with two spikes on the end — it looks like an error rather than a month with two busy days. Bars show absence as absence. The line view stays available for reading a shape across a full year, where every point usually has data.
+
+In bar view each period gets two bars side by side, income left and spending right, sized to the slot so 31 days still fit. **A zero draws no rectangle at all** — never a hairline resting on the floor, which would be indistinguishable from a tiny real amount.
 
 `trendSeries()` builds the points and decides the grain from the period selector, exactly as every other view does:
 
@@ -534,8 +538,9 @@ Four rules:
 
 - **Empty periods at the end are dropped**, so the line stops where the data does instead of trailing along the floor. Gaps *inside* the range stay as genuine zeros — a month with no spending is information.
 - **Spending obeys `countsAsExpense()`**, so settlements never appear as a spike. Income is any `type === "income"` row.
-- **Only three points are labelled** — first, last, and the peak. Labelling all 31 days would be unreadable at phone width.
-- **Fewer than two points draws nothing.** One point is not a line.
+- **Only three points are labelled** — first, last, and the peak. Labelling all 31 days would be unreadable at phone width. In bar view the label centres on the slot; in line view, on the point.
+- **Fewer than two points draws nothing.** One point is not a chart.
+- **The SVG is never stretched.** An early version scaled a fixed 320-unit viewBox to full width with `preserveAspectRatio="none"`, which squashed the axis labels flat. It now scales proportionally with `height: auto`.
 
 Both series share one y-scale so the two are directly comparable, and the caption names the peak period and its value.
 
@@ -907,7 +912,8 @@ Roughly: 10px tertiary metadata · 11–11.5px labels and hints · 12.5px list r
 | `view-sw` | Cards ↔ List segmented switch |
 | `donut-wrap` / `donut-center` | SVG ring with a figure and label in the middle; the SVG is rotated −90° so the first slice starts at twelve o'clock |
 | `legend-row` | dot, name, and right-aligned amount · share — the ring's key |
-| `tc-wrap` / `tc-line` / `tc-base` / `tc-x` | the trend chart: a scaled SVG, two 2px polylines with `vector-effect: non-scaling-stroke`, a hairline floor, and axis labels |
+| `tc-wrap` / `tc-line` / `tc-base` / `tc-x` | the trend chart: a proportionally scaled SVG, two 2px polylines with `vector-effect: non-scaling-stroke`, a hairline floor, and axis labels |
+| `tc-b-inc` / `tc-b-exp` | the paired income and spending bars |
 | `don-sw` | the Heads / Subheads switch, a `view-sw` sitting under a card title |
 | `freq` / `freq-ed` / `freq-add` | a Buy Again row: tappable body, edit, and add-to-list |
 | `toast` | transient bottom message, 2.5 s default |
@@ -1039,7 +1045,7 @@ The Drive document keeps its current JSON shape, so old and new clients can coex
 
 ## 22. Behaviour catalogue for tests
 
-The current build is pinned by 471 tests across 18 suites. Those harnesses will not survive the rebuild, but the invariants must. Each line below is an acceptance criterion.
+The current build is pinned by 494 tests across 18 suites. Those harnesses will not survive the rebuild, but the invariants must. Each line below is an acceptance criterion.
 
 **Accounting**
 
@@ -1089,33 +1095,37 @@ The current build is pinned by 471 tests across 18 suites. Those harnesses will 
 32. Trailing empty periods are dropped; interior empty periods stay as zeros.
 33. A settlement never appears as a spike in the spending line.
 34. Fewer than two points renders no chart at all.
+35. The trend opens on bars; the Bars / Line switch swaps the view and nothing else.
+36. A period worth zero draws no bar, and no bar crosses the floor or the frame.
+37. Both views carry the same title, totals, peak caption and baseline.
+38. The chart SVG is never drawn with `preserveAspectRatio="none"`.
 
 **Recurring**
 
-35. Running twice never produces a duplicate for the same rule and month.
-36. Day 31 in February files on the last day of February.
-37. Pausing stops future months; already-posted entries stay.
+39. Running twice never produces a duplicate for the same rule and month.
+40. Day 31 in February files on the last day of February.
+41. Pausing stops future months; already-posted entries stay.
 
 **Sync**
 
-38. Two devices editing different fields of the same record both keep their edits.
-39. A delete beats a concurrent edit stamped earlier, and loses to one stamped later.
-40. Rows generated independently on two devices from the same `srcKey` collapse into one.
-41. A merge that changes nothing produces no "updated" notice.
-42. When several copies of the file exist, the oldest is chosen.
+42. Two devices editing different fields of the same record both keep their edits.
+43. A delete beats a concurrent edit stamped earlier, and loses to one stamped later.
+44. Rows generated independently on two devices from the same `srcKey` collapse into one.
+45. A merge that changes nothing produces no "updated" notice.
+46. When several copies of the file exist, the oldest is chosen.
 
 **Access**
 
-43. A member with no grant cannot open a gated module, by tile or by tab.
-44. A grant expires exactly 30 minutes after it is issued, and the member is ejected within 20 seconds.
-45. Revoke and End Now take effect immediately and propagate.
-46. With no admin flagged anywhere, every signed-in user is treated as an admin.
-47. Two person rows with the same email are merged, and the admin flag survives.
+47. A member with no grant cannot open a gated module, by tile or by tab.
+48. A grant expires exactly 30 minutes after it is issued, and the member is ejected within 20 seconds.
+49. Revoke and End Now take effect immediately and propagate.
+50. With no admin flagged anywhere, every signed-in user is treated as an admin.
+51. Two person rows with the same email are merged, and the admin flag survives.
 
 **Session**
 
-48. A lapsed token never blanks the app or discards the identity.
-49. Backup download and upload are refused to non-admins.
+52. A lapsed token never blanks the app or discards the identity.
+53. Backup download and upload are refused to non-admins.
 
 ---
 

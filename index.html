@@ -308,7 +308,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .donut-val{font-size:17px;font-weight:700;color:var(--text)}
 .donut-lbl{font-size:10px;color:var(--sub)}
 .tc-wrap{width:100%;overflow:hidden}
-.tc-wrap svg{width:100%;height:132px;display:block}
+.tc-wrap svg{width:100%;height:auto;display:block}
+.tc-b-inc{fill:var(--green)}
+.tc-b-exp{fill:var(--red)}
 .tc-base{stroke:var(--border);stroke-width:1;vector-effect:non-scaling-stroke}
 .tc-line{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round;vector-effect:non-scaling-stroke}
 .tc-inc{stroke:var(--green)}
@@ -4374,28 +4376,65 @@ function trendSeries(){
 
 // A plain SVG polyline pair. No library: two series, a floor, and the highest
 // point called out is everything this chart has to say.
+let lgChart = "bar";
+
+function setChartView(v){
+  lgChart = (v === "line") ? "line" : "bar";
+  renderLedgerDash();
+}
+
 function trendChart(){
   const pts = trendSeries();
   if(pts.length < 2) return "";
 
   const W = 320, H = 132, PL = 6, PR = 6, PT = 10, PB = 20;
   const max = Math.max.apply(null, pts.map(function(p){ return Math.max(p.inc, p.exp); }).concat([1]));
-  const step = (W - PL - PR) / (pts.length - 1);
-  const x = i => PL + i * step;
   const y = v => PT + (H - PT - PB) * (1 - v / max);
+  const floor = y(0);
 
-  const path = key => pts.map(function(p, i){ return x(i).toFixed(1) + "," + y(p[key]).toFixed(1); }).join(" ");
-  const dots = (key, col) => pts.map(function(p, i){
-    return '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(p[key]).toFixed(1)
-         + '" r="1.7" fill="' + col + '"></circle>'; }).join("");
+  let plot = "";
+  if(lgChart === "line"){
+    const step = (W - PL - PR) / (pts.length - 1);
+    const x = i => PL + i * step;
+    const path = key => pts.map(function(p, i){
+      return x(i).toFixed(1) + "," + y(p[key]).toFixed(1); }).join(" ");
+    const dots = (key, col) => pts.map(function(p, i){
+      return '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(p[key]).toFixed(1)
+           + '" r="1.7" fill="' + col + '"></circle>'; }).join("");
+    plot = '<polyline points="' + path("inc") + '" class="tc-line tc-inc"></polyline>'
+         + '<polyline points="' + path("exp") + '" class="tc-line tc-exp"></polyline>'
+         + dots("inc", "var(--green)") + dots("exp", "var(--red)");
+  } else {
+    // Two bars per period, side by side. A zero draws nothing at all, so an
+    // empty day is empty rather than a hairline sitting on the floor.
+    const slot = (W - PL - PR) / pts.length;
+    const bw   = Math.max(1.2, Math.min(9, slot * 0.38));
+    const gap  = Math.min(1.2, slot * 0.08);
+    pts.forEach(function(p, i){
+      const mid = PL + slot * (i + 0.5);
+      [["inc","tc-b-inc",-1],["exp","tc-b-exp",1]].forEach(function(a){
+        const v = p[a[0]];
+        if(!(v > 0)) return;
+        const h  = floor - y(v);
+        const bx = mid + a[2] * (gap/2) - (a[2] < 0 ? bw : 0);
+        plot += '<rect x="' + bx.toFixed(1) + '" y="' + y(v).toFixed(1)
+              + '" width="' + bw.toFixed(1) + '" height="' + Math.max(h, 0.8).toFixed(1)
+              + '" class="' + a[1] + '"></rect>';
+      });
+    });
+  }
 
   // Only the ends and the peak are labelled; every label would be unreadable.
   let peak = 0;
   pts.forEach(function(p, i){ if(Math.max(p.inc,p.exp) > Math.max(pts[peak].inc,pts[peak].exp)) peak = i; });
+  const slotC = (W - PL - PR) / pts.length;
+  const centreOf = i => (lgChart === "line")
+    ? PL + i * ((W - PL - PR) / (pts.length - 1))
+    : PL + slotC * (i + 0.5);
   const marks = [0, peak, pts.length-1].filter(function(v, i, a){ return a.indexOf(v) === i; })
     .map(function(i){
       const anchor = i === 0 ? "start" : (i === pts.length-1 ? "end" : "middle");
-      const px = i === 0 ? PL : (i === pts.length-1 ? W - PR : x(i));
+      const px = i === 0 ? PL : (i === pts.length-1 ? W - PR : centreOf(i));
       return '<text x="' + px.toFixed(1) + '" y="' + (H - 6) + '" text-anchor="' + anchor
            + '" class="tc-x">' + esc(pts[i].label) + '</text>';
     }).join("");
@@ -4405,17 +4444,18 @@ function trendChart(){
 
   return '<div class="card"><div class="card-title">'
     +   (lgMonth ? "Day by day" : "Month by month") + '</div>'
+    + '<div class="view-sw don-sw">'
+    +   '<button class="' + (lgChart === "bar"  ? "on" : "") + '" onclick="setChartView(\'bar\')">Bars</button>'
+    +   '<button class="' + (lgChart === "line" ? "on" : "") + '" onclick="setChartView(\'line\')">Line</button>'
+    + '</div>'
     + '<div class="tc-key">'
     +   '<span><i style="background:var(--green)"></i>Income ' + fmt(totInc) + '</span>'
     +   '<span><i style="background:var(--red)"></i>Spent ' + fmt(totExp) + '</span>'
     + '</div>'
-    + '<div class="tc-wrap"><svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">'
-    +   '<line x1="' + PL + '" y1="' + y(0) + '" x2="' + (W-PR) + '" y2="' + y(0)
+    + '<div class="tc-wrap"><svg viewBox="0 0 ' + W + ' ' + H + '">'
+    +   '<line x1="' + PL + '" y1="' + floor + '" x2="' + (W-PR) + '" y2="' + floor
     +     '" class="tc-base"></line>'
-    +   '<polyline points="' + path("inc") + '" class="tc-line tc-inc"></polyline>'
-    +   '<polyline points="' + path("exp") + '" class="tc-line tc-exp"></polyline>'
-    +   dots("inc", "var(--green)") + dots("exp", "var(--red)")
-    +   marks
+    +   plot + marks
     + '</svg></div>'
     + '<div class="tc-peak">Highest ' + esc(pts[peak].label) + ' &middot; '
     +   fmt(Math.max(pts[peak].inc, pts[peak].exp)) + '</div>'
