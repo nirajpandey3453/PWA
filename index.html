@@ -4406,9 +4406,9 @@ function renderLedgerDash(){
                + donutCard("Where the money came from", "received",
                            headSlices(cur.heads, "income"));
 
-  el.innerHTML = stats + cardBox + cardNote + donuts + notesHTML
+  el.innerHTML = stats + cardBox + cardNote + notesHTML
     + renderPotBlock(cur)
-    + renderPayBlock(entriesIn(lgYear, lgMonth)) + bars;
+    + renderPayBlock(entriesIn(lgYear, lgMonth)) + bars + donuts;
 }
 
 function renderLedgerAll(){

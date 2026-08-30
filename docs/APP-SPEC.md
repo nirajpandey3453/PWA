@@ -1,6 +1,6 @@
 # Shree Laxmi Home — Application Specification
 
-**Version:** 1.1 · drawn from `index.html` at service-worker cache `sip-tracker-v91`
+**Version:** 1.2 · drawn from `index.html` at service-worker cache `sip-tracker-v92`
 **Purpose:** a complete, self-contained description of the app, written so a mobile application can be built from this document alone.
 
 Every rule below is taken from the running code, with line references into `index.html` so any claim can be checked. Where a code comment disagrees with what the code actually does, this document states the behaviour and flags the discrepancy in [§23](#23-known-issues-to-fix-in-the-rebuild).
@@ -485,7 +485,7 @@ The Ledger Insights screen shows, for the selected month or whole year:
 
 - **Income**, **Spent**, **Net**, and entry count, each with a percentage delta against the previous comparable period (`previousPeriod()`, `index.html:4027`).
 - A note naming exactly which payment types are behind Net, so the number can be reconciled against the pot table without guesswork.
-- **Two donut charts** — *Where the money went* and *Where the money came from* — placed directly under the headline figures, before any detail.
+- **Two donut charts** — *Where the money went* and *Where the money came from* — at the foot of the screen, after the breakdowns they summarise.
 - Breakdowns by **head** (with subheads nested), by **person**, and by **payment type**.
 - The pot table (`renderPotBlock()`, `index.html:4069`).
 - Settlement rows kept visible but separated, so a card bill is auditable without polluting Spent.
@@ -497,7 +497,7 @@ The Ledger Insights screen shows, for the selected month or whole year:
 
 ### 8.8 The two rings
 
-Expenses and income each get a ring, built by the same `donutCard()` (`index.html:3070`) that the Investment dashboard's *Allocation by Category* uses, so the two dashboards read as one app.
+Expenses and income each get a ring, built by the same `donutCard()` (`index.html:3070`) that the Investment dashboard's *Allocation by Category* uses, so the two dashboards read as one app. They sit at the **foot** of the dashboard: a ring answers "roughly how is this split?", which is a closing summary of the itemised blocks above it, not a substitute for them.
 
 `headSlices(heads, kind)` (`index.html:3061`) turns a period's head totals into slices, largest first. `donutCard(title, centre, slices)` then renders an SVG ring plus a legend of amount and share.
 
