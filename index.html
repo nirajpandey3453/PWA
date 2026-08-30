@@ -219,6 +219,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .cons-x{font-size:10px;color:var(--muted);margin-top:2px}
 .cons-bar{height:4px;background:var(--card);border-radius:3px;overflow:hidden;margin-top:8px}
 .cons-bar div{height:100%;background:var(--teal);border-radius:3px}
+.gs-row{display:flex;align-items:baseline;gap:9px;padding:7px 0;border-bottom:1px solid var(--border)}
+.gs-row:last-of-type{border-bottom:none}
+.gs-l{flex:1;font-size:12.5px;font-weight:600}
+.gs-v{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.gs-x{font-size:10px;color:var(--muted);width:100%;margin-top:-4px}
+.mg-list{display:flex;flex-direction:column;gap:2px;max-height:190px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:var(--bg)}
+.mg-row{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0;cursor:pointer}
 .freq-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .freq{display:flex;align-items:center;gap:6px;padding:9px 6px 9px 11px;border:1px solid var(--border);border-radius:11px;background:var(--bg);color:var(--text)}
 .freq.on{border-color:var(--green)}
@@ -793,6 +800,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="card-title">Saved Items <span class="opt" id="item-count"></span></div>
     <div id="item-manage"></div>
   </div>
+
+  <div class="card">
+    <div class="card-title">Combine Items</div>
+    <div style="font-size:12px;color:var(--sub);line-height:1.5;margin-bottom:10px">
+      Bought the same thing under different names? Tick them, choose which one
+      to keep, and everything tracks under that single item from now on.
+    </div>
+    <label class="form-label">Keep this one</label>
+    <select class="form-select" id="mg-target"></select>
+    <label class="form-label" style="margin-top:10px">Rename it <span class="opt">optional</span></label>
+    <input class="form-input" id="mg-name" placeholder="Leave blank to keep the name">
+    <label class="form-label" style="margin-top:10px">Fold these into it</label>
+    <div id="mg-list" class="mg-list"></div>
+    <button class="btn-sm btn-outline" style="width:100%;margin-top:11px" onclick="doMerge()">Combine</button>
+  </div>
 </div>
 
 <!-- SHOPPING: CONSUMPTION -->
@@ -914,9 +936,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="card">
     <div class="card-title">Payment Types</div>
     <div style="font-size:12px;color:var(--sub);line-height:1.5;margin-bottom:6px">
-      Tick a payment type to keep it out of monthly and yearly totals. Those
-      entries are still recorded and grouped by head, so you can see where the
-      money went — they just do not add up twice when you settle the bill.
+      Only money leaving the bank should reduce your net income, so Cash and
+      Credit Card start ticked — the cash was withdrawn earlier and the card
+      bill is paid later, both as bank movements. Ticked types are still
+      recorded and grouped by head; they just do not count twice.
     </div>
     <div id="paymode-list"></div>
     <div class="lg-f2" style="margin-top:11px">
@@ -1353,40 +1376,24 @@ function renderHome(){
   ["lock-lg","lock-iv"].forEach(function(lid){
     const b = document.getElementById(lid);
     if(!b) return;
-    if(!open)              b.textContent = "🔒";
-    else if(!isAdmin())    b.textContent = "🔓 " + left + "m";
-    else                   b.textContent = "";
+    if(!open)           b.textContent = "🔒";
+    else if(!isAdmin()) b.textContent = "🔓";
+    else                b.textContent = "";
   });
 
   const lg = document.getElementById("home-lg");
-  if(lg && !open){ lg.textContent = "🔒 Needs admin approval"; }
-  else if(lg){
-    seedHeads();
-    const y = String(new Date().getFullYear());
-    const r = sumUp(entriesIn(y,""));
-    lg.textContent = r.count
-      ? y + ": +" + fmt(r.income) + " · −" + fmt(r.expense)
-      : "No entries yet";
-  }
+  if(lg) lg.textContent = open ? "" : "Needs admin approval";
   const sh = document.getElementById("home-sh");
-  if(sh){
-    const pend = shopPending().length, got = shopDone().length;
-    sh.textContent = pend ? (pend + " to buy · " + got + " bought")
-                          : (got ? (got + " bought") : "Nothing on the list");
-  }
+  if(sh) sh.textContent = "";
   const iv = document.getElementById("home-iv");
-  if(iv && !open){ iv.textContent = "🔒 Needs admin approval"; }
-  else if(iv){
-    const done = completeMonths().filter(Boolean).length;
-    iv.textContent = fmt(totalInvested()) + " invested · " + done + "/" + MONTHS.length + " months";
-  }
+  if(iv) iv.textContent = open ? "" : "Needs admin approval";
   renderHomeRequests();
   renderHomeSeen();
   const mins = grantMinutesLeft();
   const bn = document.getElementById("home-grant");
   if(bn){
     bn.innerHTML = (!isAdmin() && mins)
-      ? '🔓 ' + mins + ' minute(s) of access left'
+      ? '🔓 Temporary access is open'
         + '<button class="end-access" onclick="endMyAccess()">End now</button>'
       : "";
   }
@@ -1518,7 +1525,7 @@ function showSec(id,el){
   if(id==="lgheads")  { seedHeads(); seedPeople(); seedExclPay(); renderHeads(); renderSubheads(); renderPayExcl(); renderPeopleManager(); renderPeopleList(); renderRecurringForm(); renderAccessAdmin(); }
   if(id==="lglog")    renderLedger();
   if(id==="shlist")   { seedItems(); renderItemPicker(); renderFrequent(); renderShopList(); }
-  if(id==="shitems")  { seedItems(); fillUnitSelect(); renderItemManage(); }
+  if(id==="shitems")  { seedItems(); fillUnitSelect(); renderItemManage(); renderMergeUI(); }
   if(id==="shcons")   { renderShopPeriodSel(); renderShopDash(); }
   if(id==="shhist")   renderShopHistory();
   if(id==="transfer") { renderTransfer(); renderSyncTools(); }
@@ -2032,6 +2039,37 @@ function exportExcel(){
   }
 }
 
+let gRefreshTimer = null;
+
+function scheduleTokenRefresh(){
+  clearTimeout(gRefreshTimer);
+  if(!gToken || !gTokenExp) return;
+  // Two minutes of headroom, and never sooner than five seconds from now.
+  const ms = Math.max(5000, gTokenExp - Date.now() - 120000);
+  gRefreshTimer = setTimeout(silentRefresh, ms);
+}
+
+function silentRefresh(){
+  if(!gUserEmail) return;
+  const old = document.getElementById("auth-frame");
+  if(old) old.remove();
+  const f = document.createElement("iframe");
+  f.id = "auth-frame";
+  f.style.display = "none";
+  const p = new URLSearchParams({
+    client_id: CLIENT_ID,
+    redirect_uri: window.location.origin + window.location.pathname,
+    response_type: "token",
+    scope: SCOPES,
+    prompt: "none",
+    login_hint: gUserEmail
+  });
+  f.src = "https://accounts.google.com/o/oauth2/auth?" + p.toString();
+  document.body.appendChild(f);
+  // Give up quietly; sessionExpired() will handle it when a call 401s.
+  setTimeout(function(){ const x = document.getElementById("auth-frame"); if(x) x.remove(); }, 20000);
+}
+
 // ── SESSION ────────────────────────────────────────────────────────────────
 // The implicit flow hands back a ~1 hour access token and no refresh token.
 // Without persisting it, every page reload (and every PWA relaunch) wiped
@@ -2067,6 +2105,7 @@ function restoreSession(){
 
 // Token died while the app was open — drop it and ask for a fresh login.
 function sessionExpired(){
+  clearTimeout(gRefreshTimer);
   gToken = null; gTokenExp = 0;
   gUserName = null; gUserPhoto = null; gUserSub = null; gUserEmail = null;
   gFileId = null; clearTimeout(syncTimer);
@@ -2091,6 +2130,7 @@ const SCOPES = "https://www.googleapis.com/auth/drive profile email";
 function handleLogin(){
   if(gToken){
     gToken = null; gUserName = null; gUserPhoto = null; gUserSub = null; gUserEmail = null; gTokenExp = 0;
+    clearTimeout(gRefreshTimer);
     clearSession();
     gFileId = null; clearTimeout(syncTimer); setSync("");
     setSyncState(false,"Sign in");
@@ -2115,8 +2155,9 @@ function handleLogin(){
     if(e.data && e.data.type==="google_token"){
       gToken = e.data.token;
       gTokenExp = Number(e.data.exp) || 0;
-      gUserName = e.data.name || "User";
+      if(e.data.name) gUserName = e.data.name;
       saveSession();
+      scheduleTokenRefresh();
       updateLoginUI();
       updateDriveStatus();
       fetchProfile();
@@ -2136,15 +2177,20 @@ function handleLogin(){
   // expires_in is seconds; keep a 60s margin so we never use a dying token
   const exp = Date.now() + (Number(params.get("expires_in")||3600) - 60) * 1000;
 
-  if(window.opener && window.opener !== window){
-    window.opener.postMessage({type:"google_token", token, exp}, window.location.origin);
-    window.close();
+  // Popup sign-in posts to its opener; the silent refresh posts to its parent.
+  const popup  = window.opener && window.opener !== window;
+  const framed = window.parent && window.parent !== window;
+  if(popup || framed){
+    (popup ? window.opener : window.parent)
+      .postMessage({type:"google_token", token, exp}, window.location.origin);
+    if(popup) window.close();
     return;
   }
 
   gToken = token;
   gTokenExp = exp;
   saveSession();
+  scheduleTokenRefresh();
   history.replaceState(null,"",window.location.pathname);
   updateLoginUI();
   updateDriveStatus();
@@ -2732,8 +2778,10 @@ async function syncDown(){
 // Keep devices converging without anyone hitting refresh.
 setInterval(function(){ if(gToken && gFileId && !gSyncing) syncNow(); }, 60000);
 document.addEventListener("visibilitychange", function(){
-  if(document.hidden) flushSync();
-  else if(gToken && gFileId && !gSyncing) syncNow();
+  if(document.hidden){ flushSync(); return; }
+  // Timers are unreliable in a backgrounded tab, so re-check on return.
+  if(gToken && gTokenExp && gTokenExp - Date.now() < 150000) silentRefresh();
+  if(gToken && gFileId && !gSyncing) syncNow();
 });
 window.addEventListener("pagehide", flushSync);
 window.addEventListener("beforeunload", flushSync);
@@ -2748,6 +2796,7 @@ if("serviceWorker" in navigator){
 if(!gToken && restoreSession()){
   updateLoginUI();
   updateDriveStatus();
+  scheduleTokenRefresh();
   fetchProfile();
 }
 
@@ -2835,14 +2884,31 @@ function delPayMode(id){
 }
 // Seeded once with card excluded, since that is the common case. Every mode is
 // written explicitly so unticking card is remembered rather than re-seeded.
+// Only money actually leaving the bank counts against income: cash was drawn
+// out earlier and a card bill is settled later, both as bank movements. Any
+// other treatment would count the same rupee twice.
 function seedExclPay(){
   seedPays();
-  if(Object.keys(ST.exclPay||{}).length) return;
-  payModes().forEach(function(p){
-    ST.exclPay[p.id] = (p.id === "card");
-    if(ST.meta.exclPay[p.id] == null) ST.meta.exclPay[p.id] = 1;
-  });
-  save(ST);
+  if(!Object.keys(ST.exclPay||{}).length){
+    payModes().forEach(function(p){
+      ST.exclPay[p.id] = (p.id !== "bank");
+      if(ST.meta.exclPay[p.id] == null) ST.meta.exclPay[p.id] = 1;
+    });
+    ST.exclPay.__v2 = true;
+    save(ST);
+    return;
+  }
+  // Installs that predate the rule keep their choices except for cash, which
+  // is switched once. "__v2" is never a payment id, so it never renders.
+  if(!ST.exclPay.__v2){
+    if(ST.exclPay.cash === false){
+      ST.exclPay.cash = true;
+      touch("exclPay","cash");
+    }
+    ST.exclPay.__v2 = true;
+    touch("exclPay","__v2");
+    save(ST);
+  }
 }
 
 function isPayExcluded(pay){ return !!(pay && ST.exclPay && ST.exclPay[pay]); }
@@ -4335,9 +4401,49 @@ function seedItems(){
   save(ST);
 }
 
+// An item may point at another: "Pyaaz" and "Onions" can both resolve to
+// "Onion" so one name carries the whole history.
+function resolveItemId(id){
+  let cur = id, hops = 0;
+  while(cur && ST.items[cur] && ST.items[cur].alias && hops++ < 5){
+    cur = ST.items[cur].alias;
+  }
+  return (cur && ST.items[cur]) ? cur : id;
+}
+
+function itemName(id){
+  const r = ST.items[resolveItemId(id)];
+  return r ? r.name : "";
+}
+
+// Merge sources into a target, keeping the target's name (or a new one).
+function mergeItems(targetId, sourceIds, newName){
+  const t = ST.items[targetId];
+  if(!t) return 0;
+  if(newName && newName.trim()){ t.name = newName.trim(); }
+  touch("items", targetId);
+  let n = 0;
+  sourceIds.forEach(function(sid){
+    if(sid === targetId || !ST.items[sid]) return;
+    ST.items[sid] = {name: ST.items[sid].name, unit: ST.items[sid].unit, alias: targetId};
+    touch("items", sid);
+    n++;
+  });
+  // Re-point existing rows so history follows the merged name.
+  (ST.shop||[]).forEach(function(r){
+    if(r.item && sourceIds.indexOf(r.item) > -1){
+      r.item = targetId;
+      r.name = t.name;
+      touch("shop", r.id);
+    }
+  });
+  save(ST);
+  return n;
+}
+
 function itemList(){
   return Object.keys(ST.items||{})
-    .filter(function(id){ return ST.items[id] && ST.items[id].name; })
+    .filter(function(id){ return ST.items[id] && ST.items[id].name && !ST.items[id].alias; })
     .map(function(id){ return {id:id, name:ST.items[id].name, unit:ST.items[id].unit||""}; })
     .sort(function(a,b){ return a.name.localeCompare(b.name); });
 }
@@ -4401,6 +4507,44 @@ function renderItemPicker(){
         return '<option value="'+i.id+'">'+esc(i.name)+(i.unit?' ('+esc(i.unit)+')':'')+'</option>';
       }).join("");
   if(keep && list.some(function(i){ return i.id === keep; })) sel.value = keep;
+}
+
+function renderMergeUI(){
+  const sel = document.getElementById("mg-target");
+  const box = document.getElementById("mg-list");
+  if(!sel || !box) return;
+  const list = itemList();
+  const keep = sel.value;
+  sel.innerHTML = list.map(function(i){
+    return '<option value="'+i.id+'">'+esc(i.name)+'</option>'; }).join("");
+  if(keep && list.some(function(i){ return i.id === keep; })) sel.value = keep;
+  box.innerHTML = list.length > 1
+    ? list.map(function(i){
+        return '<label class="mg-row"><input type="checkbox" value="'+i.id+'"> '
+          + esc(i.name) + '</label>';
+      }).join("")
+    : '<span class="head-none">Add a second item first</span>';
+}
+
+function doMerge(){
+  const sel = document.getElementById("mg-target");
+  const box = document.getElementById("mg-list");
+  if(!sel || !box) return;
+  const target = sel.value;
+  if(!target){ toast("Pick the item to keep"); return; }
+  const picked = Array.prototype.slice.call(box.querySelectorAll("input:checked"))
+    .map(function(c){ return c.value; })
+    .filter(function(id){ return id !== target; });
+  if(!picked.length){ toast("Tick the items to fold in"); return; }
+  const name = document.getElementById("mg-name").value;
+  const keepName = (name && name.trim()) || (ST.items[target] && ST.items[target].name);
+  if(!confirm("Combine " + picked.length + " item(s) into " + keepName + "?\n\n"
+      + "Past purchases move across, so consumption is tracked under one name.")) return;
+  const n = mergeItems(target, picked, name);
+  document.getElementById("mg-name").value = "";
+  renderMergeUI(); renderItemManage(); renderItemPicker();
+  renderFrequent(); renderShopList(); renderShopHistory(); renderShopDash();
+  toast("✓ " + n + " item(s) combined into " + keepName);
 }
 
 function renderItemManage(){
@@ -4813,6 +4957,40 @@ function consumption(year, month){
   return out;
 }
 
+// The shopping module tracks quantities; the money for the same shopping sits
+// in the ledger under the Grocery head. Show both here so the two halves of
+// one activity are not in separate places.
+function grocerySpend(year, month){
+  const pre = month ? (year + "-" + month) : year;
+  let counted = 0, excluded = 0, n = 0;
+  (ST.ledger||[]).forEach(function(e){
+    if(e.type === "income") return;
+    if(e.head !== "e_groceries") return;
+    if(String(e.date||"").indexOf(pre) !== 0) return;
+    const a = Number(e.amt) || 0;
+    n++;
+    if(isExcluded(e)) excluded += a; else counted += a;
+  });
+  return {counted:counted, excluded:excluded, total:counted+excluded, n:n};
+}
+
+function groceryBlock(){
+  const mo = grocerySpend(shYear, shMonth || curMonth());
+  const yr = grocerySpend(shYear, "");
+  if(!mo.n && !yr.n) return "";
+  const line = function(label, g){
+    return '<div class="gs-row"><span class="gs-l">' + label + '</span>'
+      + '<span class="gs-v">' + fmt(g.total) + '</span>'
+      + '<span class="gs-x">' + g.n + (g.n === 1 ? " entry" : " entries")
+      + (g.excluded ? " · " + fmt(g.excluded) + " not counted" : "") + '</span></div>';
+  };
+  return '<div class="hb-block"><div class="hb-title">Grocery spend (from the ledger)</div>'
+    + line(shMonth ? monthLabel(shYear + "-" + shMonth) : monthLabel(shYear + "-" + curMonth()), mo)
+    + line("Whole of " + shYear, yr)
+    + '<div class="sync-hint">Taken from ledger entries filed under the Grocery head.</div>'
+    + '</div>';
+}
+
 function renderShopDash(){
   const el = document.getElementById("shd-body");
   if(!el) return;
@@ -4835,7 +5013,7 @@ function renderShopDash(){
     + '</div>';
 
   if(!keys.length){
-    el.innerHTML = stats + '<div class="empty">Nothing bought in this period.</div>';
+    el.innerHTML = stats + groceryBlock() + '<div class="empty">Nothing bought in this period.</div>';
     return;
   }
 
@@ -4884,7 +5062,7 @@ function renderShopDash(){
       + ' month(s) — about ' + esc(fmtQty(c[top].qty/ms, c[top].base)) + ' a month.</div></div></div>';
   }
 
-  el.innerHTML = stats + note
+  el.innerHTML = stats + groceryBlock() + note
     + '<div class="hb-block"><div class="hb-title">Consumption by item — most bought first</div>'
        + toggle + rows + '</div>';
 
@@ -4899,6 +5077,7 @@ function renderShopAll(){
   fillUnitSelect();
   renderItemPicker();
   renderItemManage();
+  renderMergeUI();
   renderFrequent();
   renderShopList();
   renderShopPeriodSel();
@@ -4957,6 +5136,16 @@ function claimIdentity(){
     ST.people[id].email = em;
     touch("people", id);
   }
+  // Retire any other row claiming the same email, carrying admin across so a
+  // duplicate can never strand the admin flag on the discarded one.
+  Object.keys(ST.people).forEach(function(k){
+    if(k === id) return;
+    const q = ST.people[k];
+    if(!q || emailKey(q.email) !== em) return;
+    if(q.admin) ST.people[id].admin = true;
+    ST.people[k] = null;
+    touch("people", k);
+  });
   if(adminCount() === 0){
     ST.people[id].admin = true;
     touch("people", id);
@@ -5011,13 +5200,22 @@ function closeLogo(){
 function renderHomeSeen(){
   const el = document.getElementById("home-seen");
   if(!el) return;
-  const rows = Object.keys(ST.people||{})
-    .filter(function(id){ return ST.people[id] && emailKey(ST.people[id].email); })
-    .map(function(id){
-      const p = ST.people[id];
-      const em = emailKey(p.email);
-      return {name:p.name, email:em, admin:!!p.admin, at:Number((ST.seen||{})[em] || 0)};
-    })
+  const byEmail = {};
+  Object.keys(ST.people||{}).forEach(function(id){
+    const p = ST.people[id];
+    if(!p) return;
+    const em = emailKey(p.email);
+    if(!em) return;
+    const cur = byEmail[em];
+    // Prefer the admin record, then the one with a name, so the kept row is
+    // the most informative of the duplicates.
+    if(!cur || (p.admin && !cur.admin) || (!cur.name && p.name)){
+      byEmail[em] = {name:p.name, email:em, admin:!!p.admin, at:Number((ST.seen||{})[em] || 0)};
+    } else if(p.admin){
+      cur.admin = true;
+    }
+  });
+  const rows = Object.keys(byEmail).map(function(k){ return byEmail[k]; })
     .sort(function(a,b){ return b.at - a.at; });
 
   if(!rows.length){ el.innerHTML = ""; return; }
