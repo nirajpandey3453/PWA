@@ -1,6 +1,6 @@
 # Shree Laxmi Home — Application Specification
 
-**Version:** 1.4 · drawn from `index.html` at service-worker cache `sip-tracker-v94`
+**Version:** 1.5 · drawn from `index.html` at service-worker cache `sip-tracker-v95`
 **Purpose:** a complete, self-contained description of the app, written so a mobile application can be built from this document alone.
 
 Every rule below is taken from the running code, with line references into `index.html` so any claim can be checked. Where a code comment disagrees with what the code actually does, this document states the behaviour and flags the discrepancy in [§23](#23-known-issues-to-fix-in-the-rebuild).
@@ -592,7 +592,7 @@ The point: **editing a plan's amount re-prices future months only, never recorde
 - Tapping an item opens the buy sheet: quantity, unit, date, note. Saving sets `done`, `qty`, `unit`, `doneAt` (noon of the chosen date), `doneBy`.
 - **Quick-buy** records a purchase for an item that was never on the list, creating the row already marked done.
 - Typing a name that is not in the catalogue **adds it to the catalogue and to the list** in one action, so the list learns.
-- **History** rows are editable — the same sheet reopens and updates in place.
+- **History** is grouped by shopping day, and each day is priced from the Ledger ([§10.5](#105-pricing-a-shopping-day)). Rows stay editable — the same sheet reopens and updates in place.
 
 ### 10.2 Units and consumption
 
@@ -625,7 +625,21 @@ Several catalogue entries can be mapped to one tracked item — "Pyaaz" and "Oni
 
 `resolveItemId()` (`index.html:4588`) follows alias chains with a 5-hop guard against cycles.
 
-### 10.5 Grocery spend from the Ledger
+### 10.5 Pricing a shopping day
+
+Quantities live in Shopping and money lives in the Ledger, so the two are joined **on the date**: one shopping trip is one day's Grocery entries, however many items came home.
+
+Purchase History therefore groups a month into **day cards**, newest first. Each card header carries the date, how many items were bought, and what the Ledger says that day's groceries cost (`groceryOnDay(ymd)`); the month header totals those days.
+
+Three decisions are worth stating, because the obvious alternatives are wrong:
+
+- **The amount is never split across items.** There is no per-item price anywhere in the data, so dividing a day's total by its item count would be inventing figures — and printing the same day total against every row would read as a per-item price. The total belongs to the day, and is shown once.
+- **A day with no Ledger entry shows an em dash, never ₹0.** Zero is a claim that nothing was spent; the truth is that nobody has logged it yet, and the card says so.
+- **Grouping uses the local date, not `toISOString()`.** `doneAt` is stamped at noon local time; taking the ISO date would shift every purchase a day backwards for anyone east of Greenwich.
+
+The day total obeys `countsAsExpense()`, so a card-bill settlement never inflates a shopping day.
+
+### 10.6 Grocery spend from the Ledger
 
 The Shopping dashboard surfaces money as well as quantities, by reading the Ledger's `e_groceries` head — quantities live in Shopping, the money for the same shopping lives in the Ledger.
 
@@ -914,6 +928,7 @@ Roughly: 10px tertiary metadata · 11–11.5px labels and hints · 12.5px list r
 | `legend-row` | dot, name, and right-aligned amount · share — the ring's key |
 | `tc-wrap` / `tc-line` / `tc-base` / `tc-x` | the trend chart: a proportionally scaled SVG, two 2px polylines with `vector-effect: non-scaling-stroke`, a hairline floor, and axis labels |
 | `tc-b-inc` / `tc-b-exp` | the paired income and spending bars |
+| `sd-day` / `sd-hdr` / `sd-amt` / `sd-foot` | a shopping day card: date, item count, the day's cost, and a footnote naming its source |
 | `don-sw` | the Heads / Subheads switch, a `view-sw` sitting under a card title |
 | `freq` / `freq-ed` / `freq-add` | a Buy Again row: tappable body, edit, and add-to-list |
 | `toast` | transient bottom message, 2.5 s default |
@@ -1045,7 +1060,7 @@ The Drive document keeps its current JSON shape, so old and new clients can coex
 
 ## 22. Behaviour catalogue for tests
 
-The current build is pinned by 494 tests across 18 suites. Those harnesses will not survive the rebuild, but the invariants must. Each line below is an acceptance criterion.
+The current build is pinned by 526 tests across 19 suites. Those harnesses will not survive the rebuild, but the invariants must. Each line below is an acceptance criterion.
 
 **Accounting**
 
@@ -1080,52 +1095,56 @@ The current build is pinned by 494 tests across 18 suites. Those harnesses will 
 20. Renaming an item updates every purchase row filed under it, so its history stays one line.
 21. Renaming to a name another item already owns is refused, with a pointer to Merge items.
 22. Editing an alias edits the item it resolves to.
+23. Purchase history groups a month by day, newest first, and each day shows its own Ledger cost.
+24. A day with no Ledger entry shows a dash, never ₹0.
+25. A purchase stamped at noon groups under its own local date, in every timezone.
+26. A settlement never inflates a shopping day's cost.
 
 **Charts**
 
-23. Every ring's slices sum to 100% and the first starts at twelve o'clock.
-24. More than seven heads collapse to six plus *Everything else*, whose amount is the sum of the rest.
-25. A period with no income renders no income chart at all, rather than an empty ring.
-26. Slice colour follows rank, so the same period renders identically on every device.
-27. A head name containing markup is escaped, in both the ring and its legend.
-28. Subhead slices total exactly what the head slices totalled; entries with no subhead are kept under the head's own name.
-29. The Heads / Subheads switch is hidden when no entry in that kind carries a subhead.
-30. Expenses and income remember their head/subhead choice independently.
-31. The trend line reads day by day for a month and month by month for a year.
-32. Trailing empty periods are dropped; interior empty periods stay as zeros.
-33. A settlement never appears as a spike in the spending line.
-34. Fewer than two points renders no chart at all.
-35. The trend opens on bars; the Bars / Line switch swaps the view and nothing else.
-36. A period worth zero draws no bar, and no bar crosses the floor or the frame.
-37. Both views carry the same title, totals, peak caption and baseline.
-38. The chart SVG is never drawn with `preserveAspectRatio="none"`.
+27. Every ring's slices sum to 100% and the first starts at twelve o'clock.
+28. More than seven heads collapse to six plus *Everything else*, whose amount is the sum of the rest.
+29. A period with no income renders no income chart at all, rather than an empty ring.
+30. Slice colour follows rank, so the same period renders identically on every device.
+31. A head name containing markup is escaped, in both the ring and its legend.
+32. Subhead slices total exactly what the head slices totalled; entries with no subhead are kept under the head's own name.
+33. The Heads / Subheads switch is hidden when no entry in that kind carries a subhead.
+34. Expenses and income remember their head/subhead choice independently.
+35. The trend line reads day by day for a month and month by month for a year.
+36. Trailing empty periods are dropped; interior empty periods stay as zeros.
+37. A settlement never appears as a spike in the spending line.
+38. Fewer than two points renders no chart at all.
+39. The trend opens on bars; the Bars / Line switch swaps the view and nothing else.
+40. A period worth zero draws no bar, and no bar crosses the floor or the frame.
+41. Both views carry the same title, totals, peak caption and baseline.
+42. The chart SVG is never drawn with `preserveAspectRatio="none"`.
 
 **Recurring**
 
-39. Running twice never produces a duplicate for the same rule and month.
-40. Day 31 in February files on the last day of February.
-41. Pausing stops future months; already-posted entries stay.
+43. Running twice never produces a duplicate for the same rule and month.
+44. Day 31 in February files on the last day of February.
+45. Pausing stops future months; already-posted entries stay.
 
 **Sync**
 
-42. Two devices editing different fields of the same record both keep their edits.
-43. A delete beats a concurrent edit stamped earlier, and loses to one stamped later.
-44. Rows generated independently on two devices from the same `srcKey` collapse into one.
-45. A merge that changes nothing produces no "updated" notice.
-46. When several copies of the file exist, the oldest is chosen.
+46. Two devices editing different fields of the same record both keep their edits.
+47. A delete beats a concurrent edit stamped earlier, and loses to one stamped later.
+48. Rows generated independently on two devices from the same `srcKey` collapse into one.
+49. A merge that changes nothing produces no "updated" notice.
+50. When several copies of the file exist, the oldest is chosen.
 
 **Access**
 
-47. A member with no grant cannot open a gated module, by tile or by tab.
-48. A grant expires exactly 30 minutes after it is issued, and the member is ejected within 20 seconds.
-49. Revoke and End Now take effect immediately and propagate.
-50. With no admin flagged anywhere, every signed-in user is treated as an admin.
-51. Two person rows with the same email are merged, and the admin flag survives.
+51. A member with no grant cannot open a gated module, by tile or by tab.
+52. A grant expires exactly 30 minutes after it is issued, and the member is ejected within 20 seconds.
+53. Revoke and End Now take effect immediately and propagate.
+54. With no admin flagged anywhere, every signed-in user is treated as an admin.
+55. Two person rows with the same email are merged, and the admin flag survives.
 
 **Session**
 
-52. A lapsed token never blanks the app or discards the identity.
-53. Backup download and upload are refused to non-admins.
+56. A lapsed token never blanks the app or discards the identity.
+57. Backup download and upload are refused to non-admins.
 
 ---
 
