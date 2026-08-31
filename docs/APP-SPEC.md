@@ -1,6 +1,6 @@
 # Shree Laxmi Home — Application Specification
 
-**Version:** 1.5 · drawn from `index.html` at service-worker cache `sip-tracker-v95`
+**Version:** 1.6 · drawn from `index.html` at service-worker cache `sip-tracker-v96`
 **Purpose:** a complete, self-contained description of the app, written so a mobile application can be built from this document alone.
 
 Every rule below is taken from the running code, with line references into `index.html` so any claim can be checked. Where a code comment disagrees with what the code actually does, this document states the behaviour and flags the discrepancy in [§23](#23-known-issues-to-fix-in-the-rebuild).
@@ -602,7 +602,7 @@ Consumption is available as **cards** or as a **list**, sorted **most-used first
 
 ### 10.3 Editing an item
 
-Names are typed by hand, so they arrive misspelt and inconsistent — "Aalo", "Aata", "Narial pani". `openItemEdit(id)` / `saveItemEdit()` (`index.html:3626`) open a sheet for the item's **name** and **usual unit**, reachable from two places: the ✎ button on each **Buy Again** row, and the ✎ on each chip in the **Items** tab.
+Names are typed by hand, so they arrive misspelt and inconsistent — "Aalo", "Aata", "Narial pani". `openItemEdit(id)` / `saveItemEdit()` open a sheet for the item's **name** and **usual unit**, reached from the ✎ on each chip in the **Items** tab. It is deliberately *not* on a Buy Again tile: at two tiles per row a phone has no width for a third control ([§17.1](#171-fitting-a-phone)).
 
 **A rename must travel to the purchase history.** `ST.shop` rows carry a denormalised `name`, and `consumption()` groups on `name|base` — so renaming the catalogue entry alone would fork one item's history into two lines. The save therefore re-points every `ST.shop` row whose `item` matches, stamping each one, exactly as `mergeItems()` does. The toast says how many rows moved.
 
@@ -930,12 +930,34 @@ Roughly: 10px tertiary metadata · 11–11.5px labels and hints · 12.5px list r
 | `tc-b-inc` / `tc-b-exp` | the paired income and spending bars |
 | `sd-day` / `sd-hdr` / `sd-amt` / `sd-foot` | a shopping day card: date, item count, the day's cost, and a footnote naming its source |
 | `don-sw` | the Heads / Subheads switch, a `view-sw` sitting under a card title |
-| `freq` / `freq-ed` / `freq-add` | a Buy Again row: tappable body, edit, and add-to-list |
+| `freq` / `freq-add` | a Buy Again tile: a tappable body that records a purchase, and one button that puts the item on the list |
 | `toast` | transient bottom message, 2.5 s default |
 | `lock-screen` | full-screen PIN overlay, z-index 500 |
 | `auth-gate` | full-screen sign-in overlay, z-index 400 |
 
 Bars and chips carry meaning: teal for neutral magnitude, green for income, red for expense, dashed border for an excluded head.
+
+### 17.1 Fitting a phone
+
+The narrowest device that matters is **320 px**. Every horizontal budget is checked against it, because a page that scrolls sideways on a phone feels broken however good the content is.
+
+Two rules make that hold:
+
+- **No bare `1fr` track.** A grid item defaults to `min-width: auto`, which floors at its own min-content width — so a `1fr` column silently refuses to shrink and pushes the page sideways. Every proportional track is `minmax(0, 1fr)`, and any flex child that must be allowed to shrink carries `min-width: 0`. This was the actual cause of the Buy Again grid overflowing.
+- **`overflow-x: clip` on `body`**, not `hidden`. Hidden makes the body a scroll container and breaks the sticky top bar; clip does not. It is a backstop, not the fix — genuinely wide content (a table, a chart, the payment-type tabs) scrolls inside its own `overflow-x: auto` box.
+
+The Buy Again tile is the tightest thing in the app, and its budget at 320 px runs:
+
+| Step | Takes | Leaves |
+|---|---|---|
+| Viewport | | 320 |
+| `.section` padding, 14 each side | 28 | 292 |
+| `.card` padding, 14 each side | 28 | 264 |
+| `.freq-grid` gap, two columns | 7 | 128.5 per tile |
+| `.freq` padding 9 + 5, plus 2 borders | 16 | 112.5 |
+| The add button, 24, plus a 4 gap | 28 | **84.5 for the name** |
+
+That is why the tile carries **one** control. A second 26 px button and its gap took the name column under 50 px, at which point every item read as an ellipsis.
 
 ### Layout
 
@@ -1060,7 +1082,7 @@ The Drive document keeps its current JSON shape, so old and new clients can coex
 
 ## 22. Behaviour catalogue for tests
 
-The current build is pinned by 526 tests across 19 suites. Those harnesses will not survive the rebuild, but the invariants must. Each line below is an acceptance criterion.
+The current build is pinned by 555 tests across 20 suites. Those harnesses will not survive the rebuild, but the invariants must. Each line below is an acceptance criterion.
 
 **Accounting**
 
@@ -1099,52 +1121,54 @@ The current build is pinned by 526 tests across 19 suites. Those harnesses will 
 24. A day with no Ledger entry shows a dash, never ₹0.
 25. A purchase stamped at noon groups under its own local date, in every timezone.
 26. A settlement never inflates a shopping day's cost.
+27. Two Buy Again tiles fit a 320 px viewport without the page scrolling sideways.
+28. No proportional grid track is a bare `1fr`.
 
 **Charts**
 
-27. Every ring's slices sum to 100% and the first starts at twelve o'clock.
-28. More than seven heads collapse to six plus *Everything else*, whose amount is the sum of the rest.
-29. A period with no income renders no income chart at all, rather than an empty ring.
-30. Slice colour follows rank, so the same period renders identically on every device.
-31. A head name containing markup is escaped, in both the ring and its legend.
-32. Subhead slices total exactly what the head slices totalled; entries with no subhead are kept under the head's own name.
-33. The Heads / Subheads switch is hidden when no entry in that kind carries a subhead.
-34. Expenses and income remember their head/subhead choice independently.
-35. The trend line reads day by day for a month and month by month for a year.
-36. Trailing empty periods are dropped; interior empty periods stay as zeros.
-37. A settlement never appears as a spike in the spending line.
-38. Fewer than two points renders no chart at all.
-39. The trend opens on bars; the Bars / Line switch swaps the view and nothing else.
-40. A period worth zero draws no bar, and no bar crosses the floor or the frame.
-41. Both views carry the same title, totals, peak caption and baseline.
-42. The chart SVG is never drawn with `preserveAspectRatio="none"`.
+29. Every ring's slices sum to 100% and the first starts at twelve o'clock.
+30. More than seven heads collapse to six plus *Everything else*, whose amount is the sum of the rest.
+31. A period with no income renders no income chart at all, rather than an empty ring.
+32. Slice colour follows rank, so the same period renders identically on every device.
+33. A head name containing markup is escaped, in both the ring and its legend.
+34. Subhead slices total exactly what the head slices totalled; entries with no subhead are kept under the head's own name.
+35. The Heads / Subheads switch is hidden when no entry in that kind carries a subhead.
+36. Expenses and income remember their head/subhead choice independently.
+37. The trend line reads day by day for a month and month by month for a year.
+38. Trailing empty periods are dropped; interior empty periods stay as zeros.
+39. A settlement never appears as a spike in the spending line.
+40. Fewer than two points renders no chart at all.
+41. The trend opens on bars; the Bars / Line switch swaps the view and nothing else.
+42. A period worth zero draws no bar, and no bar crosses the floor or the frame.
+43. Both views carry the same title, totals, peak caption and baseline.
+44. The chart SVG is never drawn with `preserveAspectRatio="none"`.
 
 **Recurring**
 
-43. Running twice never produces a duplicate for the same rule and month.
-44. Day 31 in February files on the last day of February.
-45. Pausing stops future months; already-posted entries stay.
+45. Running twice never produces a duplicate for the same rule and month.
+46. Day 31 in February files on the last day of February.
+47. Pausing stops future months; already-posted entries stay.
 
 **Sync**
 
-46. Two devices editing different fields of the same record both keep their edits.
-47. A delete beats a concurrent edit stamped earlier, and loses to one stamped later.
-48. Rows generated independently on two devices from the same `srcKey` collapse into one.
-49. A merge that changes nothing produces no "updated" notice.
-50. When several copies of the file exist, the oldest is chosen.
+48. Two devices editing different fields of the same record both keep their edits.
+49. A delete beats a concurrent edit stamped earlier, and loses to one stamped later.
+50. Rows generated independently on two devices from the same `srcKey` collapse into one.
+51. A merge that changes nothing produces no "updated" notice.
+52. When several copies of the file exist, the oldest is chosen.
 
 **Access**
 
-51. A member with no grant cannot open a gated module, by tile or by tab.
-52. A grant expires exactly 30 minutes after it is issued, and the member is ejected within 20 seconds.
-53. Revoke and End Now take effect immediately and propagate.
-54. With no admin flagged anywhere, every signed-in user is treated as an admin.
-55. Two person rows with the same email are merged, and the admin flag survives.
+53. A member with no grant cannot open a gated module, by tile or by tab.
+54. A grant expires exactly 30 minutes after it is issued, and the member is ejected within 20 seconds.
+55. Revoke and End Now take effect immediately and propagate.
+56. With no admin flagged anywhere, every signed-in user is treated as an admin.
+57. Two person rows with the same email are merged, and the admin flag survives.
 
 **Session**
 
-56. A lapsed token never blanks the app or discards the identity.
-57. Backup download and upload are refused to non-admins.
+58. A lapsed token never blanks the app or discards the identity.
+59. Backup download and upload are refused to non-admins.
 
 ---
 

@@ -28,7 +28,7 @@
   --safe-bot: env(safe-area-inset-bottom, 0px);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:calc(70px + var(--safe-bot))}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:calc(70px + var(--safe-bot));overflow-x:clip}
 
 /* ── TOP BAR ── */
 .topbar{background:var(--navy);color:#fff;padding:calc(14px + var(--safe-top)) 16px 14px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
@@ -55,8 +55,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .card-title{font-size:13px;font-weight:600;color:var(--sub);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.04em}
 
 /* ── STAT GRID ── */
-.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
-.stat-card{background:var(--card);border-radius:14px;padding:14px 12px;border:1px solid var(--border)}
+.stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.stat-card{background:var(--card);border-radius:14px;padding:14px 12px;border:1px solid var(--border);min-width:0}
 .stat-label{font-size:11px;color:var(--sub);margin-bottom:5px}
 .stat-val{font-size:22px;font-weight:700}
 .stat-val.teal{color:var(--teal)}
@@ -195,7 +195,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .chip-x.adm{color:#fff;background:var(--teal);border-radius:7px;padding:1px 6px;margin-left:6px}
 .or-line{display:flex;align-items:center;gap:9px;margin:13px 0 4px;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:0.08em}
 .or-line:before,.or-line:after{content:"";flex:1;height:1px;background:var(--border)}
-.pot-head,.pot-row{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:6px;align-items:baseline}
+.pot-head,.pot-row{display:grid;grid-template-columns:1.4fr repeat(3,minmax(0,1fr));gap:6px;align-items:baseline}
 .pot-head{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;padding-bottom:6px;border-bottom:1px solid var(--border)}
 .pot-head span:not(:first-child),.pot-row span:not(:first-child){text-align:right;font-variant-numeric:tabular-nums}
 .pot-row{font-size:12px;padding:8px 0;border-bottom:1px solid var(--border)}
@@ -226,7 +226,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .cl-nums{text-align:right;flex-shrink:0}
 .cl-q{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
 .cl-x{font-size:10px;color:var(--muted)}
-.cons-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+.cons-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
 .cons-card{border:1px solid var(--border);border-radius:12px;padding:11px 12px;background:var(--bg)}
 .cons-n{font-size:12px;font-weight:600;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cons-q{font-size:16px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums}
@@ -242,7 +242,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .gro-box{display:none;margin-top:11px;border:1px solid var(--border);border-radius:11px;padding:10px 11px;background:var(--bg)}
 .gro-box.open{display:block}
 .gro-t{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--sub);margin-bottom:8px}
-.gro-row{display:grid;grid-template-columns:74px 1fr auto auto;gap:8px;align-items:center;padding:5px 0}
+.gro-row{display:grid;grid-template-columns:68px minmax(0,1fr) auto auto;gap:7px;align-items:center;padding:5px 0}
 .gro-l{font-size:11.5px;color:var(--sub);white-space:nowrap}
 .gro-bar{height:5px;background:var(--card);border-radius:3px;overflow:hidden}
 .gro-bar div{height:100%;background:var(--teal);border-radius:3px}
@@ -254,15 +254,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .gs-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:11px;padding-top:10px;border-top:1px solid var(--border);font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
 .mg-list{display:flex;flex-direction:column;gap:2px;max-height:190px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:var(--bg)}
 .mg-row{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0;cursor:pointer}
-.freq-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-.freq{display:flex;align-items:center;gap:6px;padding:9px 6px 9px 11px;border:1px solid var(--border);border-radius:11px;background:var(--bg);color:var(--text)}
+.freq-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.freq{display:flex;align-items:center;gap:4px;padding:7px 5px 7px 9px;border:1px solid var(--border);border-radius:10px;background:var(--bg);color:var(--text);min-width:0;overflow:hidden}
 .freq.on{border-color:var(--green)}
-.freq-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;cursor:pointer}
-.freq-n{font-size:12.5px;font-weight:600;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.freq-u{font-size:10px;color:var(--muted)}
-.freq-ed{width:26px;height:26px;flex-shrink:0;border:1px solid transparent;border-radius:8px;background:none;color:var(--muted);font-size:12px;line-height:1;cursor:pointer;padding:0}
-.freq-ed:active{background:var(--card);border-color:var(--border)}
-.freq-add{width:26px;height:26px;flex-shrink:0;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--sub);font-size:14px;line-height:1;cursor:pointer;padding:0}
+.freq-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;cursor:pointer}
+.freq-n{font-size:11.5px;font-weight:600;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.freq-u{font-size:9px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.freq-add{width:24px;height:24px;flex-shrink:0;border:1px solid var(--border);border-radius:7px;background:var(--card);color:var(--sub);font-size:13px;line-height:1;cursor:pointer;padding:0}
 .freq-add:active{background:var(--bg)}
 .freq.on .freq-add{color:var(--green);border-color:var(--green)}
 .sh-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
@@ -336,12 +334,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .card-exp{border-left:3px solid #C62828}
 .card-inc{border-left:3px solid #1A7A4A}
 .btn-red-solid{width:100%;padding:14px;border-radius:14px;font-size:15px;font-weight:600;border:none;cursor:pointer;background:#C62828;color:#fff}
-.lgd-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.lgd-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .lgd-s{background:var(--bg);border-radius:10px;padding:9px 7px;text-align:center}
 .lgd-l{font-size:9.5px;color:var(--sub);margin-bottom:3px}
 .lgd-v{font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums}
 .lg-form .form-label{margin-top:8px}
-.lg-f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lg-f2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 .lg-hint{font-size:11px;color:var(--sub);margin-top:9px;line-height:1.5}
 .head-group{margin-bottom:11px}
 .head-group-t{font-size:11px;font-weight:600;color:var(--sub);margin-bottom:6px}
@@ -840,8 +838,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="card-title">Buy Again</div>
     <div style="font-size:12px;color:var(--sub);line-height:1.5;margin-bottom:10px">
       Your most-bought items. Tap one to record a purchase straight away — the
-      unit is prefilled from the last time you bought it. Use &#9998; to fix a
-      name or unit.
+      unit is prefilled from the last time you bought it. Rename one under
+      <b>Items</b>.
     </div>
     <div class="freq-grid" id="freq-list"></div>
   </div>
@@ -5342,7 +5340,6 @@ function renderFrequent(){
           +   '<span class="freq-u">' + esc(u ? unitOf(u).name : "")
           +     (i.n ? ' &middot; ' + i.n + 'x' : '') + '</span>'
           + '</div>'
-          + '<button class="freq-ed" onclick="openItemEdit(\'' + i.id + '\')" title="Edit item">&#9998;</button>'
           + '<button class="freq-add" onclick="quickAddToList(\'' + i.id + '\')" title="'
           +   (on ? 'Already on the list' : 'Add to the list') + '">'
           +   (on ? '&#10003;' : '+') + '</button>'
